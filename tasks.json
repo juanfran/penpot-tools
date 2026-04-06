@@ -446,5 +446,12 @@
     "title": "Preserve shape names as data attributes for debugging",
     "description": "In `src/converter/render.ts`, add `data-penpot-name` and `data-penpot-id` HTML attributes to every rendered element using `shape.name` and `shape.id`. This makes the generated HTML much easier to inspect and debug — developers can see which Penpot shape each DOM element corresponds to. Sanitize the name by escaping it with `escapeHtml` before embedding.",
     "done": false
+  },
+  {
+    "id": 73,
+    "category": "Refinement",
+    "title": "Remove any reference to tailwindMode",
+    "description": "Remove any usage of `tailwindMode`. This includes removing any conditional logic or class generation that depends on `tailwindMode`. The render must only return html without wrappers. So including cdn or not is up to the user of the library. The converter should be agnostic to how the output is used.",
+    "done": false
   }
 ]
