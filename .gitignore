@@ -12,3 +12,8 @@ count.txt
 
 *storybook.log
 storybook-static
+
+output/*
+cache/*
+tmp/*
+info.md
