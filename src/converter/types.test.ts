@@ -5,7 +5,6 @@ import type { ConverterContext } from './types';
 
 const ctx: ConverterContext = {
   resolveImageUrl: (id) => `https://example.com/images/${id}`,
-  tailwindMode: 'cdn',
 };
 
 const minimalPage: Page = {

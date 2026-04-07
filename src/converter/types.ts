@@ -5,8 +5,14 @@ export interface ConverterContext {
   resolveImageUrl(id: Uuid): string;
   /** Optional prefix for image URLs */
   baseUrl?: string;
-  /** Whether to inject the Tailwind CDN script into the HTML output */
-  tailwindMode: 'cdn' | 'none';
+  /** @internal When true, shape renderers skip absolute positioning (parent is flex/grid) */
+  _parentIsLayout?: boolean;
+  /** @internal Page background color applied to the root frame */
+  _pageBackground?: string;
+  /** @internal When true, the shape uses relative positioning instead of absolute */
+  _forceRelative?: boolean;
+  /** @internal When true, shapes with fixedScroll use `fixed` positioning instead of `absolute` */
+  _isChildOfRoot?: boolean;
 }
 
 /** Convert a full Penpot page to an HTML document string */

@@ -13,7 +13,6 @@ const makeCtx = (
   resolveImageUrl = (id: string) => `https://assets.example.com/${id}`,
 ): ConverterContext => ({
   resolveImageUrl,
-  tailwindMode: 'none',
 });
 
 describe('solidFillToClass', () => {
@@ -403,16 +402,17 @@ describe('fillsToOutput', () => {
     expect(result.style).toContain('#ff0000');
   });
 
-  it('multiple image fills: comma-separated layers in order (first = topmost)', () => {
+  it('multiple image fills: reversed so Penpot top fill (last index) is first CSS layer', () => {
     const imageFill2: Fill = {
       fillImage: { id: 'img-2', width: 50, height: 50, mtype: 'image/jpeg' },
     };
+    // fills[0]=img-1 is the bottom in Penpot, fills[1]=img-2 is the top.
+    // CSS layers are reversed: img-2 (topmost in Penpot) comes first (topmost in CSS).
     const result = fillsToOutput([imageFill, imageFill2], makeCtx());
     expect(result.style).toContain('background-image:');
     const imgValue =
       result.style.match(/background-image:\s*([^;]+)/)?.[1] ?? '';
-    // img-1 should appear before img-2 (topmost layer first)
-    expect(imgValue.indexOf('img-1')).toBeLessThan(imgValue.indexOf('img-2'));
+    expect(imgValue.indexOf('img-2')).toBeLessThan(imgValue.indexOf('img-1'));
   });
 
   it('multiple fills: background-size has same count as background-image layers', () => {

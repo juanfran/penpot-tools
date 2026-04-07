@@ -1,2 +1,27 @@
-export { convertPage, convertShape } from './types';
-export type { ConverterContext } from './types';
+import type { Page, Shape } from '../penpot.types';
+import type { ConverterContext } from './types';
+import { renderShape } from './render';
+import { renderPage } from './page';
+
+/**
+ * Converts a full Penpot page to an HTML string (body content only, no `<html>` wrapper).
+ */
+export function convertPage(page: Page, ctx: ConverterContext): string {
+  return renderPage(page, ctx);
+}
+
+/**
+ * Converts a single Penpot shape and all its descendants to a standalone HTML snippet.
+ *
+ * The root shape is forced to `relative` positioning so it can be embedded anywhere.
+ * Returns the rendered div tree without any `<html>` or `<body>` wrapper.
+ */
+export function convertShape(
+  shape: Shape,
+  allObjects: Record<string, Shape>,
+  ctx: ConverterContext,
+): string {
+  return renderShape(shape, null, allObjects, { ...ctx, _forceRelative: true });
+}
+
+export type { ConverterContext };

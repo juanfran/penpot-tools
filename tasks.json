@@ -102,356 +102,356 @@
     "category": "Visual Properties",
     "title": "Implement solid stroke conversion to Tailwind border classes",
     "description": "Create `src/converter/visual/strokes.ts`. Implement `solidStrokeToClasses(stroke: Stroke): { classes: string; style: string }`. Map `strokeWidth` to `border-[Npx]`, `strokeColor`+`strokeOpacity` to `border-[color]` using arbitrary values. Map `strokeStyle` to Tailwind border-style classes: `solid` → `border-solid`, `dashed` → `border-dashed`, `dotted` → `border-dotted`. For `strokeAlignment` of `'inner'` or `'outer'`, note that standard CSS border is `'center'`-equivalent; for inner/outer use `box-shadow` as an inline style instead.",
-    "done": false
+    "done": true
   },
   {
     "id": 16,
     "category": "Visual Properties",
     "title": "Implement stroke alignment: inner and outer via box-shadow inline style",
     "description": "In `src/converter/visual/strokes.ts`, implement `strokeAlignmentToStyle(stroke: Stroke): string`. For `strokeAlignment === 'inner'`, emit `box-shadow: inset 0 0 0 Npx color`. For `strokeAlignment === 'outer'`, emit `box-shadow: 0 0 0 Npx color`. For `strokeAlignment === 'center'` (default), return empty string (handled by standard CSS border). This avoids layout shifts caused by border box-model. Use `hexOpacityToCss` for the color.",
-    "done": false
+    "done": true
   },
   {
     "id": 17,
     "category": "Visual Properties",
     "title": "Implement drop-shadow conversion to Tailwind shadow or CSS box-shadow",
     "description": "Create `src/converter/visual/shadows.ts`. Implement `shadowToStyle(shadow: Shadow): string`. For `shadow.style === 'drop-shadow'`, produce `box-shadow: offsetX offsetY blurRadius spreadRadius color`. For `'inner-shadow'`, prefix with `inset `. Use `hexOpacityToCss` for `shadow.color`. Skip hidden shadows (`shadow.hidden === true`). If the shape has multiple shadows, join them with `, ` in a single `box-shadow` multi-value property.",
-    "done": false
+    "done": true
   },
   {
     "id": 18,
     "category": "Visual Properties",
     "title": "Implement blur conversion to Tailwind filter classes",
     "description": "Create `src/converter/visual/blur.ts`. Implement `blurToClass(blur: Blur | undefined): string`. If `blur` is absent or `blur.hidden === true`, return `''`. For `blur.type === 'layer-blur'` (standard blur), return `blur-[Npx]` using `blur.value`. For `blur.type === 'background-blur'`, return `backdrop-blur-[Npx]` instead. Round the value to 1 decimal place.",
-    "done": false
+    "done": true
   },
   {
     "id": 19,
     "category": "Visual Properties",
     "title": "Implement blend mode conversion to Tailwind mix-blend-mode class",
     "description": "Create `src/converter/visual/blend.ts`. Implement `blendModeToClass(mode: BlendMode | undefined): string`. Map each `BlendMode` value to its Tailwind equivalent (e.g., `'multiply'` → `'mix-blend-multiply'`, `'screen'` → `'mix-blend-screen'`, etc.). If mode is `'normal'` or `undefined`, return `''` to avoid emitting a redundant class. Use a lookup record/map for the mapping, typed so TypeScript complains if a `BlendMode` variant is missing.",
-    "done": false
+    "done": true
   },
   {
     "id": 20,
     "category": "Visual Properties",
     "title": "Implement opacity conversion to Tailwind opacity class",
     "description": "In `src/converter/visual/blend.ts`, implement `opacityToClass(opacity: number | undefined): string`. If `opacity` is `undefined` or equals `1`, return `''`. Otherwise multiply by 100, round to the nearest integer, and return `opacity-[N%]` (e.g., `opacity-[50%]`). Note that Tailwind 3+ supports `opacity-50` for standard values — use `opacity-[N%]` with the arbitrary value for full coverage of non-standard values.",
-    "done": false
+    "done": true
   },
   {
     "id": 21,
     "category": "Visual Properties",
     "title": "Implement corner radius conversion to Tailwind or inline-style border-radius",
     "description": "Create `src/converter/visual/radius.ts`. Implement `radiusToOutput(shape: ShapeCommon): { classes: string; style: string }`. If all four radii (`r1`, `r2`, `r3`, `r4`) are equal (or all are `undefined`), emit a single `rounded-[Npx]` class with the common value. If they differ, emit an inline style `border-radius: r1px r2px r3px r4px` following the CSS order (top-left, top-right, bottom-right, bottom-left matching Penpot's r1–r4 labeling). Treat missing radii as `0`.",
-    "done": false
+    "done": true
   },
   {
     "id": 22,
     "category": "Visual Properties",
     "title": "Implement shape rotation to Tailwind rotate class or CSS transform",
     "description": "Create `src/converter/visual/position.ts`. Implement `rotationToClass(rotation: number | undefined): string`. If `rotation` is `undefined` or `0`, return `''`. Otherwise return `rotate-[Ndeg]` (e.g., `rotate-[45deg]`). Note that Penpot stores rotation in degrees, counter-clockwise. CSS `rotate` is clockwise — negate the value. Also implement `transformToStyle(transform: GeomMatrix): string` which returns a `transform: matrix(...)` inline style string if the matrix is not identity, using the utils from task 5.",
-    "done": false
+    "done": true
   },
   {
     "id": 23,
     "category": "Visual Properties",
     "title": "Implement hidden-shape handling",
     "description": "In `src/converter/visual/blend.ts`, implement `hiddenToClass(hidden: boolean | undefined): string` which returns `'hidden'` (Tailwind `display: none`) if `hidden === true`, otherwise `''`. This will be included in every shape's class list. Hidden shapes should still be emitted to the HTML output (with the `hidden` class) rather than being excluded entirely, preserving DOM structure for potential JS consumers.",
-    "done": false
+    "done": true
   },
   {
     "id": 24,
     "category": "Visual Properties",
     "title": "Implement a shared base-classes builder for all shapes",
     "description": "Create `src/converter/visual/base.ts`. Implement `baseClasses(shape: ShapeCommon, ctx: ConverterContext): { classes: string; style: string }` which aggregates: rotation class, opacity class, blend mode class, hidden class, blur class, shadow style, and corner radius output. This is a single call that returns everything needed by all shape renderers for the common visual properties. Each individual converter was built in prior tasks — this function just composes them.",
-    "done": false
+    "done": true
   },
   {
     "id": 25,
     "category": "Absolute Layout",
     "title": "Implement absolute positioning: emit position and size Tailwind classes",
     "description": "In `src/converter/visual/position.ts`, implement `absolutePositionClasses(shape: ShapeCommon): string` which returns `absolute left-[Xpx] top-[Ypx] w-[Wpx] h-[Hpx]` using values from `shape.x`, `shape.y`, `shape.width`, `shape.height` (all via the `pxClass` utility). This is used when a shape is a direct child of a non-layout frame (absolute positioning context) or when `layoutItemAbsolute === true` inside a flex/grid container.",
-    "done": false
+    "done": true
   },
   {
     "id": 26,
     "category": "Absolute Layout",
     "title": "Implement horizontal constraints to CSS left/right/width logic",
     "description": "In `src/converter/visual/position.ts`, implement `constraintsHToStyle(shape: ShapeCommon, parent: ShapeCommon): string` which converts `shape.constraintsH` into appropriate CSS. For `'left'` → `left: Xpx`. For `'right'` → `right: (parentWidth - x - width)px`. For `'center'` → `left: 50%; transform: translateX(-50%)`. For `'leftright'` → `left: Xpx; right: (parentWidth - x - width)px; width: unset`. For `'scale'` → `left: X%; width: W%` as percentages of parent width.",
-    "done": false
+    "done": true
   },
   {
     "id": 27,
     "category": "Absolute Layout",
     "title": "Implement vertical constraints to CSS top/bottom/height logic",
     "description": "In `src/converter/visual/position.ts`, implement `constraintsVToStyle(shape: ShapeCommon, parent: ShapeCommon): string` mirroring the horizontal constraints (task 26) but for the vertical axis. For `'top'` / `'bottom'` / `'center'` / `'topbottom'` / `'scale'`, produce equivalent CSS for `top`, `bottom`, and `height`. Both constraint functions will be called together for shapes inside non-layout frames.",
-    "done": false
+    "done": true
   },
   {
     "id": 28,
     "category": "Shape Renderers",
     "title": "Implement RectShape renderer",
     "description": "Create `src/converter/shapes/rect.ts`. Implement `renderRect(shape: RectShape, parent: ShapeCommon | null, ctx: ConverterContext): string`. Emit a `<div>` with: absolute position classes, base visual classes (fills, strokes, shadows, radius, opacity, blur, blend), and `relative` if it has no children. Use the `tag` utility from utils/html.ts. No children are expected from a rect — it is a leaf node.",
-    "done": false
+    "done": true
   },
   {
     "id": 29,
     "category": "Shape Renderers",
     "title": "Implement CircleShape renderer",
     "description": "Create `src/converter/shapes/circle.ts`. Implement `renderCircle(shape: CircleShape, parent: ShapeCommon | null, ctx: ConverterContext): string`. A circle in Penpot is stored as `type: 'circle'` (ellipse). Emit a `<div>` with `rounded-full` if `width === height` (perfect circle), otherwise emit `border-radius: 50%` as inline style. Apply all base visual properties: fills, strokes, shadows, opacity, blend mode, blur. Use absolute positioning.",
-    "done": false
+    "done": true
   },
   {
     "id": 30,
     "category": "Shape Renderers",
     "title": "Implement ImageShape renderer",
     "description": "Create `src/converter/shapes/image.ts`. Implement `renderImage(shape: ImageShape, ctx: ConverterContext): string`. Call `ctx.resolveImageUrl(shape.metadata.id)` to get the image URL. Emit an `<img>` tag with `src`, `width`, `height` attributes, `alt=\"\"` (decorative), `class` with absolute position classes, opacity, blend mode, and an inline style for any rotation/transform. If the shape has fills, they should be ignored (fills on an image shape only blend over the image — skip for simplicity).",
-    "done": false
+    "done": true
   },
   {
     "id": 31,
     "category": "Shape Renderers",
     "title": "Implement PathShape renderer using inline SVG",
     "description": "Create `src/converter/shapes/path.ts`. Implement `renderPath(shape: PathShape, ctx: ConverterContext): string`. Emit an `<svg>` element sized to the shape's bounding box (`width` × `height`), positioned absolutely. Inside, emit a `<path d=\"...\">` using `shape.content`. Translate the path coordinates so the path starts at `(0, 0)` within the SVG by applying a `transform=\"translate(-x, -y)\"` to the `<path>`. Apply fill color from `shape.fills` as `fill` attribute, stroke from `shape.strokes` as `stroke` attribute.",
-    "done": false
+    "done": true
   },
   {
     "id": 32,
     "category": "Shape Renderers",
     "title": "Implement BoolShape renderer using inline SVG",
     "description": "Create `src/converter/shapes/bool.ts`. Implement `renderBool(shape: BoolShape, ctx: ConverterContext): string`. `BoolShape` stores the result of boolean operations (union/subtract/intersect/exclude) as a flattened SVG path string in `shape.content`. Emit an `<svg>` with the bounding box dimensions, positioned absolutely. Inside, render `<path d={shape.content}>` with fill and stroke from the shape's `fills` and `strokes` arrays. Use the same SVG translate approach as the PathShape renderer.",
-    "done": false
+    "done": true
   },
   {
     "id": 33,
     "category": "Shape Renderers",
     "title": "Implement SvgRawShape renderer embedding raw SVG content",
     "description": "Create `src/converter/shapes/svg-raw.ts`. Implement `renderSvgRaw(shape: SvgRawShape, ctx: ConverterContext): string`. Wrap `shape.content` (which is a complete SVG string) inside a `<div>` that is absolutely positioned and sized to the shape bounding box. Set the inner div's `innerHTML` equivalent to the raw SVG. Apply opacity, blend mode, and rotation from base classes. Note: the raw SVG may contain `<script>` tags — strip any `<script>` elements and `on*` event attributes from the raw content before embedding for XSS safety.",
-    "done": false
+    "done": true
   },
   {
     "id": 34,
     "category": "Shape Renderers",
     "title": "Implement GroupShape renderer as a relative-positioned container",
     "description": "Create `src/converter/shapes/group.ts`. Implement `renderGroup(shape: GroupShape, children: Shape[], objects: Record<string, Shape>, ctx: ConverterContext): string`. Emit a `<div class=\"absolute\" style=\"...\">` with absolute position, width, height, opacity, blend mode, rotation. Then recursively render each child shape inside it. The group itself has no background — it only provides a containing coordinate space. Apply `maskedGroup` handling: if `shape.maskedGroup === true`, the first child acts as a clip mask — add `overflow-hidden` and apply the first child's shape as the clip (simplification: wrap in `overflow-hidden rounded` div).",
-    "done": false
+    "done": true
   },
   {
     "id": 35,
     "category": "Shape Renderers",
     "title": "Implement FrameShape renderer for absolute (no-layout) mode",
     "description": "Create `src/converter/shapes/frame.ts`. Implement `renderFrame(shape: FrameShape, children: Shape[], objects: Record<string, Shape>, ctx: ConverterContext): string`. When `shape.layoutType` is `undefined` or absent, render as a `<div>` with `relative` class when it is the root frame, or `absolute` when it is a nested frame. Apply `overflow-hidden` if `shape.clipContent === true`. Recursively render children inside. Apply all base visual properties (fills, radius, shadows, etc.).",
-    "done": false
+    "done": true
   },
   {
     "id": 36,
     "category": "Flex Layout",
     "title": "Implement flex layout container classes for FrameShape",
     "description": "Create `src/converter/layout/flex.ts`. Implement `flexContainerClasses(shape: FrameShape): string`. Map: `layoutFlexDir` → `flex-row` / `flex-col` / `flex-row-reverse` / `flex-col-reverse` (always include `flex`). `layoutAlignItems` → `items-start` / `items-center` / `items-end` / `items-stretch` / etc. `layoutJustifyContent` → `justify-start` / `justify-center` / `justify-end` / `justify-between` / `justify-around` / `justify-evenly`. `layoutWrapType` → `flex-wrap` or `flex-nowrap`. Emit all non-default classes.",
-    "done": false
+    "done": true
   },
   {
     "id": 37,
     "category": "Flex Layout",
     "title": "Implement flex layout gap and padding to Tailwind classes",
     "description": "In `src/converter/layout/flex.ts`, implement `flexSpacingClasses(shape: FrameShape): { classes: string; style: string }`. For `layoutRowGap` and `layoutColumnGap`: if they are equal emit `gap-[Npx]`, otherwise emit `gap-x-[Npx] gap-y-[Npx]`. For `layoutPadding` (type `LayoutPadding` with `p1`–`p4` top/right/bottom/left): if all equal emit `p-[Npx]`, if top=bottom and left=right emit `px-[Npx] py-[Npx]`, otherwise fall back to an inline `padding: p1px p2px p3px p4px` style.",
-    "done": false
+    "done": true
   },
   {
     "id": 38,
     "category": "Flex Layout",
     "title": "Implement layout item sizing (fill/fix/auto) for flex children",
     "description": "Create `src/converter/layout/layout-item.ts`. Implement `layoutItemSizingClasses(shape: ShapeCommon): string`. Read `shape.layoutItemHSizing` and `shape.layoutItemVSizing`. For `'fill'` → `flex-1` (or `w-full` / `h-full` depending on axis). For `'auto'` → no explicit size class. For `'fix'` → `w-[Npx] h-[Npx]` using the shape's actual dimensions. Combine horizontal and vertical sizing into a single class string. The `layoutFlexDir` of the parent is needed to distinguish main vs cross axis — accept parent as a parameter.",
-    "done": false
+    "done": true
   },
   {
     "id": 39,
     "category": "Flex Layout",
     "title": "Implement layout item margins to Tailwind margin classes",
     "description": "In `src/converter/layout/layout-item.ts`, implement `layoutItemMarginClasses(shape: ShapeCommon): { classes: string; style: string }`. Read `shape.layoutItemMargin` (type `LayoutItemMargin` with `m1`–`m4` top/right/bottom/left). If `shape.layoutItemMarginType === 'simple'` and all sides equal, emit `m-[Npx]`. If top=bottom and left=right, emit `mx-[Npx] my-[Npx]`. Otherwise fall back to inline `margin: m1px m2px m3px m4px` style. If `layoutItemMargin` is undefined, return empty strings.",
-    "done": false
+    "done": true
   },
   {
     "id": 40,
     "category": "Flex Layout",
     "title": "Implement layout item align-self to Tailwind self-* class",
     "description": "In `src/converter/layout/layout-item.ts`, implement `layoutItemAlignSelfClass(shape: ShapeCommon): string`. Map `shape.layoutItemAlignSelf` to Tailwind: `'start'` → `self-start`, `'center'` → `self-center`, `'end'` → `self-end`, `'stretch'` → `self-stretch`. If `undefined`, return `''`.",
-    "done": false
+    "done": true
   },
   {
     "id": 41,
     "category": "Flex Layout",
     "title": "Implement layout item min/max size constraints to Tailwind classes",
     "description": "In `src/converter/layout/layout-item.ts`, implement `layoutItemMinMaxClasses(shape: ShapeCommon): string`. Map `layoutItemMinW` → `min-w-[Npx]`, `layoutItemMaxW` → `max-w-[Npx]`, `layoutItemMinH` → `min-h-[Npx]`, `layoutItemMaxH` → `max-h-[Npx]`. Skip any field that is `undefined`. Join and return all emitted classes.",
-    "done": false
+    "done": true
   },
   {
     "id": 42,
     "category": "Flex Layout",
     "title": "Implement layout item z-index to Tailwind z-index class",
     "description": "In `src/converter/layout/layout-item.ts`, implement `layoutItemZIndexClass(shape: ShapeCommon): string`. If `shape.layoutItemZIndex` is defined and non-zero, return `z-[N]`. Otherwise return `''`. This is used for flex/grid children that have an explicit stacking override.",
-    "done": false
+    "done": true
   },
   {
     "id": 43,
     "category": "Flex Layout",
     "title": "Implement layout item absolute positioning inside flex container",
     "description": "In `src/converter/layout/layout-item.ts`, implement `layoutItemAbsoluteClasses(shape: ShapeCommon): string`. If `shape.layoutItemAbsolute === true`, return `absolute left-[Xpx] top-[Ypx]` (using the shape's x/y relative to the flex container — Penpot stores parentX/parentY in the shape's x/y when it is absolute within a flex parent). Otherwise return `''`.",
-    "done": false
+    "done": true
   },
   {
     "id": 44,
     "category": "Flex Layout",
     "title": "Implement FrameShape renderer for flex layout mode",
     "description": "In `src/converter/shapes/frame.ts`, extend `renderFrame` to handle `shape.layoutType === 'flex'`. When flex layout is active: emit `flex` plus all classes from `flexContainerClasses` and `flexSpacingClasses`. Render each child with layout-item classes (`layoutItemSizingClasses`, `layoutItemMarginClasses`, `layoutItemAlignSelfClass`, `layoutItemMinMaxClasses`, `layoutItemZIndexClass`, `layoutItemAbsoluteClasses`) wrapped around the child's own rendered output. Children should NOT receive absolute position classes from `absolutePositionClasses` (layout controls their position).",
-    "done": false
+    "done": true
   },
   {
     "id": 45,
     "category": "Grid Layout",
     "title": "Implement CSS grid column and row track definitions from GridTrack[]",
     "description": "Create `src/converter/layout/grid.ts`. Implement `gridTracksToStyle(tracks: GridTrack[], axis: 'columns' | 'rows'): string` which converts an array of `GridTrack` to a CSS `grid-template-columns` or `grid-template-rows` inline style value. Map: `type: 'fixed'` → `Npx`, `type: 'percent'` → `N%`, `type: 'flex'` → `Nfr`, `type: 'auto'` → `auto`. Missing `value` defaults to `1` for flex tracks and `auto` otherwise. Join with spaces. Return full CSS property string.",
-    "done": false
+    "done": true
   },
   {
     "id": 46,
     "category": "Grid Layout",
     "title": "Implement grid cell placement classes for grid children",
     "description": "In `src/converter/layout/grid.ts`, implement `gridCellClasses(cell: GridCell): string`. Map `cell.row` → `row-start-[N]`, `cell.rowSpan` → `row-span-[N]` (skip if `rowSpan === 1`), `cell.column` → `col-start-[N]`, `cell.columnSpan` → `col-span-[N]` (skip if `columnSpan === 1`). Map `cell.alignSelf` and `cell.justifySelf` to `self-*` and `justify-self-*` Tailwind classes. Return all combined classes.",
-    "done": false
+    "done": true
   },
   {
     "id": 47,
     "category": "Grid Layout",
     "title": "Implement FrameShape lookup for grid cell assignment per child shape",
     "description": "In `src/converter/layout/grid.ts`, implement `findCellForShape(frame: FrameShape, shapeId: Uuid): GridCell | undefined`. `frame.layoutGridCells` is a `Record<string, GridCell>` where each cell has a `shapes: Uuid[]` array listing which shape UUIDs occupy that cell. Iterate over all cells and return the cell whose `shapes` array includes `shapeId`. This is called when rendering grid children to look up their cell placement.",
-    "done": false
+    "done": true
   },
   {
     "id": 48,
     "category": "Grid Layout",
     "title": "Implement FrameShape renderer for grid layout mode",
     "description": "In `src/converter/shapes/frame.ts`, extend `renderFrame` to handle `shape.layoutType === 'grid'`. Emit `grid` class and inline styles for `grid-template-columns`, `grid-template-rows` (from task 45), plus gap classes. For each child, call `findCellForShape` (task 47) to get the cell, then apply `gridCellClasses` (task 46). Children rendered in grid mode do NOT use absolute position classes — the grid system positions them.",
-    "done": false
+    "done": true
   },
   {
     "id": 49,
     "category": "Text Renderer",
     "title": "Implement text inline style converter for TextLeaf",
     "description": "Create `src/converter/shapes/text.ts`. Implement `textLeafToClasses(leaf: TextLeaf): { classes: string; style: string }`. Map: `fontSize` → `text-[Npx]`, `fontWeight` → `font-[N]`, `fontStyle: 'italic'` → `italic`, `textDecoration: 'underline'` → `underline`, `textDecoration: 'line-through'` → `line-through`, `textTransform: 'uppercase'` → `uppercase`, `textTransform: 'lowercase'` → `lowercase`, `textTransform: 'capitalize'` → `capitalize`, `letterSpacing` → inline `letter-spacing: Nem`, `lineHeight` → inline `line-height: N`. For `fontFamily`, use inline style `font-family: '...'`.",
-    "done": false
+    "done": true
   },
   {
     "id": 50,
     "category": "Text Renderer",
     "title": "Implement text leaf fill color conversion",
     "description": "In `src/converter/shapes/text.ts`, implement `textLeafColorClass(leaf: TextLeaf): string`. Reads `leaf.fills` — text fills work the same as shape fills but set the text color. For solid color fills, return `text-[#color]` or `text-[rgba(...)]`. If multiple fills are present or a gradient fill is used, fall back to a Tailwind arbitrary `text-[color]` for the first fill only (CSS `color` only accepts a single value; gradients on text require `-webkit-background-clip: text` which is an advanced inline style — emit that as a fallback).",
-    "done": false
+    "done": true
   },
   {
     "id": 51,
     "category": "Text Renderer",
     "title": "Implement ParagraphNode to HTML paragraph element",
     "description": "In `src/converter/shapes/text.ts`, implement `renderParagraph(para: ParagraphNode): string`. Emit a `<p>` element. Apply paragraph-level text styles (same `TextInlineStyle` fields as on the leaf, acting as defaults for the paragraph). For each child `TextLeaf`, call the leaf renderer (task 49) and wrap each leaf in a `<span>` with its computed classes and styles. If all leaves have identical styles, hoist those styles to the `<p>` and omit the `<span>` wrappers.",
-    "done": false
+    "done": true
   },
   {
     "id": 52,
     "category": "Text Renderer",
     "title": "Implement TextShape renderer composing the full rich-text tree",
     "description": "In `src/converter/shapes/text.ts`, implement `renderText(shape: TextShape, ctx: ConverterContext): string`. If `shape.content` is null, render an empty `<div>`. Otherwise, walk `content.children` (paragraph sets) → `paragraphSet.children` (paragraphs) → paragraphs → text leaves. Wrap everything in an outer `<div>` with absolute position, width, height, rotation, opacity, and blend mode classes. For `growType === 'auto-width'` omit the width constraint; for `'auto-height'` omit the height constraint.",
-    "done": false
+    "done": true
   },
   {
     "id": 53,
     "category": "Text Renderer",
     "title": "Implement typography reference resolution for text nodes",
     "description": "In `src/converter/shapes/text.ts`, update `textLeafToClasses` to handle `typographyRefId` and `typographyRefFile`. When a leaf references a typography, the inline style fields on the leaf itself override the typography defaults — so the inline fields are always authoritative. If a leaf has `typographyRefId` but no inline `fontSize`, that means the font properties come from the referenced typography. Accept an optional `typographies: Record<string, Typography>` lookup as a parameter and merge typography defaults before applying inline overrides.",
-    "done": false
+    "done": true
   },
   {
     "id": 54,
     "category": "Shape Dispatcher",
     "title": "Implement the main renderShape dispatcher routing to per-type renderers",
     "description": "Create `src/converter/render.ts`. Implement `renderShape(shape: Shape, parent: Shape | null, objects: Record<string, Shape>, ctx: ConverterContext): string`. Use a `switch` on `shape.type` to dispatch to `renderRect`, `renderCircle`, `renderImage`, `renderPath`, `renderBool`, `renderSvgRaw`, `renderGroup`, `renderFrame`, `renderText`. Pass children (resolved from `objects` via `getChildren`) to renderers that need them. This is the single recursive entry point — each renderer calls `renderShape` recursively for its children.",
-    "done": false
+    "done": true
   },
   {
     "id": 55,
     "category": "Shape Dispatcher",
     "title": "Implement component instance flattening in the shape dispatcher",
     "description": "In `src/converter/render.ts`, add handling for shapes with `componentId` set. Penpot component instances are regular shapes in the `objects` map — they just carry component linkage metadata. The dispatcher should treat them identically to their type (frame/group/etc.) and render their children normally. Add a comment noting that live component sync is not supported — instances are rendered as static HTML. No special behavior is needed beyond recognizing they exist.",
-    "done": false
+    "done": true
   },
   {
     "id": 56,
     "category": "Page Renderer",
     "title": "Implement renderPage function that converts a full Penpot Page to HTML body content",
     "description": "Create `src/converter/page.ts`. Implement `renderPage(page: Page, ctx: ConverterContext): string`. Use `buildTree(page.objects)` to get the root shape. Call `renderShape(root, null, page.objects, ctx)` to produce the HTML. The root frame should be rendered with `relative` positioning and the page background color (from `page.options?.background`) applied as a `bg-[#color]` class or inline style on the wrapper div.",
-    "done": false
+    "done": true
   },
   {
     "id": 58,
     "category": "Page Renderer",
     "title": "Implement convertShape for exporting a single shape subtree as a standalone HTML snippet",
     "description": "In `src/converter/index.ts`, implement `convertShape(shape: Shape, allObjects: Record<string, Shape>, ctx: ConverterContext): string`. This renders only the given shape and its descendants (not the full page). Useful for exporting a specific component or artboard. The root shape should use `relative` positioning (`position: relative`), not `absolute`. Return the HTML string without a full document wrapper (no `<html>` or `<body>` tags — just the rendered div tree).",
-    "done": false
+    "done": true
   },
   {
     "id": 59,
     "category": "Image Resolution",
     "title": "Implement a file-based ImageResolver that maps Penpot image IDs to local file paths",
     "description": "Create `src/converter/resolvers/fileResolver.ts`. Export `createFileResolver(baseDir: string): (id: Uuid) => string` that returns a function which builds a file path like `baseDir/images/id.png` and returns it as a `file://` URL. This lets users point the converter at a directory where they have pre-downloaded Penpot media assets. If the file does not exist, return a `data:image/png;base64,` placeholder (a 1×1 transparent PNG in base64) to avoid broken images.",
-    "done": false
+    "done": true
   },
   {
     "id": 60,
     "category": "Image Resolution",
     "title": "Implement a Penpot API ImageResolver that fetches image URLs from the Penpot REST API",
     "description": "Create `src/converter/resolvers/apiResolver.ts`. Export `createApiResolver(apiBase: string, fileId: Uuid, authToken: string): (id: Uuid) => string` that constructs a Penpot media URL for a given image ID. The URL pattern is `{apiBase}/api/rpc/command/get-file-object-thumbnails?file-id={fileId}&object-id={id}` (or the appropriate Penpot media endpoint). This resolver is synchronous — it just builds the URL string; no fetch is performed during rendering.",
-    "done": false
+    "done": true
   },
   {
     "id": 68,
     "category": "Refinement",
     "title": "Handle shapes with both a transform matrix and a rotation value",
     "description": "In `src/converter/visual/position.ts`, update the transform/rotation logic. Penpot shapes can have both `rotation` (degrees) and a non-identity `transform` matrix. The correct CSS should be `transform: rotate(Ndeg) matrix(a,b,c,d,e,f)` — combining both. Implement `combinedTransformStyle(shape: ShapeCommon): string` that builds the final CSS `transform` property, composing rotation and matrix if both are present, emitting only the relevant part if only one is present, and emitting nothing if neither applies.",
-    "done": false
+    "done": true
   },
   {
     "id": 69,
     "category": "Refinement",
     "title": "Handle fixed-scroll shapes (viewport-pinned elements)",
     "description": "In `src/converter/visual/position.ts`, handle `shape.fixedScroll === true`. When a shape has `fixedScroll` set, it is intended to stay fixed in the viewport during prototype playback. In HTML, emit `fixed` instead of `absolute` for its positioning class. This only applies to direct children of the root frame — nested shapes with `fixedScroll` should be treated as `absolute`.",
-    "done": false
+    "done": true
   },
   {
     "id": 70,
     "category": "Refinement",
     "title": "Handle multiple fills using CSS layered backgrounds",
     "description": "Update `src/converter/visual/fills.ts`. Currently `fillsToOutput` handles one fill. Extend it to stack multiple fills using CSS `background` shorthand with comma-separated layers. Penpot renders fills bottom-to-top (index 0 is bottom). In CSS, the first listed layer is on top — so reverse the order. Emit the combined background as a single inline style property. Note: mixing `bg-[...]` Tailwind classes with inline `background` styles conflicts — prefer inline style when multiple fills are present.",
-    "done": false
+    "done": true
   },
   {
     "id": 71,
     "category": "Refinement",
     "title": "Handle locked and blocked shapes",
     "description": "In `src/converter/render.ts`, handle `shape.locked` and `shape.blocked`. These are Penpot editor-only flags (locked shapes cannot be selected; blocked shapes cannot be edited). For the HTML output, they have no visual effect — add an HTML comment `<!-- locked -->` or `<!-- blocked -->` as an attribute/data attribute `data-penpot-locked=\"true\"` on the element for informational purposes. This is purely cosmetic metadata.",
-    "done": false
+    "done": true
   },
   {
     "id": 72,
     "category": "Refinement",
     "title": "Preserve shape names as data attributes for debugging",
     "description": "In `src/converter/render.ts`, add `data-penpot-name` and `data-penpot-id` HTML attributes to every rendered element using `shape.name` and `shape.id`. This makes the generated HTML much easier to inspect and debug — developers can see which Penpot shape each DOM element corresponds to. Sanitize the name by escaping it with `escapeHtml` before embedding.",
-    "done": false
+    "done": true
   },
   {
     "id": 73,
     "category": "Refinement",
     "title": "Remove any reference to tailwindMode",
     "description": "Remove any usage of `tailwindMode`. This includes removing any conditional logic or class generation that depends on `tailwindMode`. The render must only return html without wrappers. So including cdn or not is up to the user of the library. The converter should be agnostic to how the output is used.",
-    "done": false
+    "done": true
   }
 ]

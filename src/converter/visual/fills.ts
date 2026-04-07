@@ -194,9 +194,11 @@ export function fillsToOutput(
     return { classes: '', style: '' };
   }
 
-  // Multiple fills: build CSS layered background-image
+  // Multiple fills: build CSS layered background-image.
+  // Penpot renders fills bottom-to-top (index 0 = bottom).
+  // CSS background-image: the first value is on top — so reverse the array.
   const layers: BgLayer[] = [];
-  for (const fill of fills) {
+  for (const fill of [...fills].reverse()) {
     const layer = fillToBgLayer(fill, ctx);
     if (layer) layers.push(layer);
   }
