@@ -735,6 +735,7 @@ export interface TextInlineStyle {
   direction?: string;
   textDecoration?: string;
   textTransform?: string;
+  textAlign?: string;
   typographyRefId?: Uuid | null;
   typographyRefFile?: Uuid | null;
 }

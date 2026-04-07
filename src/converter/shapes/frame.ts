@@ -43,8 +43,9 @@ export function renderFrame(
   ctx: ConverterContext,
 ): string {
   const isRoot = shape.parentId === shape.id;
-  const isFlex = shape.layoutType === 'flex';
-  const isGrid = shape.layoutType === 'grid';
+  const rawLayout = (shape as unknown as { layout?: string }).layout;
+  const isFlex = shape.layoutType === 'flex' || rawLayout === 'flex';
+  const isGrid = shape.layoutType === 'grid' || rawLayout === 'grid';
   const base = baseClasses(shape, ctx);
   const fills = fillsToOutput(shape.fills, ctx);
   const clipClass = shape.clipContent ? 'overflow-hidden' : undefined;

@@ -1,16 +1,17 @@
 /**
  * Escapes special HTML characters in a string to prevent XSS.
  *
- * Replaces: `&` → `&amp;`, `<` → `&lt;`, `>` → `&gt;`,
- * `"` → `&quot;`, `'` → `&#x27;`
+ * Replaces: `&` → `&amp;`, `<` → `&lt;`, `>` → `&gt;`, `"` → `&quot;`
+ *
+ * Single quotes are intentionally not escaped because all generated attributes
+ * use double-quote delimiters, making single quotes safe inside attribute values.
  */
 export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
+    .replace(/"/g, '&quot;');
 }
 
 /**

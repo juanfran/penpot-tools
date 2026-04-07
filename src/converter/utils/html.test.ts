@@ -22,13 +22,13 @@ describe('escapeHtml', () => {
     expect(escapeHtml('say "hello"')).toBe('say &quot;hello&quot;');
   });
 
-  it('escapes single quotes', () => {
-    expect(escapeHtml("it's")).toBe('it&#x27;s');
+  it('does not escape single quotes (safe in double-quoted attributes)', () => {
+    expect(escapeHtml("it's")).toBe("it's");
   });
 
   it('escapes all special chars in one string', () => {
     expect(escapeHtml('<script>alert("xss & \'hack\'")</script>')).toBe(
-      '&lt;script&gt;alert(&quot;xss &amp; &#x27;hack&#x27;&quot;)&lt;/script&gt;',
+      "&lt;script&gt;alert(&quot;xss &amp; 'hack'&quot;)&lt;/script&gt;",
     );
   });
 

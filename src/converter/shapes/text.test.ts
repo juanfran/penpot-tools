@@ -36,9 +36,9 @@ describe('textLeafToClasses', () => {
     expect(classes).toContain('text-[16px]');
   });
 
-  it('maps fontWeight to font-[N]', () => {
+  it('maps fontWeight 700 to font-bold', () => {
     const { classes } = textLeafToClasses(makeLeaf({ fontWeight: '700' }));
-    expect(classes).toContain('font-[700]');
+    expect(classes).toContain('font-bold');
   });
 
   it('maps fontStyle italic to italic class', () => {
@@ -86,14 +86,14 @@ describe('textLeafToClasses', () => {
     expect(style).toContain('letter-spacing: 2em');
   });
 
-  it('maps lineHeight to inline line-height style', () => {
-    const { style } = textLeafToClasses(makeLeaf({ lineHeight: '1.5' }));
-    expect(style).toContain('line-height: 1.5');
+  it('maps lineHeight to leading-[value] class', () => {
+    const { classes } = textLeafToClasses(makeLeaf({ lineHeight: '1.5' }));
+    expect(classes).toContain('leading-[1.5]');
   });
 
-  it('maps fontFamily to inline font-family style', () => {
-    const { style } = textLeafToClasses(makeLeaf({ fontFamily: 'Inter' }));
-    expect(style).toContain("font-family: 'Inter'");
+  it('maps fontFamily to font-[name] Tailwind class', () => {
+    const { classes } = textLeafToClasses(makeLeaf({ fontFamily: 'Inter' }));
+    expect(classes).toContain("font-['Inter']");
   });
 });
 
@@ -115,13 +115,13 @@ describe('textLeafToClasses with typography resolution', () => {
 
   it('uses typography defaults when leaf has no inline values', () => {
     const typos: Record<string, Typography> = { 'typo-1': makeTypography() };
-    const { classes, style } = textLeafToClasses(
+    const { classes } = textLeafToClasses(
       makeLeaf({ typographyRefId: 'typo-1' as Uuid }),
       typos,
     );
     expect(classes).toContain('text-[24px]');
-    expect(classes).toContain('font-[700]');
-    expect(style).toContain("font-family: 'Inter'");
+    expect(classes).toContain('font-bold');
+    expect(classes).toContain("font-['Inter']");
   });
 
   it('leaf inline values override typography defaults', () => {

@@ -1,0 +1,393 @@
+{
+  "options": {},
+  "objects": {
+    "00000000-0000-0000-0000-000000000000": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "name": "Root Frame",
+      "type": "frame",
+      "x": 0,
+      "y": 0,
+      "width": 0.01,
+      "height": 0.01,
+      "rotation": 0,
+      "selrect": {
+        "x": 0,
+        "y": 0,
+        "width": 0.01,
+        "height": 0.01,
+        "x1": 0,
+        "y1": 0,
+        "x2": 0.01,
+        "y2": 0.01
+      },
+      "points": [
+        { "x": 0, "y": 0 },
+        { "x": 0.01, "y": 0 },
+        { "x": 0.01, "y": 0.01 },
+        { "x": 0, "y": 0.01 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "flipX": null,
+      "flipY": null,
+      "hideFillOnExport": false,
+      "r2": 0,
+      "pluginData": {
+        "5202fd3a5fbc806b80056a0a3e86e2f6": {
+          "copiedShape": "[{\"id\":\"c7684fb6-d16b-8014-8005-6a0a6dea750f\",\"type\":\"rectangle\",\"name\":\"Rectangle\",\"blocked\":false,\"hidden\":false,\"visible\":true,\"proportionLock\":false,\"constraintsHorizontal\":null,\"constraintsVertical\":null,\"borderRadius\":0,\"borderRadiusTopLeft\":null,\"borderRadiusTopRight\":null,\"borderRadiusBottomRight\":null,\"borderRadiusBottomLeft\":null,\"opacity\":null,\"blendMode\":\"normal\",\"shadows\":null,\"blur\":null,\"exports\":null,\"x\":-364,\"y\":-43,\"parentX\":-364,\"parentY\":-43,\"boardX\":-364,\"boardY\":-43,\"width\":110.99999999999997,\"height\":151,\"bounds\":{\"x\":-364,\"y\":-43,\"width\":110.99999999999997,\"height\":151},\"center\":{\"x\":-308.5,\"y\":32.5},\"rotation\":0,\"flipX\":false,\"flipY\":false,\"fills\":[{\"fillColor\":\"#B1B2B5\",\"fillOpacity\":1}],\"strokes\":[],\"layoutChild\":null,\"layoutCell\":null,\"interactions\":[]}]"
+        }
+      },
+      "proportionLock": false,
+      "r3": 0,
+      "r1": 0,
+      "strokes": [],
+      "proportion": 1,
+      "r4": 0,
+      "fills": [{ "fillColor": "#FFFFFF", "fillOpacity": 1 }],
+      "shapes": ["74b3c446-1c14-80d2-8007-d5cae2fccd4e"]
+    },
+    "74b3c446-1c14-80d2-8007-d5cae2fccd4e": {
+      "id": "74b3c446-1c14-80d2-8007-d5cae2fccd4e",
+      "name": "Board",
+      "type": "frame",
+      "x": -28277,
+      "y": -22518,
+      "width": 200,
+      "height": 95,
+      "rotation": 0,
+      "selrect": {
+        "x": -28277,
+        "y": -22518,
+        "width": 200,
+        "height": 95,
+        "x1": -28277,
+        "y1": -22518,
+        "x2": -28077,
+        "y2": -22423
+      },
+      "points": [
+        { "x": -28277, "y": -22518 },
+        { "x": -28077, "y": -22518 },
+        { "x": -28077, "y": -22423 },
+        { "x": -28277, "y": -22423 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "flipX": null,
+      "flipY": null,
+      "hideFillOnExport": false,
+      "layoutGapType": "multiple",
+      "layoutPadding": { "p1": 12, "p2": 12, "p3": 12, "p4": 12 },
+      "layoutWrapType": "nowrap",
+      "growType": "fixed",
+      "layout": "flex",
+      "hideInViewer": false,
+      "layoutAlignItems": "start",
+      "layoutPaddingType": "simple",
+      "r2": 10,
+      "proportionLock": false,
+      "layoutGap": { "rowGap": 10, "columnGap": 0 },
+      "r3": 10,
+      "layoutJustifyContent": "start",
+      "r1": 10,
+      "layoutFlexDir": "column-reverse",
+      "layoutAlignContent": "stretch",
+      "strokes": [],
+      "proportion": 1,
+      "r4": 10,
+      "fills": [{ "fillColor": "#101010", "fillOpacity": 1 }],
+      "shapes": [
+        "74b3c446-1c14-80d2-8007-d5cb48c98b46",
+        "74b3c446-1c14-80d2-8007-d5cbac8971d2"
+      ]
+    },
+    "74b3c446-1c14-80d2-8007-d5cb48c98b46": {
+      "id": "74b3c446-1c14-80d2-8007-d5cb48c98b46",
+      "name": "Title",
+      "type": "text",
+      "x": -28265,
+      "y": -22506,
+      "width": 110,
+      "height": 14,
+      "rotation": 0,
+      "selrect": {
+        "x": -28265,
+        "y": -22506,
+        "width": 110,
+        "height": 14,
+        "x1": -28265,
+        "y1": -22506,
+        "x2": -28155,
+        "y2": -22492
+      },
+      "points": [
+        { "x": -28265, "y": -22506 },
+        { "x": -28155, "y": -22506 },
+        { "x": -28155, "y": -22492 },
+        { "x": -28265, "y": -22492 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "parentId": "74b3c446-1c14-80d2-8007-d5cae2fccd4e",
+      "frameId": "74b3c446-1c14-80d2-8007-d5cae2fccd4e",
+      "flipX": null,
+      "flipY": null,
+      "growType": "fixed",
+      "content": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "lineHeight": "1.2",
+                "fontStyle": "normal",
+                "children": [
+                  {
+                    "lineHeight": "1.2",
+                    "fontStyle": "normal",
+                    "textTransform": "none",
+                    "textAlign": "left",
+                    "fontId": "sourcesanspro",
+                    "fontSize": "14",
+                    "fontWeight": "400",
+                    "textDirection": "ltr",
+                    "fontVariantId": "regular",
+                    "textDecoration": "none",
+                    "letterSpacing": "0",
+                    "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+                    "fontFamily": "sourcesanspro",
+                    "text": "Title"
+                  }
+                ],
+                "textTransform": "none",
+                "textAlign": "left",
+                "fontId": "sourcesanspro",
+                "key": "bie92",
+                "fontSize": "14",
+                "fontWeight": "400",
+                "textDirection": "ltr",
+                "type": "paragraph",
+                "fontVariantId": "regular",
+                "textDecoration": "none",
+                "letterSpacing": "0",
+                "fills": [{ "fillColor": "#000000", "fillOpacity": 1 }],
+                "fontFamily": "sourcesanspro"
+              }
+            ]
+          }
+        ]
+      },
+      "hideInViewer": false,
+      "positionData": [
+        {
+          "x": -28265,
+          "y": -22489,
+          "width": 26.1875,
+          "height": 18,
+          "x1": 0,
+          "y1": -1,
+          "x2": 26.1875,
+          "y2": 17,
+          "fontStyle": "normal",
+          "textTransform": "none",
+          "fontSize": "14px",
+          "fontWeight": "400",
+          "textDecoration": "none",
+          "letterSpacing": "normal",
+          "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+          "direction": "ltr",
+          "fontFamily": "sourcesanspro",
+          "text": "Title"
+        }
+      ]
+    },
+    "74b3c446-1c14-80d2-8007-d5cbac8971d2": {
+      "id": "74b3c446-1c14-80d2-8007-d5cbac8971d2",
+      "name": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In pulvinar erat sit amet diam fringilla tempor. Nunc lobortis turpis quis ex cursus euismod. Proin metus sem, gravida eu pulvinar et, tincidunt at ipsum.",
+      "type": "text",
+      "x": -28265,
+      "y": -22482,
+      "width": 147,
+      "height": 47,
+      "rotation": 0,
+      "selrect": {
+        "x": -28265,
+        "y": -22482,
+        "width": 147,
+        "height": 47,
+        "x1": -28265,
+        "y1": -22482,
+        "x2": -28118,
+        "y2": -22435
+      },
+      "points": [
+        { "x": -28265, "y": -22482 },
+        { "x": -28118, "y": -22482 },
+        { "x": -28118, "y": -22435 },
+        { "x": -28265, "y": -22435 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "parentId": "74b3c446-1c14-80d2-8007-d5cae2fccd4e",
+      "frameId": "74b3c446-1c14-80d2-8007-d5cae2fccd4e",
+      "flipX": null,
+      "flipY": null,
+      "growType": "fixed",
+      "content": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "lineHeight": "1.2",
+                "fontStyle": "normal",
+                "children": [
+                  {
+                    "lineHeight": "1.2",
+                    "fontStyle": "normal",
+                    "textTransform": "none",
+                    "textAlign": "left",
+                    "fontId": "sourcesanspro",
+                    "fontSize": "8",
+                    "fontWeight": "400",
+                    "textDirection": "ltr",
+                    "fontVariantId": "regular",
+                    "textDecoration": "none",
+                    "letterSpacing": "0",
+                    "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+                    "fontFamily": "sourcesanspro",
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In pulvinar erat sit amet diam fringilla tempor. Nunc lobortis turpis quis ex cursus euismod. Proin metus sem, gravida eu pulvinar et, tincidunt at ipsum."
+                  }
+                ],
+                "textTransform": "none",
+                "textAlign": "left",
+                "fontId": "sourcesanspro",
+                "key": "bsf4u",
+                "fontSize": "8",
+                "fontWeight": "400",
+                "textDirection": "ltr",
+                "type": "paragraph",
+                "fontVariantId": "regular",
+                "textDecoration": "none",
+                "letterSpacing": "0",
+                "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+                "fontFamily": "sourcesanspro"
+              }
+            ]
+          }
+        ]
+      },
+      "hideInViewer": false,
+      "positionData": [
+        {
+          "x": -28265,
+          "y": -22472,
+          "width": 136.5625,
+          "height": 11,
+          "x1": 0,
+          "y1": -1,
+          "x2": 136.5625,
+          "y2": 10,
+          "fontStyle": "normal",
+          "textTransform": "none",
+          "fontSize": "8px",
+          "fontWeight": "400",
+          "textDecoration": "none",
+          "letterSpacing": "normal",
+          "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+          "direction": "ltr",
+          "fontFamily": "sourcesanspro",
+          "text": "Lorem ipsum dolor sit amet, consectetur "
+        },
+        {
+          "x": -28265,
+          "y": -22462.40625,
+          "width": 131.21875,
+          "height": 11,
+          "x1": 0,
+          "y1": 8.59375,
+          "x2": 131.21875,
+          "y2": 19.59375,
+          "fontStyle": "normal",
+          "textTransform": "none",
+          "fontSize": "8px",
+          "fontWeight": "400",
+          "textDecoration": "none",
+          "letterSpacing": "normal",
+          "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+          "direction": "ltr",
+          "fontFamily": "sourcesanspro",
+          "text": "adipiscing elit. In pulvinar erat sit amet "
+        },
+        {
+          "x": -28265,
+          "y": -22452.8125,
+          "width": 141.75,
+          "height": 11,
+          "x1": 0,
+          "y1": 18.1875,
+          "x2": 141.75,
+          "y2": 29.1875,
+          "fontStyle": "normal",
+          "textTransform": "none",
+          "fontSize": "8px",
+          "fontWeight": "400",
+          "textDecoration": "none",
+          "letterSpacing": "normal",
+          "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+          "direction": "ltr",
+          "fontFamily": "sourcesanspro",
+          "text": "diam fringilla tempor. Nunc lobortis turpis "
+        },
+        {
+          "x": -28265,
+          "y": -22443.21875,
+          "width": 140.359375,
+          "height": 11,
+          "x1": 0,
+          "y1": 27.78125,
+          "x2": 140.359375,
+          "y2": 38.78125,
+          "fontStyle": "normal",
+          "textTransform": "none",
+          "fontSize": "8px",
+          "fontWeight": "400",
+          "textDecoration": "none",
+          "letterSpacing": "normal",
+          "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+          "direction": "ltr",
+          "fontFamily": "sourcesanspro",
+          "text": "quis ex cursus euismod. Proin metus sem, "
+        },
+        {
+          "x": -28265,
+          "y": -22433.625,
+          "width": 139.390625,
+          "height": 11,
+          "x1": 0,
+          "y1": 37.375,
+          "x2": 139.390625,
+          "y2": 48.375,
+          "fontStyle": "normal",
+          "textTransform": "none",
+          "fontSize": "8px",
+          "fontWeight": "400",
+          "textDecoration": "none",
+          "letterSpacing": "normal",
+          "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+          "direction": "ltr",
+          "fontFamily": "sourcesanspro",
+          "text": "gravida eu pulvinar et, tincidunt at ipsum."
+        }
+      ]
+    }
+  },
+  "id": "331b47c0-6c56-80d5-8005-6a043a3639a2",
+  "name": "Page 1"
+}

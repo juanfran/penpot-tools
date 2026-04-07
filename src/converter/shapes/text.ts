@@ -15,6 +15,25 @@ import {
 } from '../visual/position';
 import { baseClasses } from '../visual/base';
 
+const FONT_WEIGHT_CLASS: Record<string, string> = {
+  '100': 'font-thin',
+  '200': 'font-extralight',
+  '300': 'font-light',
+  '400': 'font-normal',
+  '500': 'font-medium',
+  '600': 'font-semibold',
+  '700': 'font-bold',
+  '800': 'font-extrabold',
+  '900': 'font-black',
+};
+
+const TEXT_ALIGN_CLASS: Record<string, string> = {
+  left: 'text-left',
+  center: 'text-center',
+  right: 'text-right',
+  justify: 'text-justify',
+};
+
 /**
  * Converts a `TextLeaf`'s typography properties to Tailwind classes and inline styles.
  *
@@ -33,9 +52,16 @@ export function textLeafToClasses(
   }
   Object.assign(resolved, leaf);
 
+  const fontWeightClass = resolved.fontWeight
+    ? (FONT_WEIGHT_CLASS[resolved.fontWeight] ?? `font-[${resolved.fontWeight}]`)
+    : undefined;
+
   const classes = cls(
     resolved.fontSize ? pxClass('text', Number(resolved.fontSize)) : undefined,
-    resolved.fontWeight ? `font-[${resolved.fontWeight}]` : undefined,
+    fontWeightClass,
+    resolved.fontFamily ? `font-['${resolved.fontFamily}']` : undefined,
+    resolved.lineHeight ? `leading-[${resolved.lineHeight}]` : undefined,
+    resolved.textAlign ? TEXT_ALIGN_CLASS[resolved.textAlign] : undefined,
     resolved.fontStyle === 'italic' ? 'italic' : undefined,
     resolved.textDecoration === 'underline' ? 'underline' : undefined,
     resolved.textDecoration === 'line-through' ? 'line-through' : undefined,
@@ -45,25 +71,28 @@ export function textLeafToClasses(
   );
 
   const styleParts: string[] = [];
-  if (resolved.fontFamily)
-    styleParts.push(`font-family: '${resolved.fontFamily}';`);
-  if (resolved.letterSpacing)
+  if (resolved.letterSpacing && resolved.letterSpacing !== '0')
     styleParts.push(`letter-spacing: ${resolved.letterSpacing}em;`);
-  if (resolved.lineHeight)
-    styleParts.push(`line-height: ${resolved.lineHeight};`);
 
   return { classes, style: styleParts.join(' ') };
 }
 
+const NAMED_COLOR_CLASS: Record<string, string> = {
+  '#ffffff': 'text-white',
+  '#000000': 'text-black',
+};
+
 /**
- * Returns a Tailwind `text-[color]` class for the first solid fill on a text leaf.
+ * Returns a Tailwind text color class for the first solid fill on a text leaf.
+ * Maps common colors (#ffffff, #000000) to named Tailwind classes.
  */
 export function textLeafColorClass(leaf: TextLeaf): string {
   const fills = leaf.fills;
   if (!fills || fills.length === 0) return '';
   const first = fills[0];
   if (!first.fillColor) return '';
-  return `text-[${hexOpacityToCss(first.fillColor, first.fillOpacity)}]`;
+  const cssColor = hexOpacityToCss(first.fillColor, first.fillOpacity);
+  return NAMED_COLOR_CLASS[cssColor.toLowerCase()] ?? `text-[${cssColor}]`;
 }
 
 /**
