@@ -17,4 +17,14 @@ describe('integration', () => {
 
     expect(html.trim()).toBe(expectedHtml);
   });
+
+  it('svg group renders as <svg> with viewBox', async () => {
+    const page = getPage('svg-group');
+    const shape = page.objects['183a99e5-79eb-8075-8007-d6f23cf397ee'];
+    const html = await convertShape(shape, page.objects, ctx);
+
+    const expectedHtml = getExpected('svg-group');
+
+    expect(html.trim()).toBe(expectedHtml);
+  });
 });

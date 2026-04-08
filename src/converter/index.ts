@@ -24,10 +24,23 @@ export async function convertShape(
 ): Promise<string> {
   const config = await prettier.resolveConfig(import.meta.url);
 
-  return prettier.format(
-    renderShape(shape, allObjects, { ...ctx, _forceRelative: true }),
-    { ...config, parser: 'html' },
-  );
+  const isRootFrame = shape.parentId === shape.id;
+  let html: string;
+
+  if (isRootFrame) {
+    // Root frame is never rendered — render its children directly
+    const childIds = ((shape as Shape & { shapes?: string[] }).shapes) ?? [];
+    html = childIds
+      .map((id) => {
+        const child = allObjects[id];
+        return child ? renderShape(child, allObjects, ctx) : '';
+      })
+      .join('');
+  } else {
+    html = renderShape(shape, allObjects, { ...ctx, _forceRelative: true });
+  }
+
+  return prettier.format(html, { ...config, parser: 'html' });
 }
 
 export type { ConverterContext };

@@ -78,14 +78,9 @@ export function textLeafToClasses(
   return { classes, style: styleParts.join(' ') };
 }
 
-const NAMED_COLOR_CLASS: Record<string, string> = {
-  '#ffffff': 'text-white',
-  '#000000': 'text-black',
-};
-
 /**
  * Returns a Tailwind text color class for the first solid fill on a text leaf.
- * Maps common colors (#ffffff, #000000) to named Tailwind classes.
+ * Uses arbitrary-value syntax: `text-[#RRGGBB]` (uppercase hex) or `text-[rgba(...)]`.
  */
 export function textLeafColorClass(leaf: TextLeaf): string {
   const fills = leaf.fills;
@@ -93,30 +88,39 @@ export function textLeafColorClass(leaf: TextLeaf): string {
   const first = fills[0];
   if (!first.fillColor) return '';
   const cssColor = hexOpacityToCss(first.fillColor, first.fillOpacity);
-  return NAMED_COLOR_CLASS[cssColor.toLowerCase()] ?? `text-[${cssColor}]`;
+  const displayColor = cssColor.startsWith('#') ? cssColor.toUpperCase() : cssColor;
+  return `text-[${displayColor}]`;
 }
 
 /**
  * Renders a `ParagraphNode` as a `<p>` element.
  *
- * Paragraph-level styles act as defaults. Each leaf is wrapped in a `<span>`
- * with its own classes/styles when they differ from the paragraph defaults.
+ * The first leaf's color is promoted to the paragraph level.
+ * Leaves are wrapped in `<span>` only when their combined classes/style
+ * differ from the paragraph's baseline.
  */
 export function renderParagraph(para: ParagraphNode): string {
   const paraLeaf: TextLeaf = { text: '', ...para };
   const paraOutput = textLeafToClasses(paraLeaf);
 
+  // Promote the first leaf's color to the paragraph level
+  const firstLeaf = para.children[0];
+  const paraColorClass = firstLeaf ? textLeafColorClass(firstLeaf) : '';
+  const paraClasses = cls(paraOutput.classes, paraColorClass);
+
   const inner = para.children
     .map((leaf) => {
       const leafOutput = textLeafToClasses(leaf);
-      const colorClass = textLeafColorClass(leaf);
-      const spanClasses = cls(leafOutput.classes, colorClass);
-      const spanStyle = leafOutput.style;
+      const leafColorClass = textLeafColorClass(leaf);
+      const leafClasses = cls(leafOutput.classes, leafColorClass);
+      const leafStyle = leafOutput.style;
 
-      if (!spanClasses && !spanStyle) return leaf.text;
+      // Skip span when leaf styling matches the paragraph baseline
+      if (leafClasses === paraClasses && !leafStyle) return leaf.text;
+
       return tag(
         'span',
-        { class: spanClasses || undefined, style: spanStyle || undefined },
+        { class: leafClasses || undefined, style: leafStyle || undefined },
         leaf.text,
       );
     })
@@ -125,7 +129,7 @@ export function renderParagraph(para: ParagraphNode): string {
   return tag(
     'p',
     {
-      class: paraOutput.classes || undefined,
+      class: paraClasses || undefined,
       style: paraOutput.style || undefined,
     },
     inner,

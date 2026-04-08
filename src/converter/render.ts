@@ -42,10 +42,6 @@ export function renderShape(
 
   const attrs: Record<string, string> = {};
 
-  if (shape.name) {
-    attrs['data-penpot-name'] = escapeHtml(shape.name);
-  }
-
   // locked and blocked are editor-only flags not in the base types;
   // handle them defensively via type widening
   const extended = shape as Shape & { locked?: boolean; blocked?: boolean };

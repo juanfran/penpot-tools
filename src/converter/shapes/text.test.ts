@@ -160,7 +160,7 @@ describe('textLeafColorClass', () => {
     const result = textLeafColorClass(
       makeLeaf({ fills: [{ fillColor: '#ff0000' as HexColor }] }),
     );
-    expect(result).toContain('text-[#ff0000]');
+    expect(result).toContain('text-[#FF0000]');
   });
 
   it('returns text-[rgba(...)] for solid fill with opacity', () => {

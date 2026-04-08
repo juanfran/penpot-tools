@@ -233,7 +233,7 @@ async function main(): Promise<void> {
       console.error(`Error: shape "${shapeId}" not found in page.`);
       process.exit(1);
     }
-    body = convertShape(shape, page.objects, ctx);
+    body = await convertShape(shape, page.objects, ctx);
   } else {
     body = convertPage(page, ctx);
   }

@@ -54,22 +54,13 @@ describe('renderShape', () => {
     expect(html).toContain('data-id="rect-1"');
   });
 
-  it('adds data-penpot-name attribute', () => {
+  it('does not add data-penpot-name attribute', () => {
     const html = renderShape(
       makeRect({ name: 'My Rect' } as Partial<Shape>),
       {},
       ctx,
     );
-    expect(html).toContain('data-penpot-name="My Rect"');
-  });
-
-  it('escapes special characters in shape name', () => {
-    const html = renderShape(
-      makeRect({ name: '<b>bold</b>' } as Partial<Shape>),
-      {},
-      ctx,
-    );
-    expect(html).toContain('data-penpot-name="&lt;b&gt;bold&lt;/b&gt;"');
+    expect(html).not.toContain('data-penpot-name');
   });
 
   it('adds data-penpot-locked when shape is locked', () => {
@@ -92,14 +83,14 @@ describe('renderShape', () => {
 });
 
 describe('convertShape', () => {
-  it('renders the shape with relative positioning', () => {
-    const html = convertShape(makeRect(), {}, ctx);
+  it('renders the shape with relative positioning', async () => {
+    const html = await convertShape(makeRect(), {}, ctx);
     expect(html).toContain('relative');
     expect(html).not.toContain('absolute');
   });
 
-  it('does not emit left/top for the root shape', () => {
-    const html = convertShape(
+  it('does not emit left/top for the root shape', async () => {
+    const html = await convertShape(
       makeRect({ x: 50, y: 100 } as Partial<Shape>),
       {},
       ctx,
@@ -108,13 +99,13 @@ describe('convertShape', () => {
     expect(html).not.toContain('top-[100px]');
   });
 
-  it('includes data-id', () => {
-    const html = convertShape(makeRect(), {}, ctx);
+  it('includes data-id', async () => {
+    const html = await convertShape(makeRect(), {}, ctx);
     expect(html).toContain('data-id="rect-1"');
   });
 
-  it('does not include html/body wrapper', () => {
-    const html = convertShape(makeRect(), {}, ctx);
+  it('does not include html/body wrapper', async () => {
+    const html = await convertShape(makeRect(), {}, ctx);
     expect(html).not.toContain('<html');
     expect(html).not.toContain('<body');
   });

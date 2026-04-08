@@ -98,7 +98,9 @@ export function renderFrame(
   let inner: string;
   if (isFlex) {
     const flexCtx: ConverterContext = { ...ctx, _parentIsLayout: true };
-    inner = children
+    const isReverse = shape.layoutFlexDir === 'column-reverse' || shape.layoutFlexDir === 'row-reverse';
+    const orderedChildren = isReverse ? [...children].reverse() : children;
+    inner = orderedChildren
       .map((child) => {
         const itemClasses = cls(
           layoutItemSizingClasses(child, shape),
