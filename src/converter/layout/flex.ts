@@ -66,7 +66,9 @@ export function flexSpacingClasses(shape: FrameShape): {
 } {
   const gapClasses: string[] = [];
 
-  const rawGap = (shape as unknown as { layoutGap?: { rowGap?: number; columnGap?: number } }).layoutGap;
+  const rawGap = (
+    shape as unknown as { layoutGap?: { rowGap?: number; columnGap?: number } }
+  ).layoutGap;
   const rowGap = shape.layoutRowGap ?? rawGap?.rowGap;
   const colGap = shape.layoutColumnGap ?? rawGap?.columnGap;
 

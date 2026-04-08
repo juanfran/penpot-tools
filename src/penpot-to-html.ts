@@ -79,7 +79,10 @@ class PenpotClient {
   ): Promise<PenpotClient> {
     const res = await fetch(`${apiBase}/login-with-password`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
       body: JSON.stringify({ email, password }),
     });
 
@@ -117,7 +120,10 @@ class PenpotClient {
 // Image URL resolver
 // ---------------------------------------------------------------------------
 
-function makeImageResolver(apiBase: string, token: string): (id: Uuid) => string {
+function makeImageResolver(
+  apiBase: string,
+  token: string,
+): (id: Uuid) => string {
   return (id: Uuid) =>
     `${apiBase}/methods/get-object?id=${id}&token=${encodeURIComponent(token)}`;
 }
@@ -168,10 +174,19 @@ async function saveCache(fileId: string, page: Page): Promise<void> {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const { fileId, pageId, shapeId, output, baseUrl: cliBaseUrl, cache } = parseArgs(process.argv);
+  const {
+    fileId,
+    pageId,
+    shapeId,
+    output,
+    baseUrl: cliBaseUrl,
+    cache,
+  } = parseArgs(process.argv);
 
   const apiBase =
-    cliBaseUrl ?? process.env['PENPOT_BASE_URL'] ?? 'https://design.penpot.app/api/main';
+    cliBaseUrl ??
+    process.env['PENPOT_BASE_URL'] ??
+    'https://design.penpot.app/api/main';
 
   let page: Page | null = null;
 

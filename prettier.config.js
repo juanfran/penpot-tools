@@ -7,6 +7,7 @@ const config = {
   bracketSameLine: true,
   singleAttributePerLine: true,
   trailingComma: 'all',
+  plugins: ['prettier-plugin-tailwindcss'],
 };
 
 export default config;

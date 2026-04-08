@@ -28,21 +28,21 @@ const makeRect = (overrides: Partial<Shape> = {}): Shape => ({
 
 describe('renderShape', () => {
   it('renders a rect', () => {
-    const html = renderShape(makeRect(), null, {}, ctx);
+    const html = renderShape(makeRect(), {}, ctx);
     expect(html).toContain('data-id="rect-1"');
     expect(html).toContain('bg-[#aabbcc]');
   });
 
   it('accepts a parent parameter without changing output', () => {
     const parent = makeRect({ id: 'parent' as Uuid });
-    const html = renderShape(makeRect(), parent, {}, ctx);
+    const html = renderShape(makeRect(), {}, ctx);
     expect(html).toContain('data-id="rect-1"');
   });
 
   it('returns empty string for unknown shape type', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const unknown = { ...makeRect(), type: 'unknown-type' } as any;
-    const html = renderShape(unknown, null, {}, ctx);
+    const html = renderShape(unknown, {}, ctx);
     expect(html).toBe('');
   });
 
@@ -50,14 +50,13 @@ describe('renderShape', () => {
     // Component instances carry componentId but render normally by type
     const rect = makeRect();
     const withComponent = { ...rect, componentId: 'comp-1' as Uuid };
-    const html = renderShape(withComponent as Shape, null, {}, ctx);
+    const html = renderShape(withComponent as Shape, {}, ctx);
     expect(html).toContain('data-id="rect-1"');
   });
 
   it('adds data-penpot-name attribute', () => {
     const html = renderShape(
       makeRect({ name: 'My Rect' } as Partial<Shape>),
-      null,
       {},
       ctx,
     );
@@ -67,7 +66,6 @@ describe('renderShape', () => {
   it('escapes special characters in shape name', () => {
     const html = renderShape(
       makeRect({ name: '<b>bold</b>' } as Partial<Shape>),
-      null,
       {},
       ctx,
     );
@@ -76,18 +74,18 @@ describe('renderShape', () => {
 
   it('adds data-penpot-locked when shape is locked', () => {
     const locked = { ...makeRect(), locked: true } as Shape;
-    const html = renderShape(locked, null, {}, ctx);
+    const html = renderShape(locked, {}, ctx);
     expect(html).toContain('data-penpot-locked="true"');
   });
 
   it('adds data-penpot-blocked when shape is blocked', () => {
     const blocked = { ...makeRect(), blocked: true } as Shape;
-    const html = renderShape(blocked, null, {}, ctx);
+    const html = renderShape(blocked, {}, ctx);
     expect(html).toContain('data-penpot-blocked="true"');
   });
 
   it('does not add locked/blocked attrs when not set', () => {
-    const html = renderShape(makeRect(), null, {}, ctx);
+    const html = renderShape(makeRect(), {}, ctx);
     expect(html).not.toContain('data-penpot-locked');
     expect(html).not.toContain('data-penpot-blocked');
   });

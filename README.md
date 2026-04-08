@@ -21,14 +21,14 @@ PENPOT_TOKEN=<token> pnpm penpot-to-html \
 
 ## Options
 
-| Flag           | Required | Description                                                       |
-| -------------- | -------- | ----------------------------------------------------------------- |
-| `--file-id`    | yes      | UUID of the Penpot file                                           |
-| `--page-id`    | no       | UUID of the page (defaults to first page)                         |
-| `--shape-id`   | no       | UUID of a specific shape to render (renders full page if omitted) |
-| `--output`     | no       | Path to write the HTML file (prints to stdout if omitted)         |
-| `--cache`      | no       | Use cached response from `cache/<file-id>.json` if available      |
-| `--base-url`   | no       | API base URL (default: `https://design.penpot.app/api/main`)      |
+| Flag         | Required | Description                                                       |
+| ------------ | -------- | ----------------------------------------------------------------- |
+| `--file-id`  | yes      | UUID of the Penpot file                                           |
+| `--page-id`  | no       | UUID of the page (defaults to first page)                         |
+| `--shape-id` | no       | UUID of a specific shape to render (renders full page if omitted) |
+| `--output`   | no       | Path to write the HTML file (prints to stdout if omitted)         |
+| `--cache`    | no       | Use cached response from `cache/<file-id>.json` if available      |
+| `--base-url` | no       | API base URL (default: `https://design.penpot.app/api/main`)      |
 
 ## Cache
 

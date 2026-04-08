@@ -53,7 +53,8 @@ export function textLeafToClasses(
   Object.assign(resolved, leaf);
 
   const fontWeightClass = resolved.fontWeight
-    ? (FONT_WEIGHT_CLASS[resolved.fontWeight] ?? `font-[${resolved.fontWeight}]`)
+    ? (FONT_WEIGHT_CLASS[resolved.fontWeight] ??
+      `font-[${resolved.fontWeight}]`)
     : undefined;
 
   const classes = cls(

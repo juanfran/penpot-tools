@@ -34,7 +34,6 @@ function injectAttrs(html: string, attrs: Record<string, string>): string {
  */
 export function renderShape(
   shape: Shape,
-  _parent: Shape | null,
   objects: Record<string, Shape>,
   ctx: ConverterContext,
 ): string {
