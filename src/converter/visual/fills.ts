@@ -1,6 +1,7 @@
 import type { Fill, Gradient, GradientStop } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 import { hexOpacityToCss } from '../utils/color';
+import { tokenToCssVarName } from '../tokens';
 
 /**
  * Converts a solid-color fill to a Tailwind arbitrary background-color class.
@@ -178,7 +179,7 @@ export function fillsToOutput(
 
   // Token override: emit CSS variable instead of raw color
   if (fillTokenName && ctx.tokens?.has(fillTokenName)) {
-    return { classes: `bg-[var(--${fillTokenName})]`, style: '' };
+    return { classes: `bg-[var(--${tokenToCssVarName(fillTokenName)})]`, style: '' };
   }
 
   // Fast path: single fill

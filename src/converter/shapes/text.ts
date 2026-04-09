@@ -9,6 +9,7 @@ import { tag } from '../utils/html';
 import { cls, pxClass } from '../utils/tailwind';
 import { mergeStyles } from '../utils/style';
 import { hexOpacityToCss } from '../utils/color';
+import { tokenToCssVarName } from '../tokens';
 import { resolvePositionOutput } from '../visual/position';
 import { baseClasses } from '../visual/base';
 
@@ -83,7 +84,7 @@ export function textLeafColorClass(
   leaf: TextLeaf,
   fillTokenName?: string,
 ): string {
-  if (fillTokenName) return `text-[var(--${fillTokenName})]`;
+  if (fillTokenName) return `text-[var(--${tokenToCssVarName(fillTokenName)})]`;
   const fills = leaf.fills;
   if (!fills || fills.length === 0) return '';
   const first = fills[0];

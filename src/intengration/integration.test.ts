@@ -48,6 +48,16 @@ describe('integration', () => {
     expect(html.trim()).toBe(expectedHtml);
   });
 
+  it('design tokens render as CSS custom properties', async () => {
+    const page = getPage('tokens');
+    const shape = page.objects['4300202f-9c79-80a5-8007-d85d33499c1b'];
+    const { html } = await convertShape(shape, page.objects, ctx);
+
+    const expectedHtml = getExpected('tokens');
+
+    expect(html.trim()).toBe(expectedHtml);
+  });
+
   it('returns fonts used in the shape', async () => {
     const page1 = getPage('example1');
     const shape = page1.objects['00000000-0000-0000-0000-000000000000'];

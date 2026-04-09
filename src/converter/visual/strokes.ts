@@ -1,6 +1,7 @@
 import type { Stroke } from '../../penpot.types';
 import { hexOpacityToCss } from '../utils/color';
 import { cls } from '../utils/tailwind';
+import { tokenToCssVarName } from '../tokens';
 
 const STROKE_STYLE_CLASS: Record<string, string> = {
   solid: 'border-solid',
@@ -32,7 +33,7 @@ export function solidStrokeToClasses(
     ? hexOpacityToCss(stroke.strokeColor, stroke.strokeOpacity)
     : 'transparent';
   // When a token name is provided, use the CSS variable instead of the raw color
-  const color = strokeTokenName ? `var(--${strokeTokenName})` : rawColor;
+  const color = strokeTokenName ? `var(--${tokenToCssVarName(strokeTokenName)})` : rawColor;
   const width = stroke.strokeWidth ?? 1;
   const alignment = stroke.strokeAlignment ?? 'center';
 
