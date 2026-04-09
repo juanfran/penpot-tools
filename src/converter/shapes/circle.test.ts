@@ -59,14 +59,15 @@ describe('renderCircle', () => {
     expect(html).not.toContain('border-radius: 50%');
   });
 
-  it('uses border-radius: 50% inline style for ellipse (width !== height)', () => {
+  it('uses rounded-[50%] class for ellipse (width !== height)', () => {
     const html = renderCircle(
       makeCircle({ width: 120, height: 80 }),
       null,
       ctx,
     );
-    expect(html).toContain('border-radius: 50%');
+    expect(html).toContain('rounded-[50%]');
     expect(html).not.toContain('rounded-full');
+    expect(html).not.toContain('border-radius: 50%');
   });
 
   it('includes fill class', () => {

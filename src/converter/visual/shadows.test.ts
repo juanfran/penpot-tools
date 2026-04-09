@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { shadowToStyle, shadowsToStyle } from './shadows';
+import { shadowToStyle, shadowsToClass } from './shadows';
 import type { Shadow, HexColor } from '../../penpot.types';
 
 const makeShadow = (overrides: Partial<Shadow> = {}): Shadow => ({
@@ -61,22 +61,20 @@ describe('shadowToStyle', () => {
   });
 });
 
-describe('shadowsToStyle', () => {
+describe('shadowsToClass', () => {
   it('returns empty string for no shadows', () => {
-    expect(shadowsToStyle([])).toBe('');
-    expect(shadowsToStyle(undefined)).toBe('');
+    expect(shadowsToClass([])).toBe('');
+    expect(shadowsToClass(undefined)).toBe('');
   });
 
-  it('returns single box-shadow property for one shadow', () => {
+  it('returns a Tailwind shadow-[...] class for one shadow', () => {
     const shadows = [
       makeShadow({ offsetX: 2, offsetY: 4, blur: 6, spread: 0 }),
     ];
-    expect(shadowsToStyle(shadows)).toBe(
-      'box-shadow: 2px 4px 6px 0px #000000;',
-    );
+    expect(shadowsToClass(shadows)).toBe('shadow-[2px_4px_6px_0px_#000000]');
   });
 
-  it('joins multiple shadows with comma', () => {
+  it('joins multiple shadows with comma inside brackets', () => {
     const shadows = [
       makeShadow({
         offsetX: 1,
@@ -93,8 +91,8 @@ describe('shadowsToStyle', () => {
         color: { color: '#0000ff' as HexColor, opacity: 1 },
       }),
     ];
-    expect(shadowsToStyle(shadows)).toBe(
-      'box-shadow: 1px 2px 3px 0px #ff0000, 4px 5px 6px 0px #0000ff;',
+    expect(shadowsToClass(shadows)).toBe(
+      'shadow-[1px_2px_3px_0px_#ff0000,_4px_5px_6px_0px_#0000ff]',
     );
   });
 
@@ -106,13 +104,11 @@ describe('shadowsToStyle', () => {
       }),
       makeShadow({ offsetX: 2, offsetY: 4, blur: 6, spread: 0 }),
     ];
-    expect(shadowsToStyle(shadows)).toBe(
-      'box-shadow: 2px 4px 6px 0px #000000;',
-    );
+    expect(shadowsToClass(shadows)).toBe('shadow-[2px_4px_6px_0px_#000000]');
   });
 
   it('returns empty string when all shadows are hidden', () => {
     const shadows = [makeShadow({ hidden: true })];
-    expect(shadowsToStyle(shadows)).toBe('');
+    expect(shadowsToClass(shadows)).toBe('');
   });
 });

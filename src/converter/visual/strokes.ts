@@ -31,15 +31,14 @@ export function solidStrokeToClasses(stroke: Stroke): {
   const width = stroke.strokeWidth ?? 1;
   const alignment = stroke.strokeAlignment ?? 'center';
 
-  if (alignment === 'inner' || alignment === 'outer') {
-    const inset = alignment === 'inner' ? 'inset ' : '';
-    return {
-      classes: '',
-      style: `box-shadow: ${inset}0 0 0 ${width}px ${color};`,
-    };
+  if (alignment === 'outer') {
+    const tailwindValue = `0_0_0_${width}px_${color.replace(/ /g, '_')}`;
+    return { classes: `shadow-[${tailwindValue}]`, style: '' };
   }
 
-  // center alignment — use Tailwind border classes
+  // inner and center alignment — use Tailwind border classes.
+  // With box-sizing: border-box (Tailwind default), border is drawn inside
+  // the element's dimensions, matching Penpot's inner stroke behaviour.
   const tailwindColor = color.replace(/ /g, '_');
   const styleClass = stroke.strokeStyle
     ? STROKE_STYLE_CLASS[stroke.strokeStyle]

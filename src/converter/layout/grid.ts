@@ -21,19 +21,23 @@ function trackValue(track: GridTrack): string {
 }
 
 /**
- * Converts an array of `GridTrack` into a CSS `grid-template-columns` or
- * `grid-template-rows` inline style property string.
+ * Converts an array of `GridTrack` into a Tailwind arbitrary-value class for
+ * `grid-template-columns` or `grid-template-rows`.
  *
+ * Spaces in the value are replaced with underscores per Tailwind syntax.
  * Returns an empty string when `tracks` is empty.
+ *
+ * Example: `[{type:'flex',value:1}, {type:'flex',value:1}]` columns
+ *          → `'grid-cols-[1fr_1fr]'`
  */
-export function gridTracksToStyle(
+export function gridTracksToClass(
   tracks: GridTrack[],
   axis: 'columns' | 'rows',
 ): string {
   if (tracks.length === 0) return '';
-  const prop =
-    axis === 'columns' ? 'grid-template-columns' : 'grid-template-rows';
-  return `${prop}: ${tracks.map(trackValue).join(' ')};`;
+  const prefix = axis === 'columns' ? 'grid-cols' : 'grid-rows';
+  const value = tracks.map(trackValue).join(' ').replace(/ /g, '_');
+  return `${prefix}-[${value}]`;
 }
 
 const ALIGN_MAP: Partial<Record<GridCellAlign, string>> = {

@@ -38,6 +38,16 @@ describe('integration', () => {
     expect(html.trim()).toBe(expectedHtml);
   });
 
+  it('grid frame with stroke, shadow, overflow and padding', async () => {
+    const page = getPage('grid-stroke-shadow-overflow');
+    const shape = page.objects['4300202f-9c79-80a5-8007-d842dc435658'];
+    const { html } = await convertShape(shape, page.objects, ctx);
+
+    const expectedHtml = getExpected('grid-stroke-shadow-overflow');
+
+    expect(html.trim()).toBe(expectedHtml);
+  });
+
   it('returns fonts used in the shape', async () => {
     const page1 = getPage('example1');
     const shape = page1.objects['00000000-0000-0000-0000-000000000000'];

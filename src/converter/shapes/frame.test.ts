@@ -199,7 +199,7 @@ describe('renderFrame', () => {
       expect(html).toContain('grid');
     });
 
-    it('emits grid-template-columns style when layoutGridColumns is set', () => {
+    it('emits grid-cols-[...] class when layoutGridColumns is set', () => {
       const html = renderFrame(
         makeFrame({
           layoutType: 'grid',
@@ -212,10 +212,10 @@ describe('renderFrame', () => {
         {},
         ctx,
       );
-      expect(html).toContain('grid-template-columns: 100px 1fr');
+      expect(html).toContain('grid-cols-[100px_1fr]');
     });
 
-    it('emits grid-template-rows style when layoutGridRows is set', () => {
+    it('emits grid-rows-[...] class when layoutGridRows is set', () => {
       const html = renderFrame(
         makeFrame({
           layoutType: 'grid',
@@ -225,7 +225,7 @@ describe('renderFrame', () => {
         {},
         ctx,
       );
-      expect(html).toContain('grid-template-rows: 50px');
+      expect(html).toContain('grid-rows-[50px]');
     });
 
     it('applies grid cell classes to children via cell lookup', () => {

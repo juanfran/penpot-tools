@@ -28,8 +28,32 @@ export function pxClass(prefix: string, value: number): string {
  * Filters out falsy values (false, undefined, null, empty string) and joins
  * the remaining tokens with a single space. Mirrors the `clsx`/`cx` pattern.
  *
+ * Multiple `shadow-[...]` arbitrary classes are automatically merged into a
+ * single comma-separated value so that box-shadows from different sources
+ * (e.g. drop-shadow + outer stroke) coexist correctly.
+ *
  * Example: `cls('flex', false, 'items-center')` → `'flex items-center'`
+ * Example: `cls('shadow-[2px_2px_#000]', 'shadow-[0_0_0_2px_red]')`
+ *          → `'shadow-[2px_2px_#000,0_0_0_2px_red]'`
  */
 export function cls(...tokens: (string | false | undefined | null)[]): string {
-  return tokens.filter(Boolean).join(' ');
+  const all = tokens
+    .filter((t): t is string => typeof t === 'string' && t.length > 0)
+    .flatMap((t) => t.split(/\s+/))
+    .filter(Boolean);
+
+  const shadowValues: string[] = [];
+  const rest: string[] = [];
+
+  for (const c of all) {
+    const m = /^shadow-\[(.+)\]$/.exec(c);
+    if (m) shadowValues.push(m[1]);
+    else rest.push(c);
+  }
+
+  if (shadowValues.length > 0) {
+    rest.push(`shadow-[${shadowValues.join(',')}]`);
+  }
+
+  return rest.join(' ');
 }

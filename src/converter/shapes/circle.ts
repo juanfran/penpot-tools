@@ -11,7 +11,7 @@ import { fillsToOutput } from '../visual/fills';
  * Renders a Penpot `CircleShape` (ellipse) as an HTML `<div>`.
  *
  * - Perfect circle (width === height): uses `rounded-full` Tailwind class.
- * - Ellipse (width ≠ height): uses `border-radius: 50%` inline style.
+ * - Ellipse (width ≠ height): uses `rounded-[50%]` Tailwind class.
  *
  * The `data-id` attribute carries the Penpot shape ID.
  */
@@ -24,12 +24,10 @@ export function renderCircle(
   const fills = fillsToOutput(shape.fills, ctx);
   const posOut = resolvePositionOutput(shape, ctx);
 
-  const isCircle = shape.width === shape.height;
-  const radiusClass = isCircle ? 'rounded-full' : undefined;
-  const radiusStyle = isCircle ? '' : 'border-radius: 50%;';
+  const radiusClass = shape.width === shape.height ? 'rounded-full' : 'rounded-[50%]';
 
   const classes = cls(posOut.classes, base.classes, fills.classes, radiusClass);
-  const style = mergeStyles(posOut.style, base.style, fills.style, radiusStyle);
+  const style = mergeStyles(posOut.style, base.style, fills.style);
 
   return tag(
     'div',

@@ -82,22 +82,23 @@ describe('solidStrokeToClasses', () => {
       strokeAlignment: 'inner',
     };
     const result = solidStrokeToClasses(stroke);
-    expect(result.classes).toBe('');
-    expect(result.style).toBe('box-shadow: inset 0 0 0 3px #ff0000;');
+    expect(result.classes).toContain('border-[3px]');
+    expect(result.classes).toContain('border-[#ff0000]');
+    expect(result.style).toBe('');
   });
 
-  it('uses outer box-shadow for outer alignment', () => {
+  it('uses Tailwind shadow-[...] class for outer alignment', () => {
     const stroke: Stroke = {
       strokeColor: '#ff0000' as HexColor,
       strokeWidth: 3,
       strokeAlignment: 'outer',
     };
     const result = solidStrokeToClasses(stroke);
-    expect(result.classes).toBe('');
-    expect(result.style).toBe('box-shadow: 0 0 0 3px #ff0000;');
+    expect(result.classes).toBe('shadow-[0_0_0_3px_#ff0000]');
+    expect(result.style).toBe('');
   });
 
-  it('uses rgba in box-shadow when opacity is set for inner alignment', () => {
+  it('uses rgba border color when opacity is set for inner alignment', () => {
     const stroke: Stroke = {
       strokeColor: '#ff0000' as HexColor,
       strokeOpacity: 0.5,
@@ -105,7 +106,9 @@ describe('solidStrokeToClasses', () => {
       strokeAlignment: 'inner',
     };
     const result = solidStrokeToClasses(stroke);
-    expect(result.style).toContain('inset 0 0 0 2px rgba(255, 0, 0, 0.5)');
+    expect(result.classes).toContain('border-[2px]');
+    expect(result.classes).toContain('rgba(255,_0,_0,_0.5)');
+    expect(result.style).toBe('');
   });
 });
 

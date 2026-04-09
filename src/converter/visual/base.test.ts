@@ -53,7 +53,7 @@ describe('baseClasses', () => {
     expect(result.classes).toContain('blur-[8px]');
   });
 
-  it('includes shadow in style', () => {
+  it('includes shadow as Tailwind class', () => {
     const result = baseClasses(
       makeShape({
         shadow: [
@@ -71,7 +71,8 @@ describe('baseClasses', () => {
       }),
       ctx,
     );
-    expect(result.style).toContain('box-shadow:');
+    expect(result.classes).toContain('shadow-[');
+    expect(result.style).not.toContain('box-shadow:');
   });
 
   it('includes corner radius class', () => {
@@ -89,7 +90,7 @@ describe('baseClasses', () => {
     expect(result.classes).toContain('mix-blend-screen');
   });
 
-  it('merges style from radius and shadow', () => {
+  it('puts radius in style and shadow in classes', () => {
     const result = baseClasses(
       makeShape({
         r1: 4,
@@ -112,6 +113,7 @@ describe('baseClasses', () => {
       ctx,
     );
     expect(result.style).toContain('border-radius:');
-    expect(result.style).toContain('box-shadow:');
+    expect(result.classes).toContain('shadow-[');
+    expect(result.style).not.toContain('box-shadow:');
   });
 });

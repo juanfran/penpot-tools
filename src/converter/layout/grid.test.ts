@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { gridTracksToStyle, gridCellClasses, findCellForShape } from './grid';
+import { gridTracksToClass, gridCellClasses, findCellForShape } from './grid';
 import type { GridTrack, GridCell, FrameShape, Uuid } from '../../penpot.types';
 
 const makeTrack = (type: GridTrack['type'], value?: number): GridTrack => ({
@@ -7,48 +7,48 @@ const makeTrack = (type: GridTrack['type'], value?: number): GridTrack => ({
   value,
 });
 
-describe('gridTracksToStyle', () => {
+describe('gridTracksToClass', () => {
   it('returns empty string for empty tracks', () => {
-    expect(gridTracksToStyle([], 'columns')).toBe('');
+    expect(gridTracksToClass([], 'columns')).toBe('');
   });
 
   it('converts fixed tracks to px', () => {
-    expect(gridTracksToStyle([makeTrack('fixed', 100)], 'columns')).toBe(
-      'grid-template-columns: 100px;',
+    expect(gridTracksToClass([makeTrack('fixed', 100)], 'columns')).toBe(
+      'grid-cols-[100px]',
     );
   });
 
   it('converts percent tracks to %', () => {
-    expect(gridTracksToStyle([makeTrack('percent', 50)], 'rows')).toBe(
-      'grid-template-rows: 50%;',
+    expect(gridTracksToClass([makeTrack('percent', 50)], 'rows')).toBe(
+      'grid-rows-[50%]',
     );
   });
 
   it('converts flex tracks to fr', () => {
-    expect(gridTracksToStyle([makeTrack('flex', 2)], 'columns')).toBe(
-      'grid-template-columns: 2fr;',
+    expect(gridTracksToClass([makeTrack('flex', 2)], 'columns')).toBe(
+      'grid-cols-[2fr]',
     );
   });
 
   it('defaults flex track value to 1 when missing', () => {
-    expect(gridTracksToStyle([makeTrack('flex')], 'columns')).toBe(
-      'grid-template-columns: 1fr;',
+    expect(gridTracksToClass([makeTrack('flex')], 'columns')).toBe(
+      'grid-cols-[1fr]',
     );
   });
 
   it('converts auto tracks', () => {
-    expect(gridTracksToStyle([makeTrack('auto')], 'columns')).toBe(
-      'grid-template-columns: auto;',
+    expect(gridTracksToClass([makeTrack('auto')], 'columns')).toBe(
+      'grid-cols-[auto]',
     );
   });
 
-  it('joins multiple tracks with spaces', () => {
+  it('joins multiple tracks with underscores', () => {
     expect(
-      gridTracksToStyle(
+      gridTracksToClass(
         [makeTrack('fixed', 100), makeTrack('flex', 1), makeTrack('auto')],
         'columns',
       ),
-    ).toBe('grid-template-columns: 100px 1fr auto;');
+    ).toBe('grid-cols-[100px_1fr_auto]');
   });
 });
 

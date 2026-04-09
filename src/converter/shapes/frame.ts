@@ -6,6 +6,7 @@ import { mergeStyles } from '../utils/style';
 import { pxClass } from '../utils/tailwind';
 import { baseClasses } from '../visual/base';
 import { fillsToOutput } from '../visual/fills';
+import { solidStrokeToClasses } from '../visual/strokes';
 import {
   relativePositionClasses,
   resolvePositionOutput,
@@ -20,7 +21,7 @@ import {
   layoutItemAbsoluteClasses,
 } from '../layout/layout-item';
 import {
-  gridTracksToStyle,
+  gridTracksToClass,
   gridCellClasses,
   findCellForShape,
 } from '../layout/grid';
@@ -48,7 +49,9 @@ export function renderFrame(
   const isGrid = shape.layoutType === 'grid' || rawLayout === 'grid';
   const base = baseClasses(shape, ctx);
   const fills = fillsToOutput(shape.fills, ctx);
-  const clipClass = shape.clipContent ? 'overflow-hidden' : undefined;
+  const clipClass = shape.clipContent !== false ? 'overflow-hidden' : undefined;
+  const firstStroke = (shape.strokes ?? [])[0];
+  const stroke = firstStroke ? solidStrokeToClasses(firstStroke) : { classes: '', style: '' };
 
   let positionClasses: string;
   let positionStyle = '';
@@ -72,13 +75,11 @@ export function renderFrame(
     layoutClasses = cls(layoutClasses, spacing.classes);
     layoutStyle = spacing.style;
   } else if (isGrid) {
-    layoutClasses = 'grid';
-    const colStyle = gridTracksToStyle(
-      shape.layoutGridColumns ?? [],
-      'columns',
-    );
-    const rowStyle = gridTracksToStyle(shape.layoutGridRows ?? [], 'rows');
-    layoutStyle = mergeStyles(colStyle, rowStyle);
+    const spacing = flexSpacingClasses(shape);
+    const colClass = gridTracksToClass(shape.layoutGridColumns ?? [], 'columns');
+    const rowClass = gridTracksToClass(shape.layoutGridRows ?? [], 'rows');
+    layoutClasses = cls('grid', colClass, rowClass, spacing.classes);
+    layoutStyle = spacing.style;
   }
 
   const bgClass =
@@ -89,10 +90,11 @@ export function renderFrame(
     layoutClasses,
     base.classes,
     fills.classes,
+    stroke.classes,
     clipClass,
     bgClass,
   );
-  const style = mergeStyles(positionStyle, layoutStyle, base.style, fills.style);
+  const style = mergeStyles(positionStyle, layoutStyle, base.style, fills.style, stroke.style);
 
   let inner: string;
   if (isFlex) {
@@ -120,7 +122,7 @@ export function renderFrame(
       })
       .join('');
   } else if (isGrid) {
-    const gridCtx: ConverterContext = { ...ctx, _parentIsLayout: true };
+    const gridCtx: ConverterContext = { ...ctx, _forceRelative: true };
     inner = children
       .map((child) => {
         const cell = findCellForShape(shape, child.id);

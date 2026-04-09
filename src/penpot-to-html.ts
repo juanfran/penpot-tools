@@ -136,7 +136,10 @@ function buildGoogleFontsUrl(fonts: FontInfo[]): string | null {
   if (fonts.length === 0) return null;
 
   // Group variants by font family
-  const byFamily = new Map<string, Array<{ weight: string; italic: boolean }>>();
+  const byFamily = new Map<
+    string,
+    Array<{ weight: string; italic: boolean }>
+  >();
   for (const font of fonts) {
     const family = font.fontFamily;
     if (!byFamily.has(family)) byFamily.set(family, []);
@@ -150,9 +153,15 @@ function buildGoogleFontsUrl(fonts: FontInfo[]): string | null {
   for (const [family, variants] of byFamily) {
     // Sort: non-italic first, then by weight
     const sorted = [...variants].sort((a, b) =>
-      a.italic !== b.italic ? (a.italic ? 1 : -1) : Number(a.weight) - Number(b.weight),
+      a.italic !== b.italic
+        ? a.italic
+          ? 1
+          : -1
+        : Number(a.weight) - Number(b.weight),
     );
-    const tuples = sorted.map((v) => `${v.italic ? 1 : 0},${v.weight}`).join(';');
+    const tuples = sorted
+      .map((v) => `${v.italic ? 1 : 0},${v.weight}`)
+      .join(';');
     const encoded = family.replace(/ /g, '+');
     familyParams.push(`family=${encoded}:ital,wght@${tuples}`);
   }
@@ -173,6 +182,11 @@ function wrapHtml(body: string, fonts: FontInfo[]): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Penpot Export</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #e8e9ea;
+    }
+  </style>
 ${fontLink}
 </head>
 <body>

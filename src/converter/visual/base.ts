@@ -4,7 +4,7 @@ import { cls } from '../utils/tailwind';
 import { mergeStyles } from '../utils/style';
 import { blendModeToClass, opacityToClass, hiddenToClass } from './blend';
 import { blurToClass } from './blur';
-import { shadowsToStyle } from './shadows';
+import { shadowsToClass } from './shadows';
 import { radiusToOutput } from './radius';
 import { combinedTransformStyle } from './position';
 
@@ -26,11 +26,11 @@ export function baseClasses(
     hiddenToClass(shape.hidden),
     blurToClass(shape.blur),
     radius.classes,
+    shadowsToClass(shape.shadow),
   );
 
   const style = mergeStyles(
     combinedTransformStyle(shape),
-    shadowsToStyle(shape.shadow),
     radius.style,
   );
 
