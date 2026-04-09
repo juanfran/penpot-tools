@@ -15,6 +15,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { convertPage, convertShape } from './converter/index.js';
+import { extractTokens, tokensToCss } from './converter/tokens.js';
 import type { Page, Uuid } from './penpot.types.js';
 import type { ConverterContext, FontInfo } from './converter/types.js';
 
@@ -169,11 +170,29 @@ function buildGoogleFontsUrl(fonts: FontInfo[]): string | null {
   return `https://fonts.googleapis.com/css2?${familyParams.join('&')}&display=swap`;
 }
 
-function wrapHtml(body: string, fonts: FontInfo[]): string {
+function wrapHtml(
+  body: string,
+  fonts: FontInfo[],
+  tokens?: Map<string, string>,
+): string {
   const googleFontsUrl = buildGoogleFontsUrl(fonts);
   const fontLink = googleFontsUrl
     ? `  <link rel="preconnect" href="https://fonts.googleapis.com" />\n  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n  <link rel="stylesheet" href="${googleFontsUrl}" />`
     : '';
+
+  const tokensCss = tokens ? tokensToCss(tokens) : '';
+  const styleBlock = tokensCss
+    ? `  <style>
+    body {
+      background-color: #e8e9ea;
+    }
+  ${tokensCss}
+  </style>`
+    : `  <style>
+    body {
+      background-color: #e8e9ea;
+    }
+  </style>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -182,11 +201,7 @@ function wrapHtml(body: string, fonts: FontInfo[]): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Penpot Export</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      background-color: #e8e9ea;
-    }
-  </style>
+${styleBlock}
 ${fontLink}
 </head>
 <body>
@@ -269,8 +284,11 @@ async function main(): Promise<void> {
     await saveCache(fileId, page);
   }
 
+  const tokens = extractTokens(page.objects);
+
   const ctx: ConverterContext = {
     resolveImageUrl: makeImageResolver(apiBase, token ?? ''),
+    tokens,
   };
 
   let body: string;
@@ -287,7 +305,7 @@ async function main(): Promise<void> {
     ({ html: body, fonts } = convertPage(page, ctx));
   }
 
-  const html = wrapHtml(body, fonts);
+  const html = wrapHtml(body, fonts, tokens);
 
   if (output) {
     await fs.writeFile(output, html, 'utf8');

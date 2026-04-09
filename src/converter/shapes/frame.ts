@@ -48,10 +48,12 @@ export function renderFrame(
   const isFlex = shape.layoutType === 'flex' || rawLayout === 'flex';
   const isGrid = shape.layoutType === 'grid' || rawLayout === 'grid';
   const base = baseClasses(shape, ctx);
-  const fills = fillsToOutput(shape.fills, ctx);
+  const fills = fillsToOutput(shape.fills, ctx, shape.appliedTokens?.fill);
   const clipClass = shape.clipContent !== false ? 'overflow-hidden' : undefined;
   const firstStroke = (shape.strokes ?? [])[0];
-  const stroke = firstStroke ? solidStrokeToClasses(firstStroke) : { classes: '', style: '' };
+  const stroke = firstStroke
+    ? solidStrokeToClasses(firstStroke, shape.appliedTokens?.strokeColor)
+    : { classes: '', style: '' };
 
   let positionClasses: string;
   let positionStyle = '';

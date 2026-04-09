@@ -130,7 +130,7 @@ export function resolvePositionOutput(
   shape: ShapeCommon,
   ctx: ConverterContext,
 ): { classes: string; style: string } {
-  if (ctx._parentIsLayout) return { classes: '', style: '' };
+  if (ctx._parentIsLayout) return { classes: 'w-full h-full', style: '' };
   if (ctx._forceRelative) return { classes: relativePositionClasses(shape), style: '' };
   if (ctx._isCanvasTopLevel) return topLevelPositionOutput(shape, ctx._isChildOfRoot);
   return {

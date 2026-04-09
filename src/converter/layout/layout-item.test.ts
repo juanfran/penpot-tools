@@ -51,9 +51,10 @@ const makeColParent = (): FrameShape => ({
 });
 
 describe('layoutItemSizingClasses', () => {
-  it('returns empty string when no sizing is set', () => {
+  it('returns explicit w/h when no sizing is set (defaults to fix)', () => {
     const result = layoutItemSizingClasses(makeShape(), makeRowParent());
-    expect(result).toBe('');
+    expect(result).toContain('w-[100px]');
+    expect(result).toContain('h-[50px]');
   });
 
   it('returns flex-1 for fill HSizing in row parent (main axis)', () => {

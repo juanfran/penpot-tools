@@ -20,7 +20,7 @@ export function renderRect(
   ctx: ConverterContext,
 ): string {
   const base = baseClasses(shape, ctx);
-  const fills = fillsToOutput(shape.fills, ctx);
+  const fills = fillsToOutput(shape.fills, ctx, shape.appliedTokens?.fill);
   const posOut = resolvePositionOutput(shape, ctx);
 
   const classes = cls(posOut.classes, base.classes, fills.classes);

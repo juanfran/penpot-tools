@@ -31,13 +31,15 @@ export function layoutItemSizingClasses(
 
   if (hSizing === 'fill') {
     hClass = isRowDir ? 'flex-1' : 'w-full';
-  } else if (hSizing === 'fix') {
+  } else if (hSizing !== 'auto') {
+    // 'fix' or undefined → use explicit pixel dimension
     hClass = pxClass('w', shape.width ?? 0);
   }
 
   if (vSizing === 'fill') {
     vClass = isRowDir ? 'h-full' : 'flex-1';
-  } else if (vSizing === 'fix') {
+  } else if (vSizing !== 'auto') {
+    // 'fix' or undefined → use explicit pixel dimension
     vClass = pxClass('h', shape.height ?? 0);
   }
 

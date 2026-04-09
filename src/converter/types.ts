@@ -34,6 +34,8 @@ export interface ConverterContext {
   _isCanvasTopLevel?: boolean;
   /** @internal Collects font info during rendering; populated by text renderers */
   _fontCollector?: Map<string, FontInfo>;
+  /** Design token map (tokenName → cssColor). Used to emit `var(--token)` instead of raw hex values. */
+  tokens?: Map<string, string>;
 }
 
 /** Convert a full Penpot page to an HTML document string */

@@ -172,8 +172,14 @@ function fillToBgLayer(fill: Fill, ctx: ConverterContext): BgLayer | null {
 export function fillsToOutput(
   fills: Fill[] | null | undefined,
   ctx: ConverterContext,
+  fillTokenName?: string,
 ): { classes: string; style: string } {
   if (!fills || fills.length === 0) return { classes: '', style: '' };
+
+  // Token override: emit CSS variable instead of raw color
+  if (fillTokenName && ctx.tokens?.has(fillTokenName)) {
+    return { classes: `bg-[var(--${fillTokenName})]`, style: '' };
+  }
 
   // Fast path: single fill
   if (fills.length === 1) {

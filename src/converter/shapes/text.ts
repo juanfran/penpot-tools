@@ -77,8 +77,13 @@ export function textLeafToClasses(
 /**
  * Returns a Tailwind text color class for the first solid fill on a text leaf.
  * Uses arbitrary-value syntax: `text-[#RRGGBB]` (uppercase hex) or `text-[rgba(...)]`.
+ * When `fillTokenName` is provided, emits `text-[var(--token)]` instead.
  */
-export function textLeafColorClass(leaf: TextLeaf): string {
+export function textLeafColorClass(
+  leaf: TextLeaf,
+  fillTokenName?: string,
+): string {
+  if (fillTokenName) return `text-[var(--${fillTokenName})]`;
   const fills = leaf.fills;
   if (!fills || fills.length === 0) return '';
   const first = fills[0];
@@ -94,20 +99,26 @@ export function textLeafColorClass(leaf: TextLeaf): string {
  * The first leaf's color is promoted to the paragraph level.
  * Leaves are wrapped in `<span>` only when their combined classes/style
  * differ from the paragraph's baseline.
+ * When `fillTokenName` is provided, all leaf colors use `text-[var(--token)]`.
  */
-export function renderParagraph(para: ParagraphNode): string {
+export function renderParagraph(
+  para: ParagraphNode,
+  fillTokenName?: string,
+): string {
   const paraLeaf: TextLeaf = { text: '', ...para };
   const paraOutput = textLeafToClasses(paraLeaf);
 
   // Promote the first leaf's color to the paragraph level
   const firstLeaf = para.children[0];
-  const paraColorClass = firstLeaf ? textLeafColorClass(firstLeaf) : '';
+  const paraColorClass = firstLeaf
+    ? textLeafColorClass(firstLeaf, fillTokenName)
+    : '';
   const paraClasses = cls(paraOutput.classes, paraColorClass);
 
   const inner = para.children
     .map((leaf) => {
       const leafOutput = textLeafToClasses(leaf);
-      const leafColorClass = textLeafColorClass(leaf);
+      const leafColorClass = textLeafColorClass(leaf, fillTokenName);
       const leafClasses = cls(leafOutput.classes, leafColorClass);
       const leafStyle = leafOutput.style;
 
@@ -186,14 +197,20 @@ export function renderText(shape: TextShape, ctx: ConverterContext): string {
     shape.height !== undefined ? pxClass('h', shape.height) : undefined,
   );
 
-  const classes = cls(posOut.classes, sizeClasses, base.classes);
+  // When inside a flex/grid layout, posOut returns w-full/h-full which conflicts with
+  // the text shape's own explicit sizeClasses — use sizeClasses only in that case.
+  const classes = ctx._parentIsLayout
+    ? cls(sizeClasses, base.classes)
+    : cls(posOut.classes, sizeClasses, base.classes);
   const style = mergeStyles(posOut.style, base.style);
+
+  const fillTokenName = shape.appliedTokens?.fill;
 
   let inner = '';
   if (shape.content) {
     inner = shape.content.children
       .flatMap((set) => set.children)
-      .map(renderParagraph)
+      .map((para) => renderParagraph(para, fillTokenName))
       .join('');
   }
 

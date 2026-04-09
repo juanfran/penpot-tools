@@ -30,6 +30,7 @@ src/
     page.ts                # renderPage() — iterates root frame children
     tree.ts                # getChildren() — resolves shape.shapes[] into Shape[]
     types.ts               # ConverterContext, ConvertResult, FontInfo
+    tokens.ts              # extractTokens(), tokensToCss() — design token → CSS var
 
     shapes/
       dispatch.ts          # switch(shape.type) → calls the right renderer
@@ -80,37 +81,85 @@ Internal flags passed down the render tree — never set by callers:
 
 | Flag | Meaning |
 |---|---|
-| `_parentIsLayout` | Parent is a flex container; child skips all position/size output |
+| `_parentIsLayout` | Parent is a flex/grid container; child emits `w-full h-full` instead of absolute position |
 | `_forceRelative` | Emit `relative w-[N] h-[N]` instead of absolute (used for grid children and export root) |
 | `_isCanvasTopLevel` | Shape is a direct child of the root frame; use `translate()` instead of `top/left` |
 | `_isChildOfRoot` | Enables `fixed` for shapes with `fixedScroll` |
 | `_offsetX/_offsetY` | Parent's page-absolute position; used to compute relative `top`/`left` |
 | `_pageBackground` | Background color applied only to the root frame |
 | `_fontCollector` | Map populated by text renderers; extracted as `FontInfo[]` at the end |
+| `tokens` | `Map<tokenName, cssColor>` for design token → CSS variable substitution |
 
 ### Shape positioning rules (`resolvePositionOutput` in `visual/position.ts`)
 
 Priority order (highest first):
-1. `_forceRelative` → `relative w-[N] h-[N]`
-2. `_isCanvasTopLevel` → `absolute top-[0] left-[0] w-[N] h-[N]` + `transform: translate(x,y)`
-3. default → `absolute left-[N] top-[N] w-[N] h-[N]`
-4. `_parentIsLayout` → empty (layout container owns sizing)
+1. `_parentIsLayout` → `w-full h-full` (fills the wrapper div emitted by the parent layout)
+2. `_forceRelative` → `relative w-[N] h-[N]`
+3. `_isCanvasTopLevel` → `absolute top-[0] left-[0] w-[N] h-[N]` + `transform: translate(x,y)`
+4. default → `absolute left-[N] top-[N] w-[N] h-[N]`
+
+**Exception**: text shapes (`renderText`) skip `posOut.classes` when `_parentIsLayout` is set — they emit their own `sizeClasses` (`w-[N] h-[N]`) directly and don't need `w-full h-full`.
 
 ### Frame rendering (`shapes/frame.ts`)
 
 - **Root frame** (`parentId === id`): `relative w h`, no positioning. Never rendered directly — `convertShape` renders its children instead.
-- **Flex frame**: `flex` + `flexContainerClasses` + `flexSpacingClasses` (gap + padding). Children get sizing wrapper divs via `layoutItemSizingClasses`.
-- **Grid frame**: `grid` + `gridTracksToStyle` + `flexSpacingClasses` (gap + padding reused). Children rendered with `_forceRelative: true`; each wrapped in a cell div with `gridCellClasses`.
+- **Flex frame**: `flex` + `flexContainerClasses` + `flexSpacingClasses` (gap + padding). Children get sizing wrapper divs via `layoutItemSizingClasses`; the child shape fills the wrapper with `w-full h-full`.
+- **Grid frame**: `grid` + `gridTracksToClass` + `flexSpacingClasses` (gap + padding reused). Children rendered with `_forceRelative: true`; each wrapped in a cell div with `gridCellClasses`.
 - **Plain frame**: children rendered with absolute positioning offset by the frame's `x/y`.
 - `clipContent !== false` → `overflow-hidden` (absent property treated as true — Penpot clips by default).
-- Strokes applied from `shape.strokes[0]`: inner/center → `border-*` Tailwind classes; outer → `box-shadow`.
+- Strokes applied from `shape.strokes[0]`: inner/center → `border-*` Tailwind classes; outer → `shadow-[...]` Tailwind class.
+
+### Flex child sizing pattern
+
+Children inside a flex container are rendered with a two-element pattern:
+
+```html
+<!-- wrapper div carries the layout-item sizing -->
+<div class="w-[240px] h-[50px]">
+  <!-- child fills the wrapper -->
+  <div class="w-full h-full flex flex-row ...">...</div>
+</div>
+```
+
+- `layoutItemSizingClasses(child, parent)` computes the wrapper classes:
+  - `fill` → `flex-1` (main axis) or `w-full`/`h-full` (cross axis)
+  - `fix` or **undefined** → explicit `w-[Npx] h-[Hpx]` (undefined treated as fix — Penpot default)
+  - `auto` → no class
+- The wrapper div is omitted when `itemClasses` is empty (no sizing, no margin, etc.).
+- The child's `resolvePositionOutput` with `_parentIsLayout: true` returns `w-full h-full`.
 
 ### Stroke alignment
 
 | Penpot alignment | CSS output |
 |---|---|
 | `inner` / `center` | `border-[Npx] border-[color] border-solid` (Tailwind; with `box-sizing: border-box` this stays inside the element's dimensions) |
-| `outer` | `box-shadow: 0 0 0 Npx color` inline style |
+| `outer` | `shadow-[0_0_0_Npx_color]` Tailwind class |
+
+### Design token system
+
+Penpot shapes may carry an `appliedTokens` map linking CSS properties to token names. These are rendered as CSS custom properties:
+
+```html
+<style>
+  :root {
+    --accent: #2e51c4;
+    --fg: #000000;
+    --fg-light: #ffffff;
+  }
+</style>
+```
+
+**How it works:**
+1. `extractTokens(objects)` in `src/converter/tokens.ts` scans all shapes for `appliedTokens` and resolves each token name to a CSS color (from the shape's own fills/strokes).
+2. `ConverterContext.tokens` carries the `Map<tokenName, cssColor>` through the render tree.
+3. Visual functions accept an optional token name and emit `var(--token)` instead of a raw hex:
+   - `fillsToOutput(fills, ctx, fillTokenName?)` → `bg-[var(--TOKEN)]`
+   - `solidStrokeToClasses(stroke, strokeTokenName?)` → `shadow-[0_0_0_Npx_var(--TOKEN)]` or `border-[var(--TOKEN)]`
+   - `textLeafColorClass(leaf, fillTokenName?)` → `text-[var(--TOKEN)]`
+4. Each renderer reads `shape.appliedTokens?.fill` and `shape.appliedTokens?.strokeColor` and passes them to the visual functions.
+5. `tokensToCss(tokens)` generates the `:root { ... }` block injected into the `<style>` tag in `penpot-to-html.ts`.
+
+**When adding a new renderer**, always forward `shape.appliedTokens?.fill` to `fillsToOutput` and `shape.appliedTokens?.strokeColor` to stroke functions.
 
 ### `mergeStyles()` special behaviour
 

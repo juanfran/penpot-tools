@@ -339,9 +339,9 @@ const makeCtx = (overrides: Partial<ConverterContext> = {}): ConverterContext =>
 });
 
 describe('resolvePositionOutput', () => {
-  it('returns empty classes and style when _parentIsLayout', () => {
+  it('returns w-full h-full when _parentIsLayout (fills wrapper div)', () => {
     const result = resolvePositionOutput(makeShape({ x: 50, y: 50 }), makeCtx({ _parentIsLayout: true }));
-    expect(result.classes).toBe('');
+    expect(result.classes).toBe('w-full h-full');
     expect(result.style).toBe('');
   });
 
@@ -374,7 +374,7 @@ describe('resolvePositionOutput', () => {
 
   it('_parentIsLayout takes priority over _isCanvasTopLevel', () => {
     const result = resolvePositionOutput(makeShape({ x: 10, y: 20 }), makeCtx({ _parentIsLayout: true, _isCanvasTopLevel: true }));
-    expect(result.classes).toBe('');
+    expect(result.classes).toBe('w-full h-full');
     expect(result.style).toBe('');
   });
 });

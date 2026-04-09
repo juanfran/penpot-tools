@@ -17,7 +17,10 @@ const STROKE_STYLE_CLASS: Record<string, string> = {
  *
  * Returns `{ classes: '', style: '' }` when the stroke has no color or width.
  */
-export function solidStrokeToClasses(stroke: Stroke): {
+export function solidStrokeToClasses(
+  stroke: Stroke,
+  strokeTokenName?: string,
+): {
   classes: string;
   style: string;
 } {
@@ -25,9 +28,11 @@ export function solidStrokeToClasses(stroke: Stroke): {
     return { classes: '', style: '' };
   }
 
-  const color = stroke.strokeColor
+  const rawColor = stroke.strokeColor
     ? hexOpacityToCss(stroke.strokeColor, stroke.strokeOpacity)
     : 'transparent';
+  // When a token name is provided, use the CSS variable instead of the raw color
+  const color = strokeTokenName ? `var(--${strokeTokenName})` : rawColor;
   const width = stroke.strokeWidth ?? 1;
   const alignment = stroke.strokeAlignment ?? 'center';
 

@@ -21,7 +21,7 @@ export function renderCircle(
   ctx: ConverterContext,
 ): string {
   const base = baseClasses(shape, ctx);
-  const fills = fillsToOutput(shape.fills, ctx);
+  const fills = fillsToOutput(shape.fills, ctx, shape.appliedTokens?.fill);
   const posOut = resolvePositionOutput(shape, ctx);
 
   const radiusClass = shape.width === shape.height ? 'rounded-full' : 'rounded-[50%]';
