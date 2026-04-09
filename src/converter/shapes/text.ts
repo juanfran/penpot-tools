@@ -66,13 +66,12 @@ export function textLeafToClasses(
     resolved.textTransform === 'uppercase' ? 'uppercase' : undefined,
     resolved.textTransform === 'lowercase' ? 'lowercase' : undefined,
     resolved.textTransform === 'capitalize' ? 'capitalize' : undefined,
+    resolved.letterSpacing && resolved.letterSpacing !== '0'
+      ? `tracking-[${resolved.letterSpacing}px]`
+      : undefined,
   );
 
-  const styleParts: string[] = [];
-  if (resolved.letterSpacing && resolved.letterSpacing !== '0')
-    styleParts.push(`letter-spacing: ${resolved.letterSpacing}em;`);
-
-  return { classes, style: styleParts.join(' ') };
+  return { classes, style: '' };
 }
 
 /**

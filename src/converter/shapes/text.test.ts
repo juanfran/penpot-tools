@@ -81,9 +81,9 @@ describe('textLeafToClasses', () => {
     expect(classes).toContain('capitalize');
   });
 
-  it('maps letterSpacing to inline letter-spacing style in em', () => {
-    const { style } = textLeafToClasses(makeLeaf({ letterSpacing: '2' }));
-    expect(style).toContain('letter-spacing: 2em');
+  it('maps letterSpacing to tracking-[Xpx] Tailwind class', () => {
+    const { classes } = textLeafToClasses(makeLeaf({ letterSpacing: '2' }));
+    expect(classes).toContain('tracking-[2px]');
   });
 
   it('maps lineHeight to leading-[value] class', () => {
