@@ -30,10 +30,11 @@ export async function convertShape(
   if (isRootFrame) {
     // Root frame is never rendered — render its children directly
     const childIds = ((shape as Shape & { shapes?: string[] }).shapes) ?? [];
+    const canvasCtx: ConverterContext = { ...ctx, _isCanvasTopLevel: true };
     html = childIds
       .map((id) => {
         const child = allObjects[id];
-        return child ? renderShape(child, allObjects, ctx) : '';
+        return child ? renderShape(child, allObjects, canvasCtx) : '';
       })
       .join('');
   } else {

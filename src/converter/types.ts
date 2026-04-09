@@ -13,6 +13,12 @@ export interface ConverterContext {
   _forceRelative?: boolean;
   /** @internal When true, shapes with fixedScroll use `fixed` positioning instead of `absolute` */
   _isChildOfRoot?: boolean;
+  /** @internal Page-absolute X offset of the nearest positioned ancestor (for relative positioning) */
+  _offsetX?: number;
+  /** @internal Page-absolute Y offset of the nearest positioned ancestor (for relative positioning) */
+  _offsetY?: number;
+  /** @internal When true, the shape is a direct child of the root canvas frame and must use translate-based positioning */
+  _isCanvasTopLevel?: boolean;
 }
 
 /** Convert a full Penpot page to an HTML document string */

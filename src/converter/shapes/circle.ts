@@ -3,10 +3,7 @@ import type { ConverterContext } from '../types';
 import { tag } from '../utils/html';
 import { cls } from '../utils/tailwind';
 import { mergeStyles } from '../utils/style';
-import {
-  absolutePositionClasses,
-  relativePositionClasses,
-} from '../visual/position';
+import { resolvePositionOutput } from '../visual/position';
 import { baseClasses } from '../visual/base';
 import { fillsToOutput } from '../visual/fills';
 
@@ -25,22 +22,14 @@ export function renderCircle(
 ): string {
   const base = baseClasses(shape, ctx);
   const fills = fillsToOutput(shape.fills, ctx);
+  const posOut = resolvePositionOutput(shape, ctx);
 
   const isCircle = shape.width === shape.height;
   const radiusClass = isCircle ? 'rounded-full' : undefined;
   const radiusStyle = isCircle ? '' : 'border-radius: 50%;';
 
-  const classes = cls(
-    ctx._parentIsLayout
-      ? undefined
-      : ctx._forceRelative
-        ? relativePositionClasses(shape)
-        : absolutePositionClasses(shape, ctx._isChildOfRoot),
-    base.classes,
-    fills.classes,
-    radiusClass,
-  );
-  const style = mergeStyles(base.style, fills.style, radiusStyle);
+  const classes = cls(posOut.classes, base.classes, fills.classes, radiusClass);
+  const style = mergeStyles(posOut.style, base.style, fills.style, radiusStyle);
 
   return tag(
     'div',

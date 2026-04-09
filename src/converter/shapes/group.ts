@@ -3,10 +3,7 @@ import type { ConverterContext } from '../types';
 import { tag } from '../utils/html';
 import { cls } from '../utils/tailwind';
 import { mergeStyles } from '../utils/style';
-import {
-  absolutePositionClasses,
-  relativePositionClasses,
-} from '../visual/position';
+import { resolvePositionOutput } from '../visual/position';
 import { baseClasses } from '../visual/base';
 import { hexOpacityToCss } from '../utils/color';
 import { renderShape } from './dispatch';
@@ -60,14 +57,10 @@ function renderGroupAsSvg(
   const vh = shape.height;
 
   const base = baseClasses(shape, ctx);
-  const posClass = ctx._parentIsLayout
-    ? undefined
-    : ctx._forceRelative
-      ? relativePositionClasses(shape)
-      : absolutePositionClasses(shape, ctx._isChildOfRoot);
+  const posOut = resolvePositionOutput(shape, ctx);
 
-  const classes = cls(posClass, base.classes);
-  const style = mergeStyles(base.style);
+  const classes = cls(posOut.classes, base.classes);
+  const style = mergeStyles(posOut.style, base.style);
 
   const inner = children
     .filter((c) => !c.hidden)
@@ -113,21 +106,21 @@ export function renderGroup(
   }
 
   const base = baseClasses(shape, ctx);
+  const posOut = resolvePositionOutput(shape, ctx);
   const maskClass = shape.maskedGroup ? 'overflow-hidden' : undefined;
 
-  const classes = cls(
-    ctx._parentIsLayout
-      ? undefined
-      : ctx._forceRelative
-        ? relativePositionClasses(shape)
-        : absolutePositionClasses(shape, ctx._isChildOfRoot),
-    base.classes,
-    maskClass,
-  );
-  const style = mergeStyles(base.style);
+  const classes = cls(posOut.classes, base.classes, maskClass);
+  const style = mergeStyles(posOut.style, base.style);
 
+  const childCtx: ConverterContext = {
+    ...ctx,
+    _isCanvasTopLevel: false,
+    _forceRelative: false,
+    _offsetX: shape.x ?? 0,
+    _offsetY: shape.y ?? 0,
+  };
   const inner = children
-    .map((child) => renderShape(child, objects, ctx))
+    .map((child) => renderShape(child, objects, childCtx))
     .join('');
 
   return tag(

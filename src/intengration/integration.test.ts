@@ -27,4 +27,14 @@ describe('integration', () => {
 
     expect(html.trim()).toBe(expectedHtml);
   });
+
+  it('card group positions children relative to parent, not page', async () => {
+    const page = getPage('card');
+    const shape = page.objects['5526cb94-722e-8010-8007-d712339272fd'];
+    const html = await convertShape(shape, page.objects, ctx);
+
+    const expectedHtml = getExpected('card');
+
+    expect(html.trim()).toBe(expectedHtml);
+  });
 });

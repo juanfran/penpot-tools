@@ -13,9 +13,10 @@ import { renderShape } from './render';
 export function renderPage(page: Page, ctx: ConverterContext): string {
   const root = buildTree(page.objects);
 
-  const bgCtx: ConverterContext = page.options?.background
-    ? { ...ctx, _pageBackground: page.options.background }
-    : ctx;
+  const bgCtx: ConverterContext = {
+    ...(page.options?.background ? { ...ctx, _pageBackground: page.options.background } : ctx),
+    _isCanvasTopLevel: true,
+  };
 
   return getChildren(root, page.objects)
     .map((child) => renderShape(child, page.objects, bgCtx))

@@ -1,4 +1,5 @@
 import type { GeomMatrix, ShapeCommon } from '../../penpot.types';
+import type { ConverterContext } from '../types';
 import { isIdentityMatrix, matrixToCss } from '../utils/transform';
 import { cls, pxClass } from '../utils/tailwind';
 import { mergeStyles } from '../utils/style';
@@ -35,12 +36,14 @@ export function transformToStyle(transform: GeomMatrix): string {
 export function absolutePositionClasses(
   shape: ShapeCommon,
   isChildOfRoot = false,
+  offsetX = 0,
+  offsetY = 0,
 ): string {
   const posClass = isChildOfRoot && shape.fixedScroll ? 'fixed' : 'absolute';
   return cls(
     posClass,
-    pxClass('left', shape.x ?? 0),
-    pxClass('top', shape.y ?? 0),
+    pxClass('left', (shape.x ?? 0) - offsetX),
+    pxClass('top', (shape.y ?? 0) - offsetY),
     pxClass('w', shape.width ?? 0),
     pxClass('h', shape.height ?? 0),
   );
@@ -81,6 +84,64 @@ export function relativePositionClasses(shape: ShapeCommon): string {
     pxClass('w', shape.width ?? 0),
     pxClass('h', shape.height ?? 0),
   );
+}
+
+/**
+ * Returns position classes and a `transform: translate(x, y)` style for a
+ * shape that sits at the first level of the canvas (direct child of the root
+ * frame). Using translate instead of `top`/`left` keeps positional changes on
+ * the compositor thread and avoids layout reflows.
+ *
+ * The element is always anchored at `top: 0; left: 0`; the visual offset is
+ * expressed via the CSS `transform` property.
+ */
+export function topLevelPositionOutput(
+  shape: ShapeCommon,
+  isChildOfRoot = false,
+): { classes: string; style: string } {
+  const posClass = isChildOfRoot && shape.fixedScroll ? 'fixed' : 'absolute';
+  const x = shape.x ?? 0;
+  const y = shape.y ?? 0;
+  return {
+    classes: cls(
+      posClass,
+      'top-[0px]',
+      'left-[0px]',
+      pxClass('w', shape.width ?? 0),
+      pxClass('h', shape.height ?? 0),
+    ),
+    style: `transform: translate(${x}px, ${y}px);`,
+  };
+}
+
+/**
+ * Resolves the CSS position output `{ classes, style }` for a shape based on
+ * the current converter context. Centralises the four-way position dispatch
+ * so every shape renderer can call a single function instead of repeating the
+ * conditional chain.
+ *
+ * Priority (highest first):
+ * 1. `_parentIsLayout` → no position output (layout container handles it)
+ * 2. `_forceRelative`  → relative positioning (export-root use case)
+ * 3. `_isCanvasTopLevel` → translate-based positioning (first-level canvas elements)
+ * 4. default            → absolute positioning with top/left offsets
+ */
+export function resolvePositionOutput(
+  shape: ShapeCommon,
+  ctx: ConverterContext,
+): { classes: string; style: string } {
+  if (ctx._parentIsLayout) return { classes: '', style: '' };
+  if (ctx._forceRelative) return { classes: relativePositionClasses(shape), style: '' };
+  if (ctx._isCanvasTopLevel) return topLevelPositionOutput(shape, ctx._isChildOfRoot);
+  return {
+    classes: absolutePositionClasses(
+      shape,
+      ctx._isChildOfRoot,
+      ctx._offsetX ?? 0,
+      ctx._offsetY ?? 0,
+    ),
+    style: '',
+  };
 }
 
 function pct(value: number, total: number): string {

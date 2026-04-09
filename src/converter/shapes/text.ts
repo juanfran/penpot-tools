@@ -9,10 +9,7 @@ import { tag } from '../utils/html';
 import { cls, pxClass } from '../utils/tailwind';
 import { mergeStyles } from '../utils/style';
 import { hexOpacityToCss } from '../utils/color';
-import {
-  absolutePositionClasses,
-  relativePositionClasses,
-} from '../visual/position';
+import { resolvePositionOutput } from '../visual/position';
 import { baseClasses } from '../visual/base';
 
 const FONT_WEIGHT_CLASS: Record<string, string> = {
@@ -143,19 +140,15 @@ export function renderParagraph(para: ParagraphNode): string {
  */
 export function renderText(shape: TextShape, ctx: ConverterContext): string {
   const base = baseClasses(shape, ctx);
+  const posOut = resolvePositionOutput(shape, ctx);
 
-  const posClasses = ctx._parentIsLayout
-    ? ''
-    : ctx._forceRelative
-      ? relativePositionClasses(shape)
-      : absolutePositionClasses(shape, ctx._isChildOfRoot);
   const sizeClasses = cls(
     shape.width !== undefined ? pxClass('w', shape.width) : undefined,
     shape.height !== undefined ? pxClass('h', shape.height) : undefined,
   );
 
-  const classes = cls(posClasses, sizeClasses, base.classes);
-  const style = mergeStyles(base.style);
+  const classes = cls(posOut.classes, sizeClasses, base.classes);
+  const style = mergeStyles(posOut.style, base.style);
 
   let inner = '';
   if (shape.content) {

@@ -6,8 +6,11 @@ import {
   constraintsHToStyle,
   constraintsVToStyle,
   combinedTransformStyle,
+  topLevelPositionOutput,
+  resolvePositionOutput,
 } from './position';
 import type { GeomMatrix, ShapeCommon, Uuid } from '../../penpot.types';
+import type { ConverterContext } from '../types';
 
 const makeShape = (overrides: Partial<ShapeCommon> = {}): ShapeCommon => ({
   id: 'shape-1' as Uuid,
@@ -292,6 +295,87 @@ describe('transformToStyle', () => {
     const result = transformToStyle(m);
     expect(result).toMatch(/^transform: matrix\(/);
     expect(result).toContain('0.7071');
+  });
+});
+
+describe('topLevelPositionOutput', () => {
+  it('returns top-[0px] left-[0px] with translate style', () => {
+    const result = topLevelPositionOutput(makeShape({ x: 100, y: 200, width: 300, height: 150 }));
+    expect(result.classes).toContain('absolute');
+    expect(result.classes).toContain('top-[0px]');
+    expect(result.classes).toContain('left-[0px]');
+    expect(result.classes).toContain('w-[300px]');
+    expect(result.classes).toContain('h-[150px]');
+    expect(result.style).toBe('transform: translate(100px, 200px);');
+  });
+
+  it('handles negative coordinates', () => {
+    const result = topLevelPositionOutput(makeShape({ x: -28277, y: -22518 }));
+    expect(result.style).toBe('transform: translate(-28277px, -22518px);');
+  });
+
+  it('handles zero coordinates', () => {
+    const result = topLevelPositionOutput(makeShape({ x: 0, y: 0 }));
+    expect(result.classes).toContain('top-[0px]');
+    expect(result.classes).toContain('left-[0px]');
+    expect(result.style).toBe('transform: translate(0px, 0px);');
+  });
+
+  it('emits fixed when fixedScroll is true and isChildOfRoot is true', () => {
+    const result = topLevelPositionOutput(makeShape({ fixedScroll: true }), true);
+    expect(result.classes).toContain('fixed');
+    expect(result.classes).not.toContain('absolute');
+  });
+
+  it('emits absolute when fixedScroll is true but isChildOfRoot is false', () => {
+    const result = topLevelPositionOutput(makeShape({ fixedScroll: true }), false);
+    expect(result.classes).toContain('absolute');
+  });
+});
+
+const makeCtx = (overrides: Partial<ConverterContext> = {}): ConverterContext => ({
+  resolveImageUrl: (id) => id,
+  ...overrides,
+});
+
+describe('resolvePositionOutput', () => {
+  it('returns empty classes and style when _parentIsLayout', () => {
+    const result = resolvePositionOutput(makeShape({ x: 50, y: 50 }), makeCtx({ _parentIsLayout: true }));
+    expect(result.classes).toBe('');
+    expect(result.style).toBe('');
+  });
+
+  it('returns relative classes when _forceRelative', () => {
+    const result = resolvePositionOutput(makeShape({ x: 50, y: 50, width: 100, height: 100 }), makeCtx({ _forceRelative: true }));
+    expect(result.classes).toContain('relative');
+    expect(result.style).toBe('');
+  });
+
+  it('returns translate output when _isCanvasTopLevel', () => {
+    const result = resolvePositionOutput(makeShape({ x: 10, y: 20, width: 100, height: 80 }), makeCtx({ _isCanvasTopLevel: true }));
+    expect(result.classes).toContain('absolute');
+    expect(result.classes).toContain('top-[0px]');
+    expect(result.classes).toContain('left-[0px]');
+    expect(result.style).toBe('transform: translate(10px, 20px);');
+  });
+
+  it('returns absolute classes by default', () => {
+    const result = resolvePositionOutput(makeShape({ x: 10, y: 20, width: 100, height: 80 }), makeCtx({ _offsetX: 5, _offsetY: 5 }));
+    expect(result.classes).toContain('absolute');
+    expect(result.classes).toContain('left-[5px]');
+    expect(result.classes).toContain('top-[15px]');
+    expect(result.style).toBe('');
+  });
+
+  it('_forceRelative takes priority over _isCanvasTopLevel', () => {
+    const result = resolvePositionOutput(makeShape({ x: 10, y: 20 }), makeCtx({ _forceRelative: true, _isCanvasTopLevel: true }));
+    expect(result.classes).toContain('relative');
+  });
+
+  it('_parentIsLayout takes priority over _isCanvasTopLevel', () => {
+    const result = resolvePositionOutput(makeShape({ x: 10, y: 20 }), makeCtx({ _parentIsLayout: true, _isCanvasTopLevel: true }));
+    expect(result.classes).toBe('');
+    expect(result.style).toBe('');
   });
 });
 

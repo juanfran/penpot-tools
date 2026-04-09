@@ -7,8 +7,8 @@ import { pxClass } from '../utils/tailwind';
 import { baseClasses } from '../visual/base';
 import { fillsToOutput } from '../visual/fills';
 import {
-  absolutePositionClasses,
   relativePositionClasses,
+  resolvePositionOutput,
 } from '../visual/position';
 import { flexContainerClasses, flexSpacingClasses } from '../layout/flex';
 import {
@@ -51,18 +51,17 @@ export function renderFrame(
   const clipClass = shape.clipContent ? 'overflow-hidden' : undefined;
 
   let positionClasses: string;
+  let positionStyle = '';
   if (isRoot) {
     positionClasses = cls(
       'relative',
       pxClass('w', shape.width),
       pxClass('h', shape.height),
     );
-  } else if (ctx._parentIsLayout) {
-    positionClasses = '';
-  } else if (ctx._forceRelative) {
-    positionClasses = relativePositionClasses(shape);
   } else {
-    positionClasses = absolutePositionClasses(shape, ctx._isChildOfRoot);
+    const posOut = resolvePositionOutput(shape, ctx);
+    positionClasses = posOut.classes;
+    positionStyle = posOut.style;
   }
 
   let layoutClasses = '';
@@ -93,7 +92,7 @@ export function renderFrame(
     clipClass,
     bgClass,
   );
-  const style = mergeStyles(layoutStyle, base.style, fills.style);
+  const style = mergeStyles(positionStyle, layoutStyle, base.style, fills.style);
 
   let inner: string;
   if (isFlex) {
@@ -134,8 +133,11 @@ export function renderFrame(
   } else {
     const childCtx: ConverterContext = {
       ...ctx,
+      _isCanvasTopLevel: false,
       _isChildOfRoot: isRoot,
       _forceRelative: false,
+      _offsetX: shape.x ?? 0,
+      _offsetY: shape.y ?? 0,
     };
     inner = children
       .map((child) => renderShape(child, objects, childCtx))

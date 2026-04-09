@@ -3,10 +3,7 @@ import type { ConverterContext } from '../types';
 import { tag } from '../utils/html';
 import { cls } from '../utils/tailwind';
 import { mergeStyles } from '../utils/style';
-import {
-  absolutePositionClasses,
-  relativePositionClasses,
-} from '../visual/position';
+import { resolvePositionOutput } from '../visual/position';
 import { baseClasses } from '../visual/base';
 
 /**
@@ -21,16 +18,10 @@ import { baseClasses } from '../visual/base';
 export function renderImage(shape: ImageShape, ctx: ConverterContext): string {
   const base = baseClasses(shape, ctx);
   const src = ctx.resolveImageUrl(shape.metadata.id);
+  const posOut = resolvePositionOutput(shape, ctx);
 
-  const classes = cls(
-    ctx._parentIsLayout
-      ? undefined
-      : ctx._forceRelative
-        ? relativePositionClasses(shape)
-        : absolutePositionClasses(shape, ctx._isChildOfRoot),
-    base.classes,
-  );
-  const style = mergeStyles(base.style);
+  const classes = cls(posOut.classes, base.classes);
+  const style = mergeStyles(posOut.style, base.style);
 
   return tag('img', {
     'data-id': shape.id,

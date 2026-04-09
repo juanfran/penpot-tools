@@ -2,10 +2,7 @@ import type { SvgRawShape } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 import { cls } from '../utils/tailwind';
 import { mergeStyles } from '../utils/style';
-import {
-  absolutePositionClasses,
-  relativePositionClasses,
-} from '../visual/position';
+import { resolvePositionOutput } from '../visual/position';
 import { baseClasses } from '../visual/base';
 
 /**
@@ -34,16 +31,10 @@ export function renderSvgRaw(
 ): string {
   const base = baseClasses(shape, ctx);
   const safeContent = sanitizeSvg(shape.content);
+  const posOut = resolvePositionOutput(shape, ctx);
 
-  const classes = cls(
-    ctx._parentIsLayout
-      ? undefined
-      : ctx._forceRelative
-        ? relativePositionClasses(shape)
-        : absolutePositionClasses(shape, ctx._isChildOfRoot),
-    base.classes,
-  );
-  const style = mergeStyles(base.style);
+  const classes = cls(posOut.classes, base.classes);
+  const style = mergeStyles(posOut.style, base.style);
 
   const attrs = [
     `data-id="${shape.id}"`,
