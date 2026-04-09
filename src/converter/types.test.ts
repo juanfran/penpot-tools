@@ -42,3 +42,12 @@ describe('convertShape', () => {
     );
   });
 });
+
+describe('ConvertResult shape', () => {
+  it('convertPage result has html and fonts fields (type-level check)', () => {
+    // This test documents the expected shape — runtime throws, so we just check the types compile.
+    type _Check = ReturnType<typeof convertPage> extends { html: string; fonts: unknown[] } ? true : false;
+    const ok: _Check = true;
+    expect(ok).toBe(true);
+  });
+});

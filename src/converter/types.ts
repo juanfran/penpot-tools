@@ -1,5 +1,18 @@
 import type { Page, Shape, Uuid } from '../penpot.types';
 
+/** Information about a font used in the converted output */
+export interface FontInfo {
+  fontFamily: string;
+  fontWeight?: string;
+  fontStyle?: string;
+}
+
+/** Result of a convert operation */
+export interface ConvertResult {
+  html: string;
+  fonts: FontInfo[];
+}
+
 export interface ConverterContext {
   /** Returns a URL or data-URI for a Penpot image asset by its ID */
   resolveImageUrl(id: Uuid): string;
@@ -19,10 +32,12 @@ export interface ConverterContext {
   _offsetY?: number;
   /** @internal When true, the shape is a direct child of the root canvas frame and must use translate-based positioning */
   _isCanvasTopLevel?: boolean;
+  /** @internal Collects font info during rendering; populated by text renderers */
+  _fontCollector?: Map<string, FontInfo>;
 }
 
 /** Convert a full Penpot page to an HTML document string */
-export function convertPage(_page: Page, _ctx: ConverterContext): string {
+export function convertPage(_page: Page, _ctx: ConverterContext): ConvertResult {
   throw new Error('not implemented');
 }
 
@@ -31,6 +46,6 @@ export function convertShape(
   _shape: Shape,
   _allObjects: Record<string, Shape>,
   _ctx: ConverterContext,
-): string {
+): Promise<ConvertResult> {
   throw new Error('not implemented');
 }

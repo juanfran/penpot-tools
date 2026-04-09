@@ -1,14 +1,20 @@
 import type { Page, Shape } from '../penpot.types';
-import type { ConverterContext } from './types';
+import type { ConverterContext, ConvertResult, FontInfo } from './types';
 import { renderShape } from './render';
 import { renderPage } from './page';
 import * as prettier from 'prettier';
 
+function extractFonts(collector: Map<string, FontInfo>): FontInfo[] {
+  return Array.from(collector.values());
+}
+
 /**
  * Converts a full Penpot page to an HTML string (body content only, no `<html>` wrapper).
  */
-export function convertPage(page: Page, ctx: ConverterContext): string {
-  return renderPage(page, ctx);
+export function convertPage(page: Page, ctx: ConverterContext): ConvertResult {
+  const fontCollector = new Map<string, FontInfo>();
+  const html = renderPage(page, { ...ctx, _fontCollector: fontCollector });
+  return { html, fonts: extractFonts(fontCollector) };
 }
 
 /**
@@ -21,8 +27,9 @@ export async function convertShape(
   shape: Shape,
   allObjects: Record<string, Shape>,
   ctx: ConverterContext,
-): Promise<string> {
+): Promise<ConvertResult> {
   const config = await prettier.resolveConfig(import.meta.url);
+  const fontCollector = new Map<string, FontInfo>();
 
   const isRootFrame = shape.parentId === shape.id;
   let html: string;
@@ -30,7 +37,7 @@ export async function convertShape(
   if (isRootFrame) {
     // Root frame is never rendered — render its children directly
     const childIds = ((shape as Shape & { shapes?: string[] }).shapes) ?? [];
-    const canvasCtx: ConverterContext = { ...ctx, _isCanvasTopLevel: true };
+    const canvasCtx: ConverterContext = { ...ctx, _isCanvasTopLevel: true, _fontCollector: fontCollector };
     html = childIds
       .map((id) => {
         const child = allObjects[id];
@@ -38,10 +45,13 @@ export async function convertShape(
       })
       .join('');
   } else {
-    html = renderShape(shape, allObjects, { ...ctx, _forceRelative: true });
+    html = renderShape(shape, allObjects, { ...ctx, _forceRelative: true, _fontCollector: fontCollector });
   }
 
-  return prettier.format(html, { ...config, parser: 'html' });
+  return {
+    html: await prettier.format(html, { ...config, parser: 'html' }),
+    fonts: extractFonts(fontCollector),
+  };
 }
 
-export type { ConverterContext };
+export type { ConverterContext, ConvertResult, FontInfo };

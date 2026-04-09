@@ -4,7 +4,7 @@ import type {
   TextShape,
   Typography,
 } from '../../penpot.types';
-import type { ConverterContext } from '../types';
+import type { ConverterContext, FontInfo } from '../types';
 import { tag } from '../utils/html';
 import { cls, pxClass } from '../utils/tailwind';
 import { mergeStyles } from '../utils/style';
@@ -133,12 +133,52 @@ export function renderParagraph(para: ParagraphNode): string {
   );
 }
 
+function collectLeafFont(
+  leaf: TextLeaf,
+  collector: Map<string, FontInfo>,
+  typographies?: Record<string, Typography>,
+): void {
+  const resolved: Partial<Typography & TextLeaf> = {};
+  if (typographies && leaf.typographyRefId) {
+    const typo = typographies[leaf.typographyRefId];
+    if (typo) Object.assign(resolved, typo);
+  }
+  Object.assign(resolved, leaf);
+
+  if (!resolved.fontFamily) return;
+  const key = `${resolved.fontFamily}|${resolved.fontWeight ?? ''}|${resolved.fontStyle ?? ''}`;
+  if (!collector.has(key)) {
+    collector.set(key, {
+      fontFamily: resolved.fontFamily,
+      fontWeight: resolved.fontWeight,
+      fontStyle: resolved.fontStyle,
+    });
+  }
+}
+
+function collectTextFonts(
+  shape: TextShape,
+  ctx: ConverterContext,
+  typographies?: Record<string, Typography>,
+): void {
+  if (!ctx._fontCollector || !shape.content) return;
+  for (const set of shape.content.children) {
+    for (const para of set.children) {
+      collectLeafFont({ text: '', ...para }, ctx._fontCollector, typographies);
+      for (const leaf of para.children) {
+        collectLeafFont(leaf, ctx._fontCollector, typographies);
+      }
+    }
+  }
+}
+
 /**
  * Renders a `TextShape` as an absolutely-positioned `<div>` containing paragraphs.
  *
  * If `content` is null, renders an empty div with positioning only.
  */
 export function renderText(shape: TextShape, ctx: ConverterContext): string {
+  collectTextFonts(shape, ctx);
   const base = baseClasses(shape, ctx);
   const posOut = resolvePositionOutput(shape, ctx);
 

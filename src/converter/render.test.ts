@@ -84,13 +84,13 @@ describe('renderShape', () => {
 
 describe('convertShape', () => {
   it('renders the shape with relative positioning', async () => {
-    const html = await convertShape(makeRect(), {}, ctx);
+    const { html } = await convertShape(makeRect(), {}, ctx);
     expect(html).toContain('relative');
     expect(html).not.toContain('absolute');
   });
 
   it('does not emit left/top for the root shape', async () => {
-    const html = await convertShape(
+    const { html } = await convertShape(
       makeRect({ x: 50, y: 100 } as Partial<Shape>),
       {},
       ctx,
@@ -100,12 +100,12 @@ describe('convertShape', () => {
   });
 
   it('includes data-id', async () => {
-    const html = await convertShape(makeRect(), {}, ctx);
+    const { html } = await convertShape(makeRect(), {}, ctx);
     expect(html).toContain('data-id="rect-1"');
   });
 
   it('does not include html/body wrapper', async () => {
-    const html = await convertShape(makeRect(), {}, ctx);
+    const { html } = await convertShape(makeRect(), {}, ctx);
     expect(html).not.toContain('<html');
     expect(html).not.toContain('<body');
   });
