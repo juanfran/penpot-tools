@@ -68,6 +68,26 @@ describe('integration', () => {
     expect(html.trim()).toBe(expectedHtml);
   });
 
+  it('svg group with circle shapes renders circles and strokes', async () => {
+    const page = getPage('graphic-social');
+    const shape = page.objects['eaa1384c-05db-801a-8007-d9908cf18cbf'];
+    const { html } = await convertShape(shape, page.objects, ctx);
+
+    const expectedHtml = getExpected('graphic-social');
+
+    expect(html.trim()).toBe(expectedHtml);
+  });
+
+  it('svg group with stroke-only paths renders strokes', async () => {
+    const page = getPage('icon-menu');
+    const shape = page.objects['eaa1384c-05db-801a-8007-d98e7c8afad3'];
+    const { html } = await convertShape(shape, page.objects, ctx);
+
+    const expectedHtml = getExpected('icon-menu');
+
+    expect(html.trim()).toBe(expectedHtml);
+  });
+
   it('button with inner stroke renders border classes on rect', async () => {
     const page = getPage('button-stroke');
     const shape = page.objects['eaa1384c-05db-801a-8007-d98c8c7c6455'];
