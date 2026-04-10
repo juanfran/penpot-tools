@@ -4,8 +4,11 @@ import { cls, pxClass } from '../utils/tailwind';
 const FLEX_DIR_CLASS: Record<FlexDirection, string> = {
   row: 'flex-row',
   column: 'flex-col',
-  'row-reverse': 'flex-row-reverse',
-  'column-reverse': 'flex-col-reverse',
+  // Penpot's reverse directions store children in visual order (leftmost/topmost first),
+  // unlike regular row/column where children are in Z-order (rightmost/bottommost first).
+  // Using flex-row / flex-col (not CSS reverse) keeps the same justify-content semantics.
+  'row-reverse': 'flex-row',
+  'column-reverse': 'flex-col',
 };
 
 const ALIGN_ITEMS_CLASS: Partial<Record<FlexAlign, string>> = {

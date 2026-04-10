@@ -100,9 +100,12 @@ export function renderFrame(
 
   let inner: string;
   if (isFlex) {
-    // Penpot stores flex children in reverse visual order (Z-order back-to-front).
-    // Reversing always gives correct DOM order for all flex directions.
-    const orderedChildren = [...children].reverse();
+    // Penpot stores flex children in Z-order (back-to-front), which is the reverse of
+    // visual flex order for `row` and `column`. For `row-reverse` and `column-reverse`,
+    // Penpot stores children in visual order (leftmost/topmost first), so no reversal needed.
+    const flexDir = shape.layoutFlexDir;
+    const isReverseDir = flexDir === 'row-reverse' || flexDir === 'column-reverse';
+    const orderedChildren = isReverseDir ? [...children] : [...children].reverse();
     const frameOffsetX = shape.x ?? 0;
     const frameOffsetY = shape.y ?? 0;
     inner = orderedChildren

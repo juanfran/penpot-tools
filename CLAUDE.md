@@ -109,6 +109,21 @@ Priority order (highest first):
 - `clipContent !== false` → `overflow-hidden` (absent property treated as true — Penpot clips by default).
 - Strokes applied from `shape.strokes[0]`: inner/center → `border-*` Tailwind classes; outer → `shadow-[...]` Tailwind class.
 
+### Flex `shapes[]` child ordering and reverse directions
+
+Penpot stores flex children in `shapes[]` in **Z-order (back-to-front)** — `shapes[0]` is the frontmost layer (highest z-index). This ordering is opposite to CSS flex DOM order for `row` and `column`:
+
+| Penpot `layoutFlexDir` | `shapes[]` order | CSS class emitted | DOM rendering |
+|---|---|---|---|
+| `row` | rightmost first | `flex-row` | reverse `shapes[]` before rendering |
+| `column` | bottommost first | `flex-col` | reverse `shapes[]` before rendering |
+| `row-reverse` | leftmost first | `flex-row` | use `shapes[]` order as-is |
+| `column-reverse` | topmost first | `flex-col` | use `shapes[]` order as-is |
+
+**Key insight:** `row-reverse` and `column-reverse` in Penpot do **not** map to CSS `flex-row-reverse`/`flex-col-reverse`. Penpot's "reverse" flips the z-ordering of children (so the leftmost/topmost item is now frontmost), but the visual flex direction is still left-to-right / top-to-bottom. Using CSS `flex-row-reverse` would push items to the wrong side.
+
+This is implemented in `shapes/frame.ts`: the reversal of `children` is skipped when `layoutFlexDir` is `row-reverse` or `column-reverse`, and `flex.ts` maps both reverse variants to their non-reverse CSS equivalents.
+
 ### Flex child sizing pattern
 
 Children inside a flex container are rendered with a two-element pattern:

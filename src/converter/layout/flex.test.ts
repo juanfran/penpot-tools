@@ -37,18 +37,20 @@ describe('flexContainerClasses', () => {
     expect(result).toContain('flex-col');
   });
 
-  it('maps row-reverse to flex-row-reverse', () => {
+  it('maps row-reverse to flex-row (Penpot stores reverse children in visual order)', () => {
     const result = flexContainerClasses(
       makeFrame({ layoutFlexDir: 'row-reverse' }),
     );
-    expect(result).toContain('flex-row-reverse');
+    expect(result).toContain('flex-row');
+    expect(result).not.toContain('flex-row-reverse');
   });
 
-  it('maps column-reverse to flex-col-reverse', () => {
+  it('maps column-reverse to flex-col (Penpot stores reverse children in visual order)', () => {
     const result = flexContainerClasses(
       makeFrame({ layoutFlexDir: 'column-reverse' }),
     );
-    expect(result).toContain('flex-col-reverse');
+    expect(result).toContain('flex-col');
+    expect(result).not.toContain('flex-col-reverse');
   });
 
   it('maps alignItems start to items-start', () => {

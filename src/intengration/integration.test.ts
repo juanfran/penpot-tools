@@ -176,6 +176,31 @@ describe('integration', () => {
     expect(html.indexOf('whitespace-nowrap')).toBe(html.lastIndexOf('whitespace-nowrap'));
   });
 
+  it('row-reverse and column-reverse emit flex-row/flex-col and preserve visual child order', async () => {
+    // Penpot stores row-reverse/column-reverse children in visual order (leftmost/topmost
+    // first in shapes[]), unlike regular row/column where children are in Z-order
+    // (rightmost/bottommost first). Using flex-row-reverse with a reversal is doubly wrong:
+    // single-child containers end up on the opposite side; multi-child containers
+    // happen to cancel out but the CSS class is still incorrect.
+    const page = getPage('flex-reverse-direction');
+
+    // row-reverse: product-name (left) must come before price-badge (right) in DOM
+    const rowShape = page.objects['row-rev-panel'];
+    const { html: rowHtml } = await convertShape(rowShape, page.objects, ctx);
+    const rowExpected = getExpected('flex-reverse-direction');
+    expect(rowHtml.trim()).toBe(rowExpected);
+    expect(rowHtml).toContain('flex-row');
+    expect(rowHtml).not.toContain('flex-row-reverse');
+    expect(rowHtml.indexOf('product-name')).toBeLessThan(rowHtml.indexOf('price-badge'));
+
+    // column-reverse: info-header (top) must come before info-body (bottom) in DOM
+    const colShape = page.objects['col-rev-panel'];
+    const { html: colHtml } = await convertShape(colShape, page.objects, ctx);
+    expect(colHtml).toContain('flex-col');
+    expect(colHtml).not.toContain('flex-col-reverse');
+    expect(colHtml.indexOf('info-header')).toBeLessThan(colHtml.indexOf('info-body'));
+  });
+
   it('returns fonts used in the shape', async () => {
     const page1 = getPage('example1');
     const shape = page1.objects['00000000-0000-0000-0000-000000000000'];
