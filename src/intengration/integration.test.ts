@@ -161,6 +161,21 @@ describe('integration', () => {
     expect(html.indexOf('item-a')).toBeLessThan(html.indexOf('item-c'));
   });
 
+  it('text with growType auto-width gets whitespace-nowrap, auto-height does not', async () => {
+    // growType:'auto-width' means the text box expands horizontally — text must not wrap.
+    // growType:'auto-height' is normal wrapping behaviour — no whitespace-nowrap.
+    const page = getPage('text-grow-type');
+    const shape = page.objects['frame-a'];
+    const { html } = await convertShape(shape, page.objects, ctx);
+
+    const expectedHtml = getExpected('text-grow-type');
+
+    expect(html.trim()).toBe(expectedHtml);
+    expect(html).toContain('whitespace-nowrap');
+    // only the auto-width element should have it — the auto-height one should not
+    expect(html.indexOf('whitespace-nowrap')).toBe(html.lastIndexOf('whitespace-nowrap'));
+  });
+
   it('returns fonts used in the shape', async () => {
     const page1 = getPage('example1');
     const shape = page1.objects['00000000-0000-0000-0000-000000000000'];

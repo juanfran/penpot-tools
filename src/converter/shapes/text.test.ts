@@ -273,4 +273,32 @@ describe('renderText', () => {
     expect(html).toContain('w-[200px]');
     expect(html).toContain('h-[50px]');
   });
+
+  it('adds whitespace-nowrap for growType auto-width', () => {
+    const html = renderText(makeTextShape({ growType: 'auto-width' }), ctx);
+    expect(html).toContain('whitespace-nowrap');
+  });
+
+  it('does not add whitespace-nowrap for growType auto-height', () => {
+    const html = renderText(makeTextShape({ growType: 'auto-height' }), ctx);
+    expect(html).not.toContain('whitespace-nowrap');
+  });
+
+  it('does not add whitespace-nowrap for growType fixed', () => {
+    const html = renderText(makeTextShape({ growType: 'fixed' }), ctx);
+    expect(html).not.toContain('whitespace-nowrap');
+  });
+
+  it('does not add whitespace-nowrap when growType is absent', () => {
+    const html = renderText(makeTextShape(), ctx);
+    expect(html).not.toContain('whitespace-nowrap');
+  });
+
+  it('adds whitespace-nowrap for auto-width inside flex layout', () => {
+    const html = renderText(makeTextShape({ growType: 'auto-width' }), {
+      ...ctx,
+      _parentIsLayout: true,
+    });
+    expect(html).toContain('whitespace-nowrap');
+  });
 });

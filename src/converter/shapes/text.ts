@@ -198,11 +198,13 @@ export function renderText(shape: TextShape, ctx: ConverterContext): string {
     shape.height !== undefined ? pxClass('h', shape.height) : undefined,
   );
 
+  const noWrap = shape.growType === 'auto-width' ? 'whitespace-nowrap' : undefined;
+
   // When inside a flex/grid layout, posOut returns w-full/h-full which conflicts with
   // the text shape's own explicit sizeClasses — use sizeClasses only in that case.
   const classes = ctx._parentIsLayout
-    ? cls(sizeClasses, base.classes)
-    : cls(posOut.classes, sizeClasses, base.classes);
+    ? cls(sizeClasses, noWrap, base.classes)
+    : cls(posOut.classes, sizeClasses, noWrap, base.classes);
   const style = mergeStyles(posOut.style, base.style);
 
   const fillTokenName = shape.appliedTokens?.fill;

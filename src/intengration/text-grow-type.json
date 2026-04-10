@@ -1,0 +1,107 @@
+{
+  "id": "page-text-grow",
+  "name": "Text grow type",
+  "objects": {
+    "root": {
+      "id": "root",
+      "parentId": "root",
+      "type": "frame",
+      "name": "Root",
+      "x": 0,
+      "y": 0,
+      "width": 800,
+      "height": 400,
+      "shapes": ["frame-a"],
+      "fills": [],
+      "strokes": []
+    },
+    "frame-a": {
+      "id": "frame-a",
+      "parentId": "root",
+      "frameId": "root",
+      "type": "frame",
+      "name": "Card",
+      "x": 40,
+      "y": 40,
+      "width": 400,
+      "height": 200,
+      "shapes": ["label-nowrap", "label-wrap"],
+      "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+      "strokes": []
+    },
+    "label-nowrap": {
+      "id": "label-nowrap",
+      "parentId": "frame-a",
+      "frameId": "frame-a",
+      "type": "text",
+      "name": "Single-line label",
+      "x": 40,
+      "y": 40,
+      "width": 300,
+      "height": 24,
+      "growType": "auto-width",
+      "selrect": { "x": 40, "y": 40, "width": 300, "height": 24 },
+      "points": [],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "content": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "This stays on one line",
+                    "fontSize": "16",
+                    "fontWeight": "400",
+                    "fills": [{ "fillColor": "#111111", "fillOpacity": 1 }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "label-wrap": {
+      "id": "label-wrap",
+      "parentId": "frame-a",
+      "frameId": "frame-a",
+      "type": "text",
+      "name": "Multi-line label",
+      "x": 40,
+      "y": 80,
+      "width": 300,
+      "height": 60,
+      "growType": "auto-height",
+      "selrect": { "x": 40, "y": 80, "width": 300, "height": 60 },
+      "points": [],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "content": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+                    "fontSize": "14",
+                    "fontWeight": "400",
+                    "fills": [{ "fillColor": "#333333", "fillOpacity": 1 }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
