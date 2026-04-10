@@ -86,7 +86,9 @@ export function imageFillToStyle(
   const url = ctx.resolveImageUrl(fill.fillImage.id);
   // Escape single quotes in the URL to prevent breaking the CSS string
   const safeUrl = url.replace(/'/g, '%27');
-  const sizeClass = fill.fillImage.keepAspectRatio ? 'bg-contain' : 'bg-cover';
+  // keepAspectRatio is a design-editor hint (locks shape proportions when resizing),
+  // not a CSS background-size selector. Image fills always cover the shape area.
+  const sizeClass = 'bg-cover';
 
   return {
     classes: `bg-[url('${safeUrl}')] ${sizeClass} bg-center bg-no-repeat`,
@@ -144,7 +146,7 @@ function fillToBgLayer(fill: Fill, ctx: ConverterContext): BgLayer | null {
     const url = ctx.resolveImageUrl(fill.fillImage.id).replace(/'/g, '%27');
     return {
       image: `url('${url}')`,
-      size: fill.fillImage.keepAspectRatio ? 'contain' : 'cover',
+      size: 'cover',
       position: 'center',
       repeat: 'no-repeat',
     };

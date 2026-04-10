@@ -20,6 +20,10 @@ export interface ConverterContext {
   baseUrl?: string;
   /** @internal When true, shape renderers skip absolute positioning (parent is flex/grid) */
   _parentIsLayout?: boolean;
+  /** @internal When true alongside _parentIsLayout, the child must emit its own explicit width instead of w-full (auto h-sizing) */
+  _parentIsLayoutAutoW?: boolean;
+  /** @internal When true alongside _parentIsLayout, the child must emit its own explicit height instead of h-full (auto v-sizing) */
+  _parentIsLayoutAutoH?: boolean;
   /** @internal Page background color applied to the root frame */
   _pageBackground?: string;
   /** @internal When true, the shape uses relative positioning instead of absolute */

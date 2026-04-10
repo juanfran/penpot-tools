@@ -1,0 +1,135 @@
+{
+  "id": "test-page",
+  "name": "Flex Order Test",
+  "objects": {
+    "root-frame": {
+      "id": "root-frame",
+      "parentId": "root-frame",
+      "type": "frame",
+      "name": "Root Frame",
+      "x": 0,
+      "y": 0,
+      "width": 800,
+      "height": 600,
+      "shapes": [
+        "col-container"
+      ],
+      "fills": [],
+      "strokes": []
+    },
+    "col-container": {
+      "id": "col-container",
+      "parentId": "root-frame",
+      "frameId": "root-frame",
+      "type": "frame",
+      "name": "Column Container",
+      "x": 100,
+      "y": 50,
+      "width": 200,
+      "height": 160,
+      "layout": "flex",
+      "layoutFlexDir": "column",
+      "layoutAlignItems": "start",
+      "layoutJustifyContent": "start",
+      "layoutPadding": {
+        "p1": 0,
+        "p2": 0,
+        "p3": 0,
+        "p4": 0
+      },
+      "layoutGap": {
+        "rowGap": 8,
+        "columnGap": 8
+      },
+      "shapes": [
+        "item-c",
+        "item-b",
+        "item-a"
+      ],
+      "fills": [
+        {
+          "fillColor": "#f0f0f0",
+          "fillOpacity": 1
+        }
+      ],
+      "strokes": [],
+      "clipContent": false,
+      "r1": 0,
+      "r2": 0,
+      "r3": 0,
+      "r4": 0
+    },
+    "item-a": {
+      "id": "item-a",
+      "parentId": "col-container",
+      "frameId": "root-frame",
+      "type": "rect",
+      "name": "Alpha",
+      "x": 100,
+      "y": 50,
+      "width": 200,
+      "height": 40,
+      "fills": [
+        {
+          "fillColor": "#ff0000",
+          "fillOpacity": 1
+        }
+      ],
+      "strokes": [],
+      "r1": 4,
+      "r2": 4,
+      "r3": 4,
+      "r4": 4,
+      "layoutItemHSizing": "fix",
+      "layoutItemVSizing": "fix"
+    },
+    "item-b": {
+      "id": "item-b",
+      "parentId": "col-container",
+      "frameId": "root-frame",
+      "type": "rect",
+      "name": "Beta",
+      "x": 100,
+      "y": 98,
+      "width": 200,
+      "height": 40,
+      "fills": [
+        {
+          "fillColor": "#00ff00",
+          "fillOpacity": 1
+        }
+      ],
+      "strokes": [],
+      "r1": 4,
+      "r2": 4,
+      "r3": 4,
+      "r4": 4,
+      "layoutItemHSizing": "fix",
+      "layoutItemVSizing": "fix"
+    },
+    "item-c": {
+      "id": "item-c",
+      "parentId": "col-container",
+      "frameId": "root-frame",
+      "type": "rect",
+      "name": "Gamma",
+      "x": 100,
+      "y": 146,
+      "width": 200,
+      "height": 40,
+      "fills": [
+        {
+          "fillColor": "#0000ff",
+          "fillOpacity": 1
+        }
+      ],
+      "strokes": [],
+      "r1": 4,
+      "r2": 4,
+      "r3": 4,
+      "r4": 4,
+      "layoutItemHSizing": "fix",
+      "layoutItemVSizing": "fix"
+    }
+  }
+}

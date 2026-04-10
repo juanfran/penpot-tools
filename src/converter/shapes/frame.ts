@@ -100,18 +100,32 @@ export function renderFrame(
 
   let inner: string;
   if (isFlex) {
-    const flexCtx: ConverterContext = { ...ctx, _parentIsLayout: true };
-    const isReverse = shape.layoutFlexDir === 'column-reverse' || shape.layoutFlexDir === 'row-reverse';
-    const orderedChildren = isReverse ? [...children].reverse() : children;
+    // Penpot stores flex children in reverse visual order (Z-order back-to-front).
+    // Reversing always gives correct DOM order for all flex directions.
+    const orderedChildren = [...children].reverse();
+    const frameOffsetX = shape.x ?? 0;
+    const frameOffsetY = shape.y ?? 0;
     inner = orderedChildren
       .map((child) => {
+        // For auto-sized axes the child must emit its own explicit dimension
+        // instead of w-full/h-full, otherwise the child's percentage size
+        // resolves against the flex container's definite dimension (e.g. 947px)
+        // rather than the child's natural size.
+        const autoW = child.layoutItemHSizing === 'auto';
+        const autoH = child.layoutItemVSizing === 'auto';
+        const flexCtx: ConverterContext = {
+          ...ctx,
+          _parentIsLayout: true,
+          _parentIsLayoutAutoW: autoW || undefined,
+          _parentIsLayoutAutoH: autoH || undefined,
+        };
         const itemClasses = cls(
           layoutItemSizingClasses(child, shape),
           layoutItemMarginClasses(child).classes,
           layoutItemAlignSelfClass(child),
           layoutItemMinMaxClasses(child),
           layoutItemZIndexClass(child),
-          layoutItemAbsoluteClasses(child),
+          layoutItemAbsoluteClasses(child, frameOffsetX, frameOffsetY),
         );
         const itemStyle = layoutItemMarginClasses(child).style;
         const childHtml = renderShape(child, objects, flexCtx);

@@ -120,12 +120,19 @@ export function layoutItemZIndexClass(shape: ShapeCommon): string {
 
 /**
  * Returns absolute positioning classes for a layout item that is absolutely placed inside a flex/grid container.
+ *
+ * `offsetX` / `offsetY` must be the parent frame's canvas-absolute x/y so that the
+ * position is expressed relative to the frame's top-left corner, not the canvas origin.
  */
-export function layoutItemAbsoluteClasses(shape: ShapeCommon): string {
+export function layoutItemAbsoluteClasses(
+  shape: ShapeCommon,
+  offsetX = 0,
+  offsetY = 0,
+): string {
   if (!shape.layoutItemAbsolute) return '';
   return cls(
     'absolute',
-    pxClass('left', shape.x ?? 0),
-    pxClass('top', shape.y ?? 0),
+    pxClass('left', (shape.x ?? 0) - offsetX),
+    pxClass('top', (shape.y ?? 0) - offsetY),
   );
 }

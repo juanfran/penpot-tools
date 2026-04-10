@@ -77,7 +77,9 @@ function parseArgs(argv: string[]): Args {
 
   const fileId = get('--file-id');
   if (!fileId) {
-    console.error('Error: --file-id is required (or use --url <penpot-workspace-url>)');
+    console.error(
+      'Error: --file-id is required (or use --url <penpot-workspace-url>)',
+    );
     process.exit(1);
   }
 
@@ -293,7 +295,7 @@ async function main(): Promise<void> {
     }
   }
 
-  let token = process.env['PENPOT_TOKEN'];
+  const token = process.env['PENPOT_TOKEN'];
 
   if (!page) {
     let client: PenpotClient;
@@ -310,13 +312,13 @@ async function main(): Promise<void> {
         process.exit(1);
       }
       client = await PenpotClient.loginWithPassword(apiBase, email, password);
-      token = '';
     }
 
     page = await client.getPage(fileId, pageId);
     await saveCache(fileId, page);
   }
 
+  console.time('Render');
   const tokens = extractTokens(page.objects);
 
   const ctx: ConverterContext = {
@@ -337,6 +339,8 @@ async function main(): Promise<void> {
   } else {
     ({ html: body, fonts } = convertPage(page, ctx));
   }
+
+  console.timeEnd('Render');
 
   const html = wrapHtml(body, fonts, tokens);
 

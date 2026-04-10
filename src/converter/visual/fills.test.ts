@@ -229,7 +229,7 @@ describe('imageFillToStyle', () => {
     expect(result.classes).toContain('bg-cover');
   });
 
-  it('uses bg-contain when keepAspectRatio is true', () => {
+  it('uses bg-cover regardless of keepAspectRatio (keepAspectRatio is an editor hint, not a CSS size selector)', () => {
     const fill: Fill = {
       fillImage: {
         id: 'abc-123',
@@ -240,8 +240,8 @@ describe('imageFillToStyle', () => {
       },
     };
     const result = imageFillToStyle(fill, makeCtx());
-    expect(result.classes).toContain('bg-contain');
-    expect(result.classes).not.toContain('bg-cover');
+    expect(result.classes).toContain('bg-cover');
+    expect(result.classes).not.toContain('bg-contain');
   });
 
   it('includes bg-center', () => {
