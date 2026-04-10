@@ -68,6 +68,16 @@ describe('integration', () => {
     expect(html.trim()).toBe(expectedHtml);
   });
 
+  it('button with inner stroke renders border classes on rect', async () => {
+    const page = getPage('button-stroke');
+    const shape = page.objects['eaa1384c-05db-801a-8007-d98c8c7c6455'];
+    const { html } = await convertShape(shape, page.objects, ctx);
+
+    const expectedHtml = getExpected('button-stroke');
+
+    expect(html.trim()).toBe(expectedHtml);
+  });
+
   it('returns fonts used in the shape', async () => {
     const page1 = getPage('example1');
     const shape = page1.objects['00000000-0000-0000-0000-000000000000'];

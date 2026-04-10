@@ -6,6 +6,7 @@ import { mergeStyles } from '../utils/style';
 import { resolvePositionOutput } from '../visual/position';
 import { baseClasses } from '../visual/base';
 import { fillsToOutput } from '../visual/fills';
+import { solidStrokeToClasses } from '../visual/strokes';
 
 /**
  * Renders a Penpot `CircleShape` (ellipse) as an HTML `<div>`.
@@ -23,11 +24,15 @@ export function renderCircle(
   const base = baseClasses(shape, ctx);
   const fills = fillsToOutput(shape.fills, ctx, shape.appliedTokens?.fill);
   const posOut = resolvePositionOutput(shape, ctx);
+  const firstStroke = (shape.strokes ?? [])[0];
+  const stroke = firstStroke
+    ? solidStrokeToClasses(firstStroke, shape.appliedTokens?.strokeColor)
+    : { classes: '', style: '' };
 
   const radiusClass = shape.width === shape.height ? 'rounded-full' : 'rounded-[50%]';
 
-  const classes = cls(posOut.classes, base.classes, fills.classes, radiusClass);
-  const style = mergeStyles(posOut.style, base.style, fills.style);
+  const classes = cls(posOut.classes, base.classes, fills.classes, stroke.classes, radiusClass);
+  const style = mergeStyles(posOut.style, base.style, fills.style, stroke.style);
 
   return tag(
     'div',
