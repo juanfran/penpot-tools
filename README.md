@@ -53,6 +53,24 @@ PENPOT_TOKEN=xxx pnpm penpot-to-html --file-id <uuid> --cache --output page.html
 PENPOT_TOKEN=xxx pnpm penpot-to-html --file-id <uuid> --base-url https://your-instance.com/api/main --output page.html
 ```
 
+## Preview integration test fixtures
+
+Visualize a `.expected.html` fixture in the browser with Tailwind CSS, design tokens, and Google Fonts applied:
+
+```bash
+pnpm preview <name>
+```
+
+Examples:
+
+```bash
+pnpm preview card
+pnpm preview tokens
+pnpm preview grid-stroke-shadow-overflow
+```
+
+The script reads `src/intengration/<name>.expected.html` and the corresponding `<name>.json`, injects CSS custom properties for any design tokens, loads the required Google Fonts, and opens the result in the browser.
+
 # How to run Ralph
 
 /ralph-loop:ralph-loop "READ PROMPT.md a follow instructions" --completion-promise "DONE" --max-iterations 10

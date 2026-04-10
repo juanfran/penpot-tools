@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "format": "prettier --check .",
     "check": "prettier --write . && eslint --fix",
-    "penpot-to-html": "tsx src/penpot-to-html.ts"
+    "penpot-to-html": "tsx src/penpot-to-html.ts",
+    "preview": "tsx src/intengration/preview.mts"
   },
   "keywords": [],
   "author": "",
