@@ -58,6 +58,16 @@ describe('integration', () => {
     expect(html.trim()).toBe(expectedHtml);
   });
 
+  it('rect with fillImage renders as Tailwind bg-[url(...)] classes', async () => {
+    const page = getPage('image-fill');
+    const shape = page.objects['0d3e2d55-6b68-8009-8007-d9885486fad8'];
+    const { html } = await convertShape(shape, page.objects, ctx);
+
+    const expectedHtml = getExpected('image-fill');
+
+    expect(html.trim()).toBe(expectedHtml);
+  });
+
   it('returns fonts used in the shape', async () => {
     const page1 = getPage('example1');
     const shape = page1.objects['00000000-0000-0000-0000-000000000000'];

@@ -210,25 +210,26 @@ describe('radialGradientToStyle', () => {
 });
 
 describe('imageFillToStyle', () => {
-  it('returns background-image with resolved URL', () => {
+  it('returns bg-[url(...)] class with resolved URL', () => {
     const fill: Fill = {
       fillImage: { id: 'abc-123', width: 100, height: 100, mtype: 'image/png' },
     };
     const result = imageFillToStyle(fill, makeCtx());
-    expect(result).toContain(
-      "background-image: url('https://assets.example.com/abc-123')",
+    expect(result.classes).toContain(
+      "bg-[url('https://assets.example.com/abc-123')]",
     );
+    expect(result.style).toBe('');
   });
 
-  it('includes background-size: cover by default', () => {
+  it('includes bg-cover by default', () => {
     const fill: Fill = {
       fillImage: { id: 'abc-123', width: 100, height: 100, mtype: 'image/png' },
     };
     const result = imageFillToStyle(fill, makeCtx());
-    expect(result).toContain('background-size: cover');
+    expect(result.classes).toContain('bg-cover');
   });
 
-  it('uses background-size: contain when keepAspectRatio is true', () => {
+  it('uses bg-contain when keepAspectRatio is true', () => {
     const fill: Fill = {
       fillImage: {
         id: 'abc-123',
@@ -239,30 +240,30 @@ describe('imageFillToStyle', () => {
       },
     };
     const result = imageFillToStyle(fill, makeCtx());
-    expect(result).toContain('background-size: contain');
-    expect(result).not.toContain('cover');
+    expect(result.classes).toContain('bg-contain');
+    expect(result.classes).not.toContain('bg-cover');
   });
 
-  it('includes background-position: center', () => {
+  it('includes bg-center', () => {
     const fill: Fill = {
       fillImage: { id: 'abc-123', width: 100, height: 100, mtype: 'image/png' },
     };
     const result = imageFillToStyle(fill, makeCtx());
-    expect(result).toContain('background-position: center');
+    expect(result.classes).toContain('bg-center');
   });
 
-  it('includes background-repeat: no-repeat', () => {
+  it('includes bg-no-repeat', () => {
     const fill: Fill = {
       fillImage: { id: 'abc-123', width: 100, height: 100, mtype: 'image/png' },
     };
     const result = imageFillToStyle(fill, makeCtx());
-    expect(result).toContain('background-repeat: no-repeat');
+    expect(result.classes).toContain('bg-no-repeat');
   });
 
-  it('returns empty string when fillImage is absent', () => {
+  it('returns empty classes when fillImage is absent', () => {
     const fill: Fill = {};
     const result = imageFillToStyle(fill, makeCtx());
-    expect(result).toBe('');
+    expect(result).toEqual({ classes: '', style: '' });
   });
 
   it('calls resolveImageUrl with the fillImage id', () => {
@@ -294,7 +295,7 @@ describe('imageFillToStyle', () => {
     };
     const ctx = makeCtx((id) => `https://example.com/${id}`);
     const result = imageFillToStyle(fill, ctx);
-    expect(result).not.toMatch(/url\('[^']*'[^']*'\)/);
+    expect(result.classes).not.toMatch(/url\('[^']*'[^']*'\)/);
   });
 });
 
@@ -369,11 +370,11 @@ describe('fillsToOutput', () => {
     expect(result.style).toMatch(/background:\s*radial-gradient\(/);
   });
 
-  it('single image fill returns style, no class', () => {
+  it('single image fill returns Tailwind classes, no inline style', () => {
     const result = fillsToOutput([imageFill], makeCtx());
-    expect(result.classes).toBe('');
-    expect(result.style).toContain('background-image:');
-    expect(result.style).toContain("url('https://assets.example.com/img-1')");
+    expect(result.classes).toContain("bg-[url('https://assets.example.com/img-1')]");
+    expect(result.classes).toContain('bg-cover');
+    expect(result.style).toBe('');
   });
 
   it('multiple solid fills: layers via background-image gradient trick, no class', () => {

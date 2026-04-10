@@ -3,6 +3,7 @@
  *
  * Usage:
  *   npx tsx src/penpot-to-html.ts --file-id <uuid> [--page-id <uuid>] [--shape-id <uuid>] [--output <path>] [--base-url <url>]
+ *   npx tsx src/penpot-to-html.ts --url "https://design.penpot.app/#/workspace?file-id=...&page-id=..." [--shape-id <uuid>] [--output <path>]
  *
  * Authentication (pick one):
  *   PENPOT_TOKEN=<access-token>          (recommended)
@@ -32,6 +33,28 @@ interface Args {
   cache: boolean;
 }
 
+function parsePenpotUrl(raw: string): { fileId: string; pageId?: string } {
+  // Penpot workspace URLs use a hash fragment:
+  // https://design.penpot.app/#/workspace?team-id=...&file-id=...&page-id=...
+  // URLSearchParams can't parse fragment query strings directly, so we extract
+  // the query portion from the hash manually.
+  const hashIndex = raw.indexOf('#');
+  const queryString = hashIndex !== -1 ? raw.slice(hashIndex + 1) : raw;
+  const questionIndex = queryString.indexOf('?');
+  const params = new URLSearchParams(
+    questionIndex !== -1 ? queryString.slice(questionIndex + 1) : queryString,
+  );
+
+  const fileId = params.get('file-id');
+  if (!fileId) {
+    console.error('Error: could not extract file-id from the provided URL');
+    process.exit(1);
+  }
+
+  const pageId = params.get('page-id') ?? undefined;
+  return { fileId, pageId };
+}
+
 function parseArgs(argv: string[]): Args {
   const args = argv.slice(2);
   const get = (flag: string): string | undefined => {
@@ -39,9 +62,22 @@ function parseArgs(argv: string[]): Args {
     return idx !== -1 ? args[idx + 1] : undefined;
   };
 
+  const rawUrl = get('--url');
+  if (rawUrl) {
+    const { fileId, pageId } = parsePenpotUrl(rawUrl);
+    return {
+      fileId,
+      pageId,
+      shapeId: get('--shape-id'),
+      output: get('--output'),
+      baseUrl: get('--base-url'),
+      cache: args.includes('--cache'),
+    };
+  }
+
   const fileId = get('--file-id');
   if (!fileId) {
-    console.error('Error: --file-id is required');
+    console.error('Error: --file-id is required (or use --url <penpot-workspace-url>)');
     process.exit(1);
   }
 
@@ -121,12 +157,9 @@ class PenpotClient {
 // Image URL resolver
 // ---------------------------------------------------------------------------
 
-function makeImageResolver(
-  apiBase: string,
-  token: string,
-): (id: Uuid) => string {
-  return (id: Uuid) =>
-    `${apiBase}/methods/get-object?id=${id}&token=${encodeURIComponent(token)}`;
+function makeImageResolver(apiBase: string): (id: Uuid) => string {
+  const origin = new URL(apiBase).origin;
+  return (id: Uuid) => `${origin}/assets/by-file-media-id/${id}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -287,7 +320,7 @@ async function main(): Promise<void> {
   const tokens = extractTokens(page.objects);
 
   const ctx: ConverterContext = {
-    resolveImageUrl: makeImageResolver(apiBase, token ?? ''),
+    resolveImageUrl: makeImageResolver(apiBase),
     tokens,
   };
 

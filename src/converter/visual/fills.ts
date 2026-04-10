@@ -72,28 +72,26 @@ export function radialGradientToStyle(gradient: Gradient): string {
 }
 
 /**
- * Converts an image fill to CSS background-image inline style properties.
- * Returns `''` if no `fillImage` is present.
+ * Converts an image fill to Tailwind background classes.
+ * Returns `{ classes: '', style: '' }` if no `fillImage` is present.
  *
- * Uses `background-size: contain` when `keepAspectRatio` is true,
- * otherwise defaults to `background-size: cover`.
+ * Uses `bg-contain` when `keepAspectRatio` is true, otherwise `bg-cover`.
  */
-export function imageFillToStyle(fill: Fill, ctx: ConverterContext): string {
-  if (!fill.fillImage) return '';
+export function imageFillToStyle(
+  fill: Fill,
+  ctx: ConverterContext,
+): { classes: string; style: string } {
+  if (!fill.fillImage) return { classes: '', style: '' };
 
   const url = ctx.resolveImageUrl(fill.fillImage.id);
   // Escape single quotes in the URL to prevent breaking the CSS string
   const safeUrl = url.replace(/'/g, '%27');
-  const size = fill.fillImage.keepAspectRatio ? 'contain' : 'cover';
+  const sizeClass = fill.fillImage.keepAspectRatio ? 'bg-contain' : 'bg-cover';
 
-  return (
-    [
-      `background-image: url('${safeUrl}')`,
-      `background-size: ${size}`,
-      `background-position: center`,
-      `background-repeat: no-repeat`,
-    ].join('; ') + ';'
-  );
+  return {
+    classes: `bg-[url('${safeUrl}')] ${sizeClass} bg-center bg-no-repeat`,
+    style: '',
+  };
 }
 
 /**
@@ -193,7 +191,7 @@ export function fillsToOutput(
       return { classes: '', style };
     }
     if (fill.fillImage) {
-      return { classes: '', style: imageFillToStyle(fill, ctx) };
+      return imageFillToStyle(fill, ctx);
     }
     if (fill.fillColor) {
       return { classes: solidFillToClass(fill), style: '' };
