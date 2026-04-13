@@ -79,20 +79,21 @@ src/
 
 Internal flags passed down the render tree — never set by callers:
 
-| Flag | Meaning |
-|---|---|
-| `_parentIsLayout` | Parent is a flex/grid container; child emits `w-full h-full` instead of absolute position |
-| `_forceRelative` | Emit `relative w-[N] h-[N]` instead of absolute (used for grid children and export root) |
-| `_isCanvasTopLevel` | Shape is a direct child of the root frame; use `translate()` instead of `top/left` |
-| `_isChildOfRoot` | Enables `fixed` for shapes with `fixedScroll` |
-| `_offsetX/_offsetY` | Parent's page-absolute position; used to compute relative `top`/`left` |
-| `_pageBackground` | Background color applied only to the root frame |
-| `_fontCollector` | Map populated by text renderers; extracted as `FontInfo[]` at the end |
-| `tokens` | `Map<tokenName, cssColor>` for design token → CSS variable substitution |
+| Flag                | Meaning                                                                                   |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| `_parentIsLayout`   | Parent is a flex/grid container; child emits `w-full h-full` instead of absolute position |
+| `_forceRelative`    | Emit `relative w-[N] h-[N]` instead of absolute (used for grid children and export root)  |
+| `_isCanvasTopLevel` | Shape is a direct child of the root frame; use `translate()` instead of `top/left`        |
+| `_isChildOfRoot`    | Enables `fixed` for shapes with `fixedScroll`                                             |
+| `_offsetX/_offsetY` | Parent's page-absolute position; used to compute relative `top`/`left`                    |
+| `_pageBackground`   | Background color applied only to the root frame                                           |
+| `_fontCollector`    | Map populated by text renderers; extracted as `FontInfo[]` at the end                     |
+| `tokens`            | `Map<tokenName, cssColor>` for design token → CSS variable substitution                   |
 
 ### Shape positioning rules (`resolvePositionOutput` in `visual/position.ts`)
 
 Priority order (highest first):
+
 1. `_parentIsLayout` → `w-full h-full` (fills the wrapper div emitted by the parent layout)
 2. `_forceRelative` → `relative w-[N] h-[N]`
 3. `_isCanvasTopLevel` → `absolute top-[0] left-[0] w-[N] h-[N]` + `transform: translate(x,y)`
@@ -113,12 +114,12 @@ Priority order (highest first):
 
 Penpot stores flex children in `shapes[]` in **Z-order (back-to-front)** — `shapes[0]` is the frontmost layer (highest z-index). This ordering is opposite to CSS flex DOM order for `row` and `column`:
 
-| Penpot `layoutFlexDir` | `shapes[]` order | CSS class emitted | DOM rendering |
-|---|---|---|---|
-| `row` | rightmost first | `flex-row` | reverse `shapes[]` before rendering |
-| `column` | bottommost first | `flex-col` | reverse `shapes[]` before rendering |
-| `row-reverse` | leftmost first | `flex-row` | use `shapes[]` order as-is |
-| `column-reverse` | topmost first | `flex-col` | use `shapes[]` order as-is |
+| Penpot `layoutFlexDir` | `shapes[]` order | CSS class emitted | DOM rendering                       |
+| ---------------------- | ---------------- | ----------------- | ----------------------------------- |
+| `row`                  | rightmost first  | `flex-row`        | reverse `shapes[]` before rendering |
+| `column`               | bottommost first | `flex-col`        | reverse `shapes[]` before rendering |
+| `row-reverse`          | leftmost first   | `flex-row`        | use `shapes[]` order as-is          |
+| `column-reverse`       | topmost first    | `flex-col`        | use `shapes[]` order as-is          |
 
 **Key insight:** `row-reverse` and `column-reverse` in Penpot do **not** map to CSS `flex-row-reverse`/`flex-col-reverse`. Penpot's "reverse" flips the z-ordering of children (so the leftmost/topmost item is now frontmost), but the visual flex direction is still left-to-right / top-to-bottom. Using CSS `flex-row-reverse` would push items to the wrong side.
 
@@ -130,9 +131,9 @@ Children inside a flex container are rendered with a two-element pattern:
 
 ```html
 <!-- wrapper div carries the layout-item sizing -->
-<div class="w-[240px] h-[50px]">
+<div class="h-[50px] w-[240px]">
   <!-- child fills the wrapper -->
-  <div class="w-full h-full flex flex-row ...">...</div>
+  <div class="flex h-full w-full flex-row ...">...</div>
 </div>
 ```
 
@@ -145,10 +146,10 @@ Children inside a flex container are rendered with a two-element pattern:
 
 ### Stroke alignment
 
-| Penpot alignment | CSS output |
-|---|---|
+| Penpot alignment   | CSS output                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | `inner` / `center` | `border-[Npx] border-[color] border-solid` (Tailwind; with `box-sizing: border-box` this stays inside the element's dimensions) |
-| `outer` | `shadow-[0_0_0_Npx_color]` Tailwind class |
+| `outer`            | `shadow-[0_0_0_Npx_color]` Tailwind class                                                                                       |
 
 ### Design token system
 
@@ -165,6 +166,7 @@ Penpot shapes may carry an `appliedTokens` map linking CSS properties to token n
 ```
 
 **How it works:**
+
 1. `extractTokens(objects)` in `src/converter/tokens.ts` scans all shapes for `appliedTokens` and resolves each token name to a CSS color (from the shape's own fills/strokes).
 2. `ConverterContext.tokens` carries the `Map<tokenName, cssColor>` through the render tree.
 3. Visual functions accept an optional token name and emit `var(--token)` instead of a raw hex:
@@ -193,6 +195,7 @@ No inline `border-radius` style should ever appear.
 **All visual properties must be expressed as Tailwind classes. Inline `style=` is only allowed when no Tailwind equivalent exists.**
 
 Allowed inline styles:
+
 - `transform: translate(x, y)` — canvas-top-level elements (no Tailwind class for arbitrary translate on positioned elements)
 - `border-radius: top-left top-right bottom-right bottom-left` — non-uniform corner radii (four different values)
 - `padding: p1 p2 p3 p4` — non-symmetric padding (all four sides different)
@@ -200,47 +203,101 @@ Allowed inline styles:
 
 Everything else must use Tailwind arbitrary-value classes:
 
-| Property | Inline style ❌ | Tailwind class ✓ |
-|---|---|---|
-| `box-shadow` | `style="box-shadow: 4px 4px #000"` | `shadow-[4px_4px_#000]` |
-| `grid-template-columns` | `style="grid-template-columns: 1fr 2fr"` | `grid-cols-[1fr_2fr]` |
-| `grid-template-rows` | `style="grid-template-rows: 100px auto"` | `grid-rows-[100px_auto]` |
-| `border-radius` (uniform) | `style="border-radius: 50%"` | `rounded-[50%]` |
+| Property                  | Inline style ❌                          | Tailwind class ✓         |
+| ------------------------- | ---------------------------------------- | ------------------------ |
+| `box-shadow`              | `style="box-shadow: 4px 4px #000"`       | `shadow-[4px_4px_#000]`  |
+| `grid-template-columns`   | `style="grid-template-columns: 1fr 2fr"` | `grid-cols-[1fr_2fr]`    |
+| `grid-template-rows`      | `style="grid-template-rows: 100px auto"` | `grid-rows-[100px_auto]` |
+| `border-radius` (uniform) | `style="border-radius: 50%"`             | `rounded-[50%]`          |
 
 ### Arbitrary value encoding
 
 In Tailwind arbitrary values, **spaces become underscores** and the value goes inside `[...]`:
+
 - `4px 4px 4px 10px rgba(255, 0, 0, 0.2)` → `shadow-[4px_4px_4px_10px_rgba(255,_0,_0,_0.2)]`
 - `1fr 1fr 1fr` → `grid-cols-[1fr_1fr_1fr]` or `grid-rows-[1fr_1fr_1fr]`
 
 ### Multiple `shadow-[...]` classes
 
 `cls()` automatically merges multiple `shadow-[...]` classes into one comma-separated value so that drop-shadows and outer strokes coexist:
+
 ```ts
-cls('shadow-[2px_2px_#000]', 'shadow-[0_0_0_2px_red]')
+cls('shadow-[2px_2px_#000]', 'shadow-[0_0_0_2px_red]');
 // → 'shadow-[2px_2px_#000,0_0_0_2px_red]'
+```
+
+## Generating HTML from a Penpot board URL
+
+When the user gives you fileId, pageId or shapeId, run this script:
+
+```bash
+pnpm penpot-to-html \
+  --file-id 0075361e-ccf8-8015-8007-dd63b3a9bb7d \
+  --page-id 0075361e-ccf8-8015-8007-dd63b3a9bb7e \
+  --shape-id 4c914ab1-c8d2-80ae-8007-dd653415ab49 \
+  --output output.html \
+  --cache
+```
+
+The `--cache` flag saves the fetched page to `cache/<file-id>.json` so subsequent runs don't re-fetch.
+Omit `--shape-id` to render the entire page.
+
+You can also pass the full workspace URL directly:
+
+```bash
+pnpm penpot-to-html --url "https://design.penpot.app/#/workspace?file-id=...&page-id=..." --shape-id <board-id>
 ```
 
 ## Adding a new integration test
 
+### From a real Penpot board (recommended)
+
+**Step 1** — fetch and cache the page:
+
+```bash
+pnpm penpot-to-html --file-id <uuid> --page-id <uuid> --cache
+```
+
+**Step 2** — create the test case files automatically:
+
+```bash
+pnpm exec tsx scripts/add-test-case.mts --name <test-name> --file-id <uuid> --board-id <uuid>
+```
+
+This script:
+
+1. Reads `cache/<file-id>.json`
+2. Copies it to `src/intengration/<name>.json`
+3. Runs `convertShape` on the board shape
+4. Writes `src/intengration/<name>.expected.html`
+5. Prints the test case snippet to add in `integration.test.ts`
+
+**Step 3** — add the printed test case to `src/intengration/integration.test.ts`.
+
+### Manually (for hand-crafted JSON)
+
 1. Place the Penpot page JSON in `src/intengration/<name>.json`.
-2. Generate the expected HTML:
-   ```ts
-   // gen.mts — run with: pnpm exec tsx gen.mts
-   import { convertShape } from './src/converter/index.ts';
-   import { readFileSync, writeFileSync } from 'node:fs';
-   async function main() {
-     const page = JSON.parse(readFileSync('src/intengration/<name>.json', 'utf-8'));
-     const shape = page.objects['<shape-id>'];
-     const ctx = { resolveImageUrl: (id) => `https://assets.example.com/${id}` };
-     const { html } = await convertShape(shape, page.objects, ctx);
-     writeFileSync('src/intengration/<name>.expected.html', html.trim() + '\n');
-   }
-   main();
+2. Regenerate the expected HTML:
+   ```bash
+   pnpm exec tsx scripts/add-test-case.mts --name <name> --file-id <file-id-matching-cache> --board-id <shape-id>
    ```
+   Or if the JSON is already in place, edit and re-run to overwrite only the `.expected.html`.
 3. Add a test case in `src/intengration/integration.test.ts` following the existing pattern.
 
-When expected output changes (intentional), regenerate the `.expected.html` file with the script above — do not hand-edit it.
+### Regenerating expected HTML after intentional output changes
+
+Re-run the add-test-case script — do not hand-edit `.expected.html` files.
+
+## Test fixture files
+
+Integration test fixtures live in `src/intengration/`:
+
+| File                   | Purpose                                                           |
+| ---------------------- | ----------------------------------------------------------------- |
+| `<name>.json`          | Full Penpot page JSON (same shape as the API `get-page` response) |
+| `<name>.expected.html` | Expected converter output for the target shape                    |
+
+Cached raw API responses live in `cache/<file-id>.json` — these are gitignored and used only as a source when creating new test cases.
 
 ## Adding a new shape type
 
