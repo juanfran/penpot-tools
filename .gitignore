@@ -13,6 +13,8 @@ count.txt
 *storybook.log
 storybook-static
 
+output.html
+
 output/*
 cache/*
 tmp/*

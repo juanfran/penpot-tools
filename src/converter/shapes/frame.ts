@@ -87,8 +87,13 @@ export function renderFrame(
   const bgClass =
     isRoot && ctx._pageBackground ? `bg-[${ctx._pageBackground}]` : undefined;
 
+  const hasAbsoluteChild =
+    (isFlex || isGrid) &&
+    children.some((c) => (c as unknown as { layoutItemAbsolute?: boolean }).layoutItemAbsolute);
+
   const classes = cls(
     positionClasses,
+    hasAbsoluteChild ? 'relative' : undefined,
     layoutClasses,
     base.classes,
     fills.classes,

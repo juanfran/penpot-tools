@@ -299,6 +299,38 @@ Integration test fixtures live in `src/intengration/`:
 
 Cached raw API responses live in `cache/<file-id>.json` — these are gitignored and used only as a source when creating new test cases.
 
+## Cache JSON structure
+
+`cache/<file-id>.json` is a **flat** Penpot page object:
+
+```json
+{
+  "id":      "<page-uuid>",
+  "name":    "Page 1",
+  "objects": {
+    "<shape-uuid>": { /* Shape */ },
+    "00000000-0000-0000-0000-000000000000": { /* Root frame */ }
+  }
+}
+```
+
+All shapes from the fetched page live directly under `objects` — there is **no nesting by page-id**. The root frame always has `id === parentId === "00000000-0000-0000-0000-000000000000"`.
+
+## Inspecting a specific shape
+
+When debugging output for a specific shape, use the inspect script instead of ad-hoc Python one-liners:
+
+```bash
+pnpm exec tsx scripts/inspect-shape.mts --file-id <uuid> --shape-id <uuid> [--html]
+```
+
+This prints:
+- The full parent chain (child → root) with layout, sizing, and `layoutItemAbsolute` flags highlighted
+- The shape's data (geometry noise filtered out)
+- With `--html`: the rendered HTML for that shape
+
+The HTML output file (`output.html`) is **minified to a single line** — do not try to read it with `cat` or `grep` for context. Use the inspect script or search by `data-id` attribute.
+
 ## Adding a new shape type
 
 1. Create `src/converter/shapes/<type>.ts` exporting `render<Type>(shape, ctx): string`.
