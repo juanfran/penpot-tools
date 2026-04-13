@@ -30,7 +30,10 @@ export function layoutItemSizingClasses(
   let vClass: string | undefined;
 
   if (hSizing === 'fill') {
-    hClass = isRowDir ? 'flex-1' : 'w-full';
+    // Main axis (row → h-fill): flex-1 to grow within the flow.
+    // Cross axis (column → h-fill): explicit px width to prevent content overflow
+    // from inflating the flex container's cross-axis size.
+    hClass = isRowDir ? 'flex-1' : pxClass('w', shape.width ?? 0);
   } else if (hSizing !== 'auto') {
     // 'fix' or undefined → use explicit pixel dimension
     hClass = pxClass('w', shape.width ?? 0);

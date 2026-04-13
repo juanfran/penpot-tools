@@ -81,12 +81,13 @@ describe('layoutItemSizingClasses', () => {
     expect(result).toContain('flex-1');
   });
 
-  it('returns w-full for fill HSizing in column parent (cross axis)', () => {
+  it('returns w-[Npx] for fill HSizing in column parent (cross axis — prevents overflow inflation)', () => {
     const result = layoutItemSizingClasses(
       makeShape({ layoutItemHSizing: 'fill' }),
       makeColParent(),
     );
-    expect(result).toContain('w-full');
+    expect(result).toContain('w-[100px]');
+    expect(result).not.toContain('w-full');
   });
 
   it('returns w-[Npx] for fix HSizing', () => {

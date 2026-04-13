@@ -191,6 +191,34 @@ describe('renderFrame', () => {
       expect(html).not.toContain('left-[10px]');
       expect(html).not.toContain('top-[10px]');
     });
+
+    it('column flex: fill hSizing child uses explicit w-[Npx] on wrapper and child (not w-full)', () => {
+      // Regression: w-full (percentage) on a cross-axis fill child in a column
+      // container allows descendant overflow to inflate the container width.
+      // Explicit px prevents the browser from expanding the container.
+      const child: Shape = {
+        ...makeChild('child-1'),
+        width: 400,
+        height: 100,
+        layoutItemHSizing: 'fill' as const,
+        layoutItemVSizing: 'fix' as const,
+      };
+      const objects: Record<string, Shape> = { 'child-1': child };
+      const html = renderFrame(
+        makeFrame({
+          parentId: 'parent-frame' as Uuid,
+          id: 'frame-1' as Uuid,
+          layoutType: 'flex',
+          layoutFlexDir: 'column',
+        }),
+        [child],
+        objects,
+        ctx,
+      );
+      // Wrapper div must use explicit pixel width
+      expect(html).toContain('w-[400px]');
+      expect(html).not.toContain('w-full');
+    });
   });
 
   describe('grid layout mode', () => {
@@ -264,6 +292,50 @@ describe('renderFrame', () => {
       );
       expect(html).not.toContain('left-[10px]');
       expect(html).not.toContain('top-[10px]');
+    });
+  });
+
+  describe('plain frame inside a flex/grid parent', () => {
+    const layoutCtx: ConverterContext = {
+      ...ctx,
+      _parentIsLayout: true,
+    };
+
+    it('gets relative class so its absolutely-positioned children have a containing block', () => {
+      // When a plain frame is a flex/grid child, positionClasses is `w-full h-full`
+      // (no CSS position property). Without `relative`, the frame is position:static
+      // and cannot act as a containing block for absolutely-positioned children.
+      const frame = makeFrame({
+        parentId: 'parent-frame' as Uuid,
+        id: 'frame-1' as Uuid,
+      });
+      const child = makeChild('child-1');
+      const objects: Record<string, Shape> = { 'child-1': child };
+      const html = renderFrame(frame, [child], objects, layoutCtx);
+
+      expect(html).toContain('relative');
+    });
+
+    it('children of a plain frame inside flex parent use absolute positioning, not w-full h-full', () => {
+      // The plain frame must reset _parentIsLayout so its own children get
+      // absolute top/left coordinates, not the flex-fill `w-full h-full`.
+      const frame = makeFrame({
+        parentId: 'parent-frame' as Uuid,
+        id: 'frame-1' as Uuid,
+        x: 0,
+        y: 0,
+      });
+      const child = makeChild('child-1'); // x:10, y:10
+      const objects: Record<string, Shape> = { 'child-1': child };
+      const html = renderFrame(frame, [child], objects, layoutCtx);
+
+      // Child must be absolutely positioned relative to the plain frame
+      expect(html).toContain('left-[10px]');
+      expect(html).toContain('top-[10px]');
+      // The child div itself must NOT have w-full or h-full (only the frame wrapper may)
+      const childMatch = html.match(/data-id="child-1"[^>]*class="([^"]+)"/);
+      expect(childMatch?.[1]).not.toContain('w-full');
+      expect(childMatch?.[1]).not.toContain('h-full');
     });
   });
 });

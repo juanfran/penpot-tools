@@ -118,6 +118,7 @@ export function renderFrame(
     // Penpot stores children in visual order (leftmost/topmost first), so no reversal needed.
     const flexDir = shape.layoutFlexDir;
     const isReverseDir = flexDir === 'row-reverse' || flexDir === 'column-reverse';
+    const isRowDir = flexDir === 'row' || flexDir === 'row-reverse' || flexDir === undefined;
     const orderedChildren = isReverseDir ? [...children] : [...children].reverse();
     const frameOffsetX = shape.x ?? 0;
     const frameOffsetY = shape.y ?? 0;
@@ -127,7 +128,12 @@ export function renderFrame(
         // instead of w-full/h-full, otherwise the child's percentage size
         // resolves against the flex container's definite dimension (e.g. 947px)
         // rather than the child's natural size.
-        const autoW = child.layoutItemHSizing === 'auto';
+        // For fill sizing on the cross-axis of a column container (horizontal),
+        // also use explicit px to prevent descendant overflow from inflating the
+        // flex container's cross-axis measurement in the browser.
+        const autoW =
+          child.layoutItemHSizing === 'auto' ||
+          (!isRowDir && child.layoutItemHSizing === 'fill');
         const autoH = child.layoutItemVSizing === 'auto';
         const flexCtx: ConverterContext = {
           ...ctx,

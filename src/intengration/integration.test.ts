@@ -211,4 +211,21 @@ describe('integration', () => {
       expect(typeof font.fontFamily).toBe('string');
     }
   });
+
+  it('column flex: fill hSizing child uses explicit w-[Npx] to prevent overflow inflation', async () => {
+    // Regression: a fill child in a column flex container with horizontal padding had
+    // grandchildren with fixed widths equal to the container. Using w-full on the child
+    // allowed browsers to inflate the container by the padding amount (e.g. 1657px → 1697px).
+    // The fix: fill on the cross-axis (w in column) uses explicit w-[Npx] instead.
+    const page = getPage('flex-fill-cross-overflow');
+    const shape = page.objects['outer-row'];
+    const { html } = await convertShape(shape, page.objects, ctx);
+
+    const expectedHtml = getExpected('flex-fill-cross-overflow');
+    expect(html.trim()).toBe(expectedHtml);
+
+    // fill-child (fill hSizing in column parent) must use explicit px, not w-full
+    expect(html).toContain('w-[400px]');
+    expect(html).not.toMatch(/data-id="fill-child"[^>]*class="[^"]*w-full/);
+  });
 });
