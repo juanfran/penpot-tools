@@ -91,8 +91,16 @@ export function renderFrame(
     (isFlex || isGrid) &&
     children.some((c) => (c as unknown as { layoutItemAbsolute?: boolean }).layoutItemAbsolute);
 
+  // A plain frame with children acts as a containing block for its absolutely-positioned
+  // children. When it's inside a flex/grid parent, positionClasses is `w-full h-full`
+  // (no CSS position), leaving it as `position: static` which does not create a
+  // containing block. Add `relative` in that case to anchor child absolute positioning.
+  const plainFrameNeedsRelative =
+    !isFlex && !isGrid && !isRoot && children.length > 0 && ctx._parentIsLayout;
+
   const classes = cls(
     positionClasses,
+    plainFrameNeedsRelative ? 'relative' : undefined,
     hasAbsoluteChild ? 'relative' : undefined,
     layoutClasses,
     base.classes,
@@ -162,6 +170,9 @@ export function renderFrame(
       _isCanvasTopLevel: false,
       _isChildOfRoot: isRoot,
       _forceRelative: false,
+      _parentIsLayout: false,
+      _parentIsLayoutAutoW: undefined,
+      _parentIsLayoutAutoH: undefined,
       _offsetX: shape.x ?? 0,
       _offsetY: shape.y ?? 0,
     };
