@@ -14,6 +14,10 @@ import { hexOpacityToCss } from '../utils/color';
  * The inner `<path>` is translated by `(-x, -y)` so it starts at `(0, 0)`
  * within the SVG viewport.
  *
+ * When `shape.x/y/width/height` are null (e.g. boolean/difference path ops),
+ * `shape.selrect` is used as the authoritative bounding box — it is the exact
+ * value Penpot computes and what the design tool displays.
+ *
  * Fill and stroke are taken from the first fill/stroke entry respectively.
  * The `data-id` attribute carries the Penpot shape ID.
  */
@@ -38,15 +42,24 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
     ? String(firstStroke.strokeWidth)
     : undefined;
 
+  // When shape geometry is null (boolean/difference path ops), fall back to
+  // selrect — the exact bounding box Penpot computes (matches design tool).
+  const x = shape.x ?? shape.selrect?.x ?? 0;
+  const y = shape.y ?? shape.selrect?.y ?? 0;
+  const width = shape.width ?? shape.selrect?.width ?? 0;
+  const height = shape.height ?? shape.selrect?.height ?? 0;
+
   const pathEl = tag('path', {
     d: shape.content,
-    transform: `translate(${-(shape.x ?? 0)}, ${-(shape.y ?? 0)})`,
+    transform: `translate(${-x}, ${-y})`,
     fill: fillAttr,
     stroke: strokeAttr,
     'stroke-width': strokeWidthAttr,
   });
 
-  const posOut = resolvePositionOutput(shape, ctx);
+  // Supply computed geometry so resolvePositionOutput emits the right classes.
+  const effectiveShape = { ...shape, x, y, width, height };
+  const posOut = resolvePositionOutput(effectiveShape, ctx);
   const classes = cls(posOut.classes, base.classes);
   const style = mergeStyles(posOut.style, base.style);
 
@@ -54,8 +67,9 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
     'svg',
     {
       'data-id': shape.id,
-      width: String(shape.width ?? 0),
-      height: String(shape.height ?? 0),
+      width: String(width),
+      height: String(height),
+      overflow: 'visible',
       xmlns: 'http://www.w3.org/2000/svg',
       class: classes || undefined,
       style: style || undefined,
