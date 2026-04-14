@@ -7,9 +7,7 @@
 export function px(value: number): string {
   const rounded = Math.round(value * 100) / 100;
   const formatted =
-    rounded % 1 === 0
-      ? String(rounded | 0)
-      : rounded.toFixed(2).replace(/\.?0+$/, '');
+    rounded % 1 === 0 ? String(rounded | 0) : rounded.toFixed(2).replace(/\.?0+$/, '');
   return `[${formatted}px]`;
 }
 

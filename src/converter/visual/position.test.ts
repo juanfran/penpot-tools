@@ -64,16 +64,12 @@ describe('transformToStyle', () => {
 
   it('returns transform style for non-identity matrix', () => {
     const m: GeomMatrix = { a: 0.5, b: 0, c: 0, d: 0.5, e: 10, f: 20 };
-    expect(transformToStyle(m)).toBe(
-      'transform: matrix(0.5, 0, 0, 0.5, 10, 20);',
-    );
+    expect(transformToStyle(m)).toBe('transform: matrix(0.5, 0, 0, 0.5, 10, 20);');
   });
 
   describe('absolutePositionClasses', () => {
     it('returns absolute position and size classes', () => {
-      const result = absolutePositionClasses(
-        makeShape({ x: 10, y: 20, width: 200, height: 150 }),
-      );
+      const result = absolutePositionClasses(makeShape({ x: 10, y: 20, width: 200, height: 150 }));
       expect(result).toContain('absolute');
       expect(result).toContain('left-[10px]');
       expect(result).toContain('top-[20px]');
@@ -82,9 +78,7 @@ describe('transformToStyle', () => {
     });
 
     it('handles x=0 and y=0', () => {
-      const result = absolutePositionClasses(
-        makeShape({ x: 0, y: 0, width: 100, height: 100 }),
-      );
+      const result = absolutePositionClasses(makeShape({ x: 0, y: 0, width: 100, height: 100 }));
       expect(result).toContain('left-[0px]');
       expect(result).toContain('top-[0px]');
     });
@@ -113,28 +107,19 @@ describe('transformToStyle', () => {
     });
 
     it('emits fixed when fixedScroll is true and isChildOfRoot is true', () => {
-      const result = absolutePositionClasses(
-        makeShape({ fixedScroll: true }),
-        true,
-      );
+      const result = absolutePositionClasses(makeShape({ fixedScroll: true }), true);
       expect(result).toContain('fixed');
       expect(result).not.toContain('absolute');
     });
 
     it('emits absolute when fixedScroll is true but isChildOfRoot is false', () => {
-      const result = absolutePositionClasses(
-        makeShape({ fixedScroll: true }),
-        false,
-      );
+      const result = absolutePositionClasses(makeShape({ fixedScroll: true }), false);
       expect(result).toContain('absolute');
       expect(result).not.toContain('fixed');
     });
 
     it('emits absolute when fixedScroll is false even if isChildOfRoot is true', () => {
-      const result = absolutePositionClasses(
-        makeShape({ fixedScroll: false }),
-        true,
-      );
+      const result = absolutePositionClasses(makeShape({ fixedScroll: false }), true);
       expect(result).toContain('absolute');
       expect(result).not.toContain('fixed');
     });
@@ -174,9 +159,7 @@ describe('transformToStyle', () => {
         height: 50,
         constraintsH: 'center',
       });
-      expect(constraintsHToStyle(shape, parent)).toBe(
-        'left: 50%; transform: translateX(-50%);',
-      );
+      expect(constraintsHToStyle(shape, parent)).toBe('left: 50%; transform: translateX(-50%);');
     });
 
     it('leftright constraint: emits left, right, and width unset', () => {
@@ -188,9 +171,7 @@ describe('transformToStyle', () => {
         constraintsH: 'leftright',
       });
       // right = 400 - 20 - 360 = 20
-      expect(constraintsHToStyle(shape, parent)).toBe(
-        'left: 20px; right: 20px; width: unset;',
-      );
+      expect(constraintsHToStyle(shape, parent)).toBe('left: 20px; right: 20px; width: unset;');
     });
 
     it('scale constraint: emits left% and width%', () => {
@@ -245,9 +226,7 @@ describe('transformToStyle', () => {
         height: 50,
         constraintsV: 'center',
       });
-      expect(constraintsVToStyle(shape, parent)).toBe(
-        'top: 50%; transform: translateY(-50%);',
-      );
+      expect(constraintsVToStyle(shape, parent)).toBe('top: 50%; transform: translateY(-50%);');
     });
 
     it('topbottom constraint: emits top, bottom, and height unset', () => {
@@ -259,9 +238,7 @@ describe('transformToStyle', () => {
         constraintsV: 'topbottom',
       });
       // bottom = 300 - 20 - 260 = 20
-      expect(constraintsVToStyle(shape, parent)).toBe(
-        'top: 20px; bottom: 20px; height: unset;',
-      );
+      expect(constraintsVToStyle(shape, parent)).toBe('top: 20px; bottom: 20px; height: unset;');
     });
 
     it('scale constraint: emits top% and height%', () => {
@@ -340,19 +317,28 @@ const makeCtx = (overrides: Partial<ConverterContext> = {}): ConverterContext =>
 
 describe('resolvePositionOutput', () => {
   it('returns w-full h-full when _parentIsLayout (fills wrapper div)', () => {
-    const result = resolvePositionOutput(makeShape({ x: 50, y: 50 }), makeCtx({ _parentIsLayout: true }));
+    const result = resolvePositionOutput(
+      makeShape({ x: 50, y: 50 }),
+      makeCtx({ _parentIsLayout: true }),
+    );
     expect(result.classes).toBe('w-full h-full');
     expect(result.style).toBe('');
   });
 
   it('returns relative classes when _forceRelative', () => {
-    const result = resolvePositionOutput(makeShape({ x: 50, y: 50, width: 100, height: 100 }), makeCtx({ _forceRelative: true }));
+    const result = resolvePositionOutput(
+      makeShape({ x: 50, y: 50, width: 100, height: 100 }),
+      makeCtx({ _forceRelative: true }),
+    );
     expect(result.classes).toContain('relative');
     expect(result.style).toBe('');
   });
 
   it('returns translate output when _isCanvasTopLevel', () => {
-    const result = resolvePositionOutput(makeShape({ x: 10, y: 20, width: 100, height: 80 }), makeCtx({ _isCanvasTopLevel: true }));
+    const result = resolvePositionOutput(
+      makeShape({ x: 10, y: 20, width: 100, height: 80 }),
+      makeCtx({ _isCanvasTopLevel: true }),
+    );
     expect(result.classes).toContain('absolute');
     expect(result.classes).toContain('top-[0px]');
     expect(result.classes).toContain('left-[0px]');
@@ -360,7 +346,10 @@ describe('resolvePositionOutput', () => {
   });
 
   it('returns absolute classes by default', () => {
-    const result = resolvePositionOutput(makeShape({ x: 10, y: 20, width: 100, height: 80 }), makeCtx({ _offsetX: 5, _offsetY: 5 }));
+    const result = resolvePositionOutput(
+      makeShape({ x: 10, y: 20, width: 100, height: 80 }),
+      makeCtx({ _offsetX: 5, _offsetY: 5 }),
+    );
     expect(result.classes).toContain('absolute');
     expect(result.classes).toContain('left-[5px]');
     expect(result.classes).toContain('top-[15px]');
@@ -368,12 +357,18 @@ describe('resolvePositionOutput', () => {
   });
 
   it('_forceRelative takes priority over _isCanvasTopLevel', () => {
-    const result = resolvePositionOutput(makeShape({ x: 10, y: 20 }), makeCtx({ _forceRelative: true, _isCanvasTopLevel: true }));
+    const result = resolvePositionOutput(
+      makeShape({ x: 10, y: 20 }),
+      makeCtx({ _forceRelative: true, _isCanvasTopLevel: true }),
+    );
     expect(result.classes).toContain('relative');
   });
 
   it('_parentIsLayout takes priority over _isCanvasTopLevel', () => {
-    const result = resolvePositionOutput(makeShape({ x: 10, y: 20 }), makeCtx({ _parentIsLayout: true, _isCanvasTopLevel: true }));
+    const result = resolvePositionOutput(
+      makeShape({ x: 10, y: 20 }),
+      makeCtx({ _parentIsLayout: true, _isCanvasTopLevel: true }),
+    );
     expect(result.classes).toBe('w-full h-full');
     expect(result.style).toBe('');
   });
@@ -399,9 +394,7 @@ describe('combinedTransformStyle', () => {
       e: 0,
       f: 0,
     };
-    const result = combinedTransformStyle(
-      makeShape({ transform: nonIdentity }),
-    );
+    const result = combinedTransformStyle(makeShape({ transform: nonIdentity }));
     expect(result).toContain('matrix(');
     expect(result).not.toContain('rotate');
   });
@@ -415,9 +408,7 @@ describe('combinedTransformStyle', () => {
       e: 0,
       f: 0,
     };
-    const result = combinedTransformStyle(
-      makeShape({ rotation: 30, transform: nonIdentity }),
-    );
+    const result = combinedTransformStyle(makeShape({ rotation: 30, transform: nonIdentity }));
     expect(result).toContain('rotate(-30deg)');
     expect(result).toContain('matrix(');
   });

@@ -17,9 +17,7 @@ function toKebabCase(key: string): string {
  * buildStyle({ position: 'absolute', left: '10px', top: '20px' })
  * // → 'position: absolute; left: 10px; top: 20px;'
  */
-export function buildStyle(
-  props: Record<string, string | number | undefined | null>,
-): string {
+export function buildStyle(props: Record<string, string | number | undefined | null>): string {
   const parts: string[] = [];
 
   for (const [key, value] of Object.entries(props)) {

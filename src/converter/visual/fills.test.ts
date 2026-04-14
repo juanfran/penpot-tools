@@ -215,9 +215,7 @@ describe('imageFillToStyle', () => {
       fillImage: { id: 'abc-123', width: 100, height: 100, mtype: 'image/png' },
     };
     const result = imageFillToStyle(fill, makeCtx());
-    expect(result.classes).toContain(
-      "bg-[url('https://assets.example.com/abc-123')]",
-    );
+    expect(result.classes).toContain("bg-[url('https://assets.example.com/abc-123')]");
     expect(result.style).toBe('');
   });
 
@@ -411,8 +409,7 @@ describe('fillsToOutput', () => {
     // CSS layers are reversed: img-2 (topmost in Penpot) comes first (topmost in CSS).
     const result = fillsToOutput([imageFill, imageFill2], makeCtx());
     expect(result.style).toContain('background-image:');
-    const imgValue =
-      result.style.match(/background-image:\s*([^;]+)/)?.[1] ?? '';
+    const imgValue = result.style.match(/background-image:\s*([^;]+)/)?.[1] ?? '';
     expect(imgValue.indexOf('img-2')).toBeLessThan(imgValue.indexOf('img-1'));
   });
 
@@ -427,8 +424,7 @@ describe('fillsToOutput', () => {
       },
     };
     const result = fillsToOutput([imageFill, imageFill2], makeCtx());
-    const bgImage =
-      result.style.match(/background-image:\s*([^;]+)/)?.[1] ?? '';
+    const bgImage = result.style.match(/background-image:\s*([^;]+)/)?.[1] ?? '';
     const bgSize = result.style.match(/background-size:\s*([^;]+)/)?.[1] ?? '';
     const imageCount = bgImage.split(',').length;
     const sizeCount = bgSize.split(',').length;

@@ -64,10 +64,7 @@ describe('renderPath', () => {
   });
 
   it('applies fill color from fills', () => {
-    const html = renderPath(
-      makePath({ fills: [{ fillColor: '#ff0000' as HexColor }] }),
-      ctx,
-    );
+    const html = renderPath(makePath({ fills: [{ fillColor: '#ff0000' as HexColor }] }), ctx);
     expect(html).toContain('fill="#ff0000"');
   });
 

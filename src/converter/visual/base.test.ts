@@ -81,10 +81,7 @@ describe('baseClasses', () => {
   });
 
   it('merges multiple classes correctly', () => {
-    const result = baseClasses(
-      makeShape({ hidden: true, opacity: 0.5, blendMode: 'screen' }),
-      ctx,
-    );
+    const result = baseClasses(makeShape({ hidden: true, opacity: 0.5, blendMode: 'screen' }), ctx);
     expect(result.classes).toContain('hidden');
     expect(result.classes).toContain('opacity-[50%]');
     expect(result.classes).toContain('mix-blend-screen');

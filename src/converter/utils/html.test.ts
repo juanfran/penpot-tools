@@ -57,9 +57,9 @@ describe('tag', () => {
   });
 
   it('omits attributes with undefined values', () => {
-    expect(
-      tag('div', { id: 'foo', class: undefined, style: 'color:red' }, 'hi'),
-    ).toBe('<div id="foo" style="color:red">hi</div>');
+    expect(tag('div', { id: 'foo', class: undefined, style: 'color:red' }, 'hi')).toBe(
+      '<div id="foo" style="color:red">hi</div>',
+    );
   });
 
   it('escapes attribute values', () => {

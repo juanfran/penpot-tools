@@ -1,6 +1,5 @@
 import type { Shape } from '../penpot.types';
 import type { ConverterContext } from './types';
-import { escapeHtml } from './utils/html';
 import { renderShape as dispatchShape } from './shapes/dispatch';
 
 /**

@@ -32,20 +32,12 @@ describe('renderCircle', () => {
   });
 
   it('includes data-id attribute with shape id', () => {
-    const html = renderCircle(
-      makeCircle({ id: 'my-circle' as Uuid }),
-      null,
-      ctx,
-    );
+    const html = renderCircle(makeCircle({ id: 'my-circle' as Uuid }), null, ctx);
     expect(html).toContain('data-id="my-circle"');
   });
 
   it('includes absolute positioning classes', () => {
-    const html = renderCircle(
-      makeCircle({ x: 10, y: 20, width: 80, height: 80 }),
-      null,
-      ctx,
-    );
+    const html = renderCircle(makeCircle({ x: 10, y: 20, width: 80, height: 80 }), null, ctx);
     expect(html).toContain('absolute');
     expect(html).toContain('left-[10px]');
     expect(html).toContain('top-[20px]');
@@ -60,11 +52,7 @@ describe('renderCircle', () => {
   });
 
   it('uses rounded-[50%] class for ellipse (width !== height)', () => {
-    const html = renderCircle(
-      makeCircle({ width: 120, height: 80 }),
-      null,
-      ctx,
-    );
+    const html = renderCircle(makeCircle({ width: 120, height: 80 }), null, ctx);
     expect(html).toContain('rounded-[50%]');
     expect(html).not.toContain('rounded-full');
     expect(html).not.toContain('border-radius: 50%');

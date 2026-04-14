@@ -20,9 +20,7 @@ function getFirstTextLeafFill(shape: TextShape): string | undefined {
  * - `appliedTokens.fill` on a text shape → resolved from the first text leaf fill color
  * - `appliedTokens.strokeColor` → resolved from `shape.strokes[0].strokeColor`
  */
-export function extractTokens(
-  objects: Record<string, Shape>,
-): Map<string, string> {
+export function extractTokens(objects: Record<string, Shape>): Map<string, string> {
   const tokens = new Map<string, string>();
 
   for (const shape of Object.values(objects)) {

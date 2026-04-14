@@ -50,12 +50,7 @@ describe('renderFrame', () => {
   });
 
   it('includes data-id attribute', () => {
-    const html = renderFrame(
-      makeFrame({ id: 'my-frame' as Uuid }),
-      [],
-      {},
-      ctx,
-    );
+    const html = renderFrame(makeFrame({ id: 'my-frame' as Uuid }), [], {}, ctx);
     expect(html).toContain('data-id="my-frame"');
   });
 
@@ -73,12 +68,7 @@ describe('renderFrame', () => {
   });
 
   it('includes width and height classes', () => {
-    const html = renderFrame(
-      makeFrame({ width: 400, height: 300 }),
-      [],
-      {},
-      ctx,
-    );
+    const html = renderFrame(makeFrame({ width: 400, height: 300 }), [], {}, ctx);
     expect(html).toContain('w-[400px]');
     expect(html).toContain('h-[300px]');
   });
@@ -126,12 +116,7 @@ describe('renderFrame', () => {
   });
 
   it('includes corner radius class', () => {
-    const html = renderFrame(
-      makeFrame({ r1: 8, r2: 8, r3: 8, r4: 8 }),
-      [],
-      {},
-      ctx,
-    );
+    const html = renderFrame(makeFrame({ r1: 8, r2: 8, r3: 8, r4: 8 }), [], {}, ctx);
     expect(html).toContain('rounded-[8px]');
   });
 
@@ -289,12 +274,7 @@ describe('renderFrame', () => {
     it('does not apply absolute positioning to grid children', () => {
       const child = makeChild('child-1');
       const objects: Record<string, Shape> = { 'child-1': child };
-      const html = renderFrame(
-        makeFrame({ layoutType: 'grid' }),
-        [child],
-        objects,
-        ctx,
-      );
+      const html = renderFrame(makeFrame({ layoutType: 'grid' }), [child], objects, ctx);
       expect(html).not.toContain('left-[10px]');
       expect(html).not.toContain('top-[10px]');
     });

@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  textLeafToClasses,
-  textLeafColorClass,
-  renderParagraph,
-  renderText,
-} from './text';
+import { textLeafToClasses, textLeafColorClass, renderParagraph, renderText } from './text';
 import type {
   TextLeaf,
   ParagraphNode,
@@ -47,37 +42,27 @@ describe('textLeafToClasses', () => {
   });
 
   it('maps textDecoration underline', () => {
-    const { classes } = textLeafToClasses(
-      makeLeaf({ textDecoration: 'underline' }),
-    );
+    const { classes } = textLeafToClasses(makeLeaf({ textDecoration: 'underline' }));
     expect(classes).toContain('underline');
   });
 
   it('maps textDecoration line-through', () => {
-    const { classes } = textLeafToClasses(
-      makeLeaf({ textDecoration: 'line-through' }),
-    );
+    const { classes } = textLeafToClasses(makeLeaf({ textDecoration: 'line-through' }));
     expect(classes).toContain('line-through');
   });
 
   it('maps textTransform uppercase', () => {
-    const { classes } = textLeafToClasses(
-      makeLeaf({ textTransform: 'uppercase' }),
-    );
+    const { classes } = textLeafToClasses(makeLeaf({ textTransform: 'uppercase' }));
     expect(classes).toContain('uppercase');
   });
 
   it('maps textTransform lowercase', () => {
-    const { classes } = textLeafToClasses(
-      makeLeaf({ textTransform: 'lowercase' }),
-    );
+    const { classes } = textLeafToClasses(makeLeaf({ textTransform: 'lowercase' }));
     expect(classes).toContain('lowercase');
   });
 
   it('maps textTransform capitalize', () => {
-    const { classes } = textLeafToClasses(
-      makeLeaf({ textTransform: 'capitalize' }),
-    );
+    const { classes } = textLeafToClasses(makeLeaf({ textTransform: 'capitalize' }));
     expect(classes).toContain('capitalize');
   });
 
@@ -115,10 +100,7 @@ describe('textLeafToClasses with typography resolution', () => {
 
   it('uses typography defaults when leaf has no inline values', () => {
     const typos: Record<string, Typography> = { 'typo-1': makeTypography() };
-    const { classes } = textLeafToClasses(
-      makeLeaf({ typographyRefId: 'typo-1' as Uuid }),
-      typos,
-    );
+    const { classes } = textLeafToClasses(makeLeaf({ typographyRefId: 'typo-1' as Uuid }), typos);
     expect(classes).toContain('text-[24px]');
     expect(classes).toContain('font-bold');
     expect(classes).toContain("font-['Inter']");
@@ -157,9 +139,7 @@ describe('textLeafColorClass', () => {
   });
 
   it('returns text-[#color] for solid fill', () => {
-    const result = textLeafColorClass(
-      makeLeaf({ fills: [{ fillColor: '#ff0000' as HexColor }] }),
-    );
+    const result = textLeafColorClass(makeLeaf({ fills: [{ fillColor: '#ff0000' as HexColor }] }));
     expect(result).toContain('text-[#FF0000]');
   });
 
@@ -173,9 +153,7 @@ describe('textLeafColorClass', () => {
   });
 });
 
-const makeParagraph = (
-  overrides: Partial<ParagraphNode> = {},
-): ParagraphNode => ({
+const makeParagraph = (overrides: Partial<ParagraphNode> = {}): ParagraphNode => ({
   type: 'paragraph',
   children: [makeLeaf()],
   ...overrides,
@@ -189,9 +167,7 @@ describe('renderParagraph', () => {
   });
 
   it('includes leaf text content', () => {
-    const html = renderParagraph(
-      makeParagraph({ children: [makeLeaf({ text: 'World' })] }),
-    );
+    const html = renderParagraph(makeParagraph({ children: [makeLeaf({ text: 'World' })] }));
     expect(html).toContain('World');
   });
 

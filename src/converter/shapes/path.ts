@@ -2,7 +2,6 @@ import type { PathShape, StrokeCap } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 import { tag } from '../utils/html';
 import { cls } from '../utils/tailwind';
-import { mergeStyles } from '../utils/style';
 import { resolvePositionOutput } from '../visual/position';
 import { baseClasses } from '../visual/base';
 import { hexOpacityToCss } from '../utils/color';
@@ -18,11 +17,7 @@ import { hexOpacityToCss } from '../utils/color';
  * Returns null for cap types that are not rendered as SVG markers (`round`,
  * `square`) — those are handled via `stroke-linecap` on the `<path>` itself.
  */
-function buildMarkerDef(
-  capType: StrokeCap,
-  color: string,
-  id: string,
-): string | null {
+function buildMarkerDef(capType: StrokeCap, color: string, id: string): string | null {
   if (!capType || capType === 'round' || capType === 'square') return null;
 
   let inner: string;
@@ -193,9 +188,7 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
     ? hexOpacityToCss(firstStroke.strokeColor, firstStroke.strokeOpacity)
     : undefined;
 
-  const strokeWidthAttr = firstStroke?.strokeWidth
-    ? String(firstStroke.strokeWidth)
-    : undefined;
+  const strokeWidthAttr = firstStroke?.strokeWidth ? String(firstStroke.strokeWidth) : undefined;
 
   // Build SVG marker defs and marker-start/marker-end references.
   let markerStartAttr: string | undefined;

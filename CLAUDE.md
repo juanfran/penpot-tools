@@ -305,11 +305,15 @@ Cached raw API responses live in `cache/<file-id>.json` — these are gitignored
 
 ```json
 {
-  "id":      "<page-uuid>",
-  "name":    "Page 1",
+  "id": "<page-uuid>",
+  "name": "Page 1",
   "objects": {
-    "<shape-uuid>": { /* Shape */ },
-    "00000000-0000-0000-0000-000000000000": { /* Root frame */ }
+    "<shape-uuid>": {
+      /* Shape */
+    },
+    "00000000-0000-0000-0000-000000000000": {
+      /* Root frame */
+    }
   }
 }
 ```
@@ -325,6 +329,7 @@ pnpm exec tsx scripts/inspect-shape.mts --file-id <uuid> --shape-id <uuid> [--ht
 ```
 
 This prints:
+
 - The full parent chain (child → root) with layout, sizing, and `layoutItemAbsolute` flags highlighted
 - The shape's data (geometry noise filtered out)
 - With `--html`: the rendered HTML for that shape

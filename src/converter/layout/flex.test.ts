@@ -38,32 +38,24 @@ describe('flexContainerClasses', () => {
   });
 
   it('maps row-reverse to flex-row (Penpot stores reverse children in visual order)', () => {
-    const result = flexContainerClasses(
-      makeFrame({ layoutFlexDir: 'row-reverse' }),
-    );
+    const result = flexContainerClasses(makeFrame({ layoutFlexDir: 'row-reverse' }));
     expect(result).toContain('flex-row');
     expect(result).not.toContain('flex-row-reverse');
   });
 
   it('maps column-reverse to flex-col (Penpot stores reverse children in visual order)', () => {
-    const result = flexContainerClasses(
-      makeFrame({ layoutFlexDir: 'column-reverse' }),
-    );
+    const result = flexContainerClasses(makeFrame({ layoutFlexDir: 'column-reverse' }));
     expect(result).toContain('flex-col');
     expect(result).not.toContain('flex-col-reverse');
   });
 
   it('maps alignItems start to items-start', () => {
-    const result = flexContainerClasses(
-      makeFrame({ layoutAlignItems: 'start' }),
-    );
+    const result = flexContainerClasses(makeFrame({ layoutAlignItems: 'start' }));
     expect(result).toContain('items-start');
   });
 
   it('maps alignItems center to items-center', () => {
-    const result = flexContainerClasses(
-      makeFrame({ layoutAlignItems: 'center' }),
-    );
+    const result = flexContainerClasses(makeFrame({ layoutAlignItems: 'center' }));
     expect(result).toContain('items-center');
   });
 
@@ -73,51 +65,37 @@ describe('flexContainerClasses', () => {
   });
 
   it('maps alignItems stretch to items-stretch', () => {
-    const result = flexContainerClasses(
-      makeFrame({ layoutAlignItems: 'stretch' }),
-    );
+    const result = flexContainerClasses(makeFrame({ layoutAlignItems: 'stretch' }));
     expect(result).toContain('items-stretch');
   });
 
   it('maps justifyContent start to justify-start', () => {
-    const result = flexContainerClasses(
-      makeFrame({ layoutJustifyContent: 'start' }),
-    );
+    const result = flexContainerClasses(makeFrame({ layoutJustifyContent: 'start' }));
     expect(result).toContain('justify-start');
   });
 
   it('maps justifyContent center to justify-center', () => {
-    const result = flexContainerClasses(
-      makeFrame({ layoutJustifyContent: 'center' }),
-    );
+    const result = flexContainerClasses(makeFrame({ layoutJustifyContent: 'center' }));
     expect(result).toContain('justify-center');
   });
 
   it('maps justifyContent end to justify-end', () => {
-    const result = flexContainerClasses(
-      makeFrame({ layoutJustifyContent: 'end' }),
-    );
+    const result = flexContainerClasses(makeFrame({ layoutJustifyContent: 'end' }));
     expect(result).toContain('justify-end');
   });
 
   it('maps justifyContent space-between to justify-between', () => {
-    const result = flexContainerClasses(
-      makeFrame({ layoutJustifyContent: 'space-between' }),
-    );
+    const result = flexContainerClasses(makeFrame({ layoutJustifyContent: 'space-between' }));
     expect(result).toContain('justify-between');
   });
 
   it('maps justifyContent space-around to justify-around', () => {
-    const result = flexContainerClasses(
-      makeFrame({ layoutJustifyContent: 'space-around' }),
-    );
+    const result = flexContainerClasses(makeFrame({ layoutJustifyContent: 'space-around' }));
     expect(result).toContain('justify-around');
   });
 
   it('maps justifyContent space-evenly to justify-evenly', () => {
-    const result = flexContainerClasses(
-      makeFrame({ layoutJustifyContent: 'space-evenly' }),
-    );
+    const result = flexContainerClasses(makeFrame({ layoutJustifyContent: 'space-evenly' }));
     expect(result).toContain('justify-evenly');
   });
 
@@ -127,9 +105,7 @@ describe('flexContainerClasses', () => {
   });
 
   it('maps no-wrap to flex-nowrap', () => {
-    const result = flexContainerClasses(
-      makeFrame({ layoutWrapType: 'no-wrap' }),
-    );
+    const result = flexContainerClasses(makeFrame({ layoutWrapType: 'no-wrap' }));
     expect(result).toContain('flex-nowrap');
   });
 
@@ -158,16 +134,12 @@ describe('flexSpacingClasses', () => {
   });
 
   it('emits gap-[Npx] when row and column gap are equal', () => {
-    const result = flexSpacingClasses(
-      makeFrame({ layoutRowGap: 8, layoutColumnGap: 8 }),
-    );
+    const result = flexSpacingClasses(makeFrame({ layoutRowGap: 8, layoutColumnGap: 8 }));
     expect(result.classes).toContain('gap-[8px]');
   });
 
   it('emits gap-x and gap-y when gaps differ', () => {
-    const result = flexSpacingClasses(
-      makeFrame({ layoutRowGap: 4, layoutColumnGap: 8 }),
-    );
+    const result = flexSpacingClasses(makeFrame({ layoutRowGap: 4, layoutColumnGap: 8 }));
     expect(result.classes).toContain('gap-x-[8px]');
     expect(result.classes).toContain('gap-y-[4px]');
   });

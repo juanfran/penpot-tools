@@ -34,7 +34,7 @@ describe('renderShape', () => {
   });
 
   it('accepts a parent parameter without changing output', () => {
-    const parent = makeRect({ id: 'parent' as Uuid });
+    makeRect({ id: 'parent' as Uuid });
     const html = renderShape(makeRect(), {}, ctx);
     expect(html).toContain('data-id="rect-1"');
   });
@@ -55,11 +55,7 @@ describe('renderShape', () => {
   });
 
   it('does not add data-penpot-name attribute', () => {
-    const html = renderShape(
-      makeRect({ name: 'My Rect' } as Partial<Shape>),
-      {},
-      ctx,
-    );
+    const html = renderShape(makeRect({ name: 'My Rect' } as Partial<Shape>), {}, ctx);
     expect(html).not.toContain('data-penpot-name');
   });
 
@@ -90,11 +86,7 @@ describe('convertShape', () => {
   });
 
   it('does not emit left/top for the root shape', async () => {
-    const { html } = await convertShape(
-      makeRect({ x: 50, y: 100 } as Partial<Shape>),
-      {},
-      ctx,
-    );
+    const { html } = await convertShape(makeRect({ x: 50, y: 100 } as Partial<Shape>), {}, ctx);
     expect(html).not.toContain('left-[50px]');
     expect(html).not.toContain('top-[100px]');
   });

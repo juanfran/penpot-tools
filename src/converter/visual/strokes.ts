@@ -46,14 +46,8 @@ export function solidStrokeToClasses(
   // With box-sizing: border-box (Tailwind default), border is drawn inside
   // the element's dimensions, matching Penpot's inner stroke behaviour.
   const tailwindColor = color.replace(/ /g, '_');
-  const styleClass = stroke.strokeStyle
-    ? STROKE_STYLE_CLASS[stroke.strokeStyle]
-    : undefined;
-  const classes = cls(
-    `border-[${width}px]`,
-    `border-[${tailwindColor}]`,
-    styleClass,
-  );
+  const styleClass = stroke.strokeStyle ? STROKE_STYLE_CLASS[stroke.strokeStyle] : undefined;
+  const classes = cls(`border-[${width}px]`, `border-[${tailwindColor}]`, styleClass);
 
   return { classes, style: '' };
 }

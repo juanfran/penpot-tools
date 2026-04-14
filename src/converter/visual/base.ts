@@ -29,10 +29,7 @@ export function baseClasses(
     shadowsToClass(shape.shadow),
   );
 
-  const style = mergeStyles(
-    combinedTransformStyle(shape),
-    radius.style,
-  );
+  const style = mergeStyles(combinedTransformStyle(shape), radius.style);
 
   return { classes, style };
 }

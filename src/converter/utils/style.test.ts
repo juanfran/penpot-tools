@@ -3,19 +3,15 @@ import { buildStyle, mergeStyles } from './style';
 
 describe('buildStyle', () => {
   it('builds a style string from a simple object', () => {
-    expect(
-      buildStyle({ position: 'absolute', left: '10px', top: '20px' }),
-    ).toBe('position: absolute; left: 10px; top: 20px;');
+    expect(buildStyle({ position: 'absolute', left: '10px', top: '20px' })).toBe(
+      'position: absolute; left: 10px; top: 20px;',
+    );
   });
 
   it('converts camelCase keys to kebab-case', () => {
-    expect(buildStyle({ backgroundColor: '#ff0000' })).toBe(
-      'background-color: #ff0000;',
-    );
+    expect(buildStyle({ backgroundColor: '#ff0000' })).toBe('background-color: #ff0000;');
     expect(buildStyle({ fontSize: '16px' })).toBe('font-size: 16px;');
-    expect(buildStyle({ borderTopLeftRadius: '4px' })).toBe(
-      'border-top-left-radius: 4px;',
-    );
+    expect(buildStyle({ borderTopLeftRadius: '4px' })).toBe('border-top-left-radius: 4px;');
   });
 
   it('skips undefined values', () => {
@@ -35,9 +31,7 @@ describe('buildStyle', () => {
   });
 
   it('includes non-zero numeric values', () => {
-    expect(buildStyle({ width: 120, height: 80 })).toBe(
-      'width: 120; height: 80;',
-    );
+    expect(buildStyle({ width: 120, height: 80 })).toBe('width: 120; height: 80;');
   });
 
   it('returns empty string for empty object', () => {
@@ -51,21 +45,15 @@ describe('buildStyle', () => {
 
 describe('mergeStyles', () => {
   it('joins two style strings', () => {
-    expect(mergeStyles('left: 10px;', 'top: 20px;')).toBe(
-      'left: 10px; top: 20px;',
-    );
+    expect(mergeStyles('left: 10px;', 'top: 20px;')).toBe('left: 10px; top: 20px;');
   });
 
   it('handles trailing semicolons and spacing correctly', () => {
-    expect(mergeStyles('left: 10px; ', ' top: 20px;')).toBe(
-      'left: 10px; top: 20px;',
-    );
+    expect(mergeStyles('left: 10px; ', ' top: 20px;')).toBe('left: 10px; top: 20px;');
   });
 
   it('skips empty parts', () => {
-    expect(mergeStyles('left: 10px;', '', 'top: 20px;')).toBe(
-      'left: 10px; top: 20px;',
-    );
+    expect(mergeStyles('left: 10px;', '', 'top: 20px;')).toBe('left: 10px; top: 20px;');
   });
 
   it('returns empty string when all parts are empty', () => {
@@ -81,15 +69,15 @@ describe('mergeStyles', () => {
   });
 
   it('merges two box-shadow declarations into a comma-separated value', () => {
-    expect(
-      mergeStyles('box-shadow: 0 2px 4px #000;', 'box-shadow: inset 0 0 0 2px red;'),
-    ).toBe('box-shadow: 0 2px 4px #000, inset 0 0 0 2px red;');
+    expect(mergeStyles('box-shadow: 0 2px 4px #000;', 'box-shadow: inset 0 0 0 2px red;')).toBe(
+      'box-shadow: 0 2px 4px #000, inset 0 0 0 2px red;',
+    );
   });
 
   it('merges two transform declarations into a space-separated value', () => {
-    expect(
-      mergeStyles('transform: translate(10px, 20px);', 'transform: rotate(45deg);'),
-    ).toBe('transform: translate(10px, 20px) rotate(45deg);');
+    expect(mergeStyles('transform: translate(10px, 20px);', 'transform: rotate(45deg);')).toBe(
+      'transform: translate(10px, 20px) rotate(45deg);',
+    );
   });
 
   it('merges three transform declarations preserving order', () => {

@@ -34,15 +34,12 @@ function renderPathElement(shape: PathShape): string {
     ? hexOpacityToCss(firstStroke.strokeColor, firstStroke.strokeOpacity ?? 1)
     : undefined;
 
-  const strokeWidthAttr = firstStroke?.strokeWidth
-    ? String(firstStroke.strokeWidth)
-    : undefined;
+  const strokeWidthAttr = firstStroke?.strokeWidth ? String(firstStroke.strokeWidth) : undefined;
 
   const svgAttrs =
-    ((shape as unknown as Record<string, unknown>).svgAttrs as Record<
-      string,
-      string
-    > | undefined) ?? {};
+    ((shape as unknown as Record<string, unknown>).svgAttrs as
+      | Record<string, string>
+      | undefined) ?? {};
 
   return tag('path', {
     d: shape.content,
@@ -76,9 +73,8 @@ function renderCircleElement(shape: CircleShape): string {
     ? hexOpacityToCss(firstStroke.strokeColor, firstStroke.strokeOpacity ?? 1)
     : undefined;
 
-  const strokeWidthAttr = firstStroke?.strokeWidth != null
-    ? String(firstStroke.strokeWidth)
-    : undefined;
+  const strokeWidthAttr =
+    firstStroke?.strokeWidth != null ? String(firstStroke.strokeWidth) : undefined;
 
   const cx = shape.x + shape.width / 2;
   const cy = shape.y + shape.height / 2;
@@ -122,11 +118,7 @@ function renderCircleElement(shape: CircleShape): string {
  * `<svg>` element. The viewBox maps page-absolute coordinates to the group's
  * display size so that paths with absolute coordinates render correctly.
  */
-function renderGroupAsSvg(
-  shape: GroupShape,
-  children: Shape[],
-  ctx: ConverterContext,
-): string {
+function renderGroupAsSvg(shape: GroupShape, children: Shape[], ctx: ConverterContext): string {
   const vx = shape.x;
   const vy = shape.y;
   const vw = shape.width;
@@ -199,9 +191,7 @@ export function renderGroup(
     _offsetX: shape.x ?? 0,
     _offsetY: shape.y ?? 0,
   };
-  const inner = children
-    .map((child) => renderShape(child, objects, childCtx))
-    .join('');
+  const inner = children.map((child) => renderShape(child, objects, childCtx)).join('');
 
   return tag(
     'div',

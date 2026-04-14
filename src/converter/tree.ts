@@ -5,10 +5,7 @@ export type ShapeNode = Shape & { _children: ShapeNode[] };
 
 /** Returns true if the shape has an ordered list of child IDs. */
 function hasShapes(shape: Shape): shape is Shape & { shapes: Uuid[] } {
-  return (
-    'shapes' in shape &&
-    Array.isArray((shape as Shape & { shapes?: unknown }).shapes)
-  );
+  return 'shapes' in shape && Array.isArray((shape as Shape & { shapes?: unknown }).shapes);
 }
 
 /**
@@ -16,10 +13,7 @@ function hasShapes(shape: Shape): shape is Shape & { shapes: Uuid[] } {
  * map, in the z-order defined by the shape's `shapes` array.
  * Shapes whose ID is not present in `objects` are silently skipped.
  */
-export function getChildren(
-  shape: Shape,
-  objects: Record<string, Shape>,
-): Shape[] {
+export function getChildren(shape: Shape, objects: Record<string, Shape>): Shape[] {
   if (!hasShapes(shape)) return [];
   return shape.shapes.reduce<Shape[]>((acc, id) => {
     const child = objects[id];

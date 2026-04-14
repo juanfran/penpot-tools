@@ -1,9 +1,4 @@
-import type {
-  TextLeaf,
-  ParagraphNode,
-  TextShape,
-  Typography,
-} from '../../penpot.types';
+import type { TextLeaf, ParagraphNode, TextShape, Typography } from '../../penpot.types';
 import type { ConverterContext, FontInfo } from '../types';
 import { tag } from '../utils/html';
 import { cls, pxClass } from '../utils/tailwind';
@@ -51,8 +46,7 @@ export function textLeafToClasses(
   Object.assign(resolved, leaf);
 
   const fontWeightClass = resolved.fontWeight
-    ? (FONT_WEIGHT_CLASS[resolved.fontWeight] ??
-      `font-[${resolved.fontWeight}]`)
+    ? (FONT_WEIGHT_CLASS[resolved.fontWeight] ?? `font-[${resolved.fontWeight}]`)
     : undefined;
 
   const classes = cls(
@@ -80,10 +74,7 @@ export function textLeafToClasses(
  * Uses arbitrary-value syntax: `text-[#RRGGBB]` (uppercase hex) or `text-[rgba(...)]`.
  * When `fillTokenName` is provided, emits `text-[var(--token)]` instead.
  */
-export function textLeafColorClass(
-  leaf: TextLeaf,
-  fillTokenName?: string,
-): string {
+export function textLeafColorClass(leaf: TextLeaf, fillTokenName?: string): string {
   if (fillTokenName) return `text-[var(--${tokenToCssVarName(fillTokenName)})]`;
   const fills = leaf.fills;
   if (!fills || fills.length === 0) return '';
@@ -102,18 +93,13 @@ export function textLeafColorClass(
  * differ from the paragraph's baseline.
  * When `fillTokenName` is provided, all leaf colors use `text-[var(--token)]`.
  */
-export function renderParagraph(
-  para: ParagraphNode,
-  fillTokenName?: string,
-): string {
+export function renderParagraph(para: ParagraphNode, fillTokenName?: string): string {
   const paraLeaf: TextLeaf = { text: '', ...para };
   const paraOutput = textLeafToClasses(paraLeaf);
 
   // Promote the first leaf's color to the paragraph level
   const firstLeaf = para.children[0];
-  const paraColorClass = firstLeaf
-    ? textLeafColorClass(firstLeaf, fillTokenName)
-    : '';
+  const paraColorClass = firstLeaf ? textLeafColorClass(firstLeaf, fillTokenName) : '';
   const paraClasses = cls(paraOutput.classes, paraColorClass);
 
   const inner = para.children

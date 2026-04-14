@@ -1,10 +1,4 @@
-import type {
-  GridTrack,
-  GridCell,
-  GridCellAlign,
-  FrameShape,
-  Uuid,
-} from '../../penpot.types';
+import type { GridTrack, GridCell, GridCellAlign, FrameShape, Uuid } from '../../penpot.types';
 import { cls } from '../utils/tailwind';
 
 function trackValue(track: GridTrack): string {
@@ -30,10 +24,7 @@ function trackValue(track: GridTrack): string {
  * Example: `[{type:'flex',value:1}, {type:'flex',value:1}]` columns
  *          → `'grid-cols-[1fr_1fr]'`
  */
-export function gridTracksToClass(
-  tracks: GridTrack[],
-  axis: 'columns' | 'rows',
-): string {
+export function gridTracksToClass(tracks: GridTrack[], axis: 'columns' | 'rows'): string {
   if (tracks.length === 0) return '';
   const prefix = axis === 'columns' ? 'grid-cols' : 'grid-rows';
   const value = tracks.map(trackValue).join(' ').replace(/ /g, '_');
@@ -59,9 +50,7 @@ const ALIGN_MAP: Partial<Record<GridCellAlign, string>> = {
  */
 export function gridCellClasses(cell: GridCell): string {
   const alignClass =
-    cell.alignSelf && ALIGN_MAP[cell.alignSelf]
-      ? `self-${ALIGN_MAP[cell.alignSelf]}`
-      : undefined;
+    cell.alignSelf && ALIGN_MAP[cell.alignSelf] ? `self-${ALIGN_MAP[cell.alignSelf]}` : undefined;
 
   const justifyClass =
     cell.justifySelf && ALIGN_MAP[cell.justifySelf]
@@ -83,12 +72,7 @@ export function gridCellClasses(cell: GridCell): string {
  *
  * Returns `undefined` if no cell contains the shape.
  */
-export function findCellForShape(
-  frame: FrameShape,
-  shapeId: Uuid,
-): GridCell | undefined {
+export function findCellForShape(frame: FrameShape, shapeId: Uuid): GridCell | undefined {
   if (!frame.layoutGridCells) return undefined;
-  return Object.values(frame.layoutGridCells).find((cell) =>
-    cell.shapes.includes(shapeId),
-  );
+  return Object.values(frame.layoutGridCells).find((cell) => cell.shapes.includes(shapeId));
 }

@@ -160,24 +160,22 @@ describe('layoutItemAlignSelfClass', () => {
     expect(layoutItemAlignSelfClass(makeShape())).toBe('');
   });
   it('maps start to self-start', () => {
-    expect(
-      layoutItemAlignSelfClass(makeShape({ layoutItemAlignSelf: 'start' })),
-    ).toBe('self-start');
+    expect(layoutItemAlignSelfClass(makeShape({ layoutItemAlignSelf: 'start' }))).toBe(
+      'self-start',
+    );
   });
   it('maps center to self-center', () => {
-    expect(
-      layoutItemAlignSelfClass(makeShape({ layoutItemAlignSelf: 'center' })),
-    ).toBe('self-center');
+    expect(layoutItemAlignSelfClass(makeShape({ layoutItemAlignSelf: 'center' }))).toBe(
+      'self-center',
+    );
   });
   it('maps end to self-end', () => {
-    expect(
-      layoutItemAlignSelfClass(makeShape({ layoutItemAlignSelf: 'end' })),
-    ).toBe('self-end');
+    expect(layoutItemAlignSelfClass(makeShape({ layoutItemAlignSelf: 'end' }))).toBe('self-end');
   });
   it('maps stretch to self-stretch', () => {
-    expect(
-      layoutItemAlignSelfClass(makeShape({ layoutItemAlignSelf: 'stretch' })),
-    ).toBe('self-stretch');
+    expect(layoutItemAlignSelfClass(makeShape({ layoutItemAlignSelf: 'stretch' }))).toBe(
+      'self-stretch',
+    );
   });
 });
 
@@ -186,24 +184,16 @@ describe('layoutItemMinMaxClasses', () => {
     expect(layoutItemMinMaxClasses(makeShape())).toBe('');
   });
   it('emits min-w-[Npx]', () => {
-    expect(
-      layoutItemMinMaxClasses(makeShape({ layoutItemMinW: 50 })),
-    ).toContain('min-w-[50px]');
+    expect(layoutItemMinMaxClasses(makeShape({ layoutItemMinW: 50 }))).toContain('min-w-[50px]');
   });
   it('emits max-w-[Npx]', () => {
-    expect(
-      layoutItemMinMaxClasses(makeShape({ layoutItemMaxW: 200 })),
-    ).toContain('max-w-[200px]');
+    expect(layoutItemMinMaxClasses(makeShape({ layoutItemMaxW: 200 }))).toContain('max-w-[200px]');
   });
   it('emits min-h-[Npx]', () => {
-    expect(
-      layoutItemMinMaxClasses(makeShape({ layoutItemMinH: 30 })),
-    ).toContain('min-h-[30px]');
+    expect(layoutItemMinMaxClasses(makeShape({ layoutItemMinH: 30 }))).toContain('min-h-[30px]');
   });
   it('emits max-h-[Npx]', () => {
-    expect(
-      layoutItemMinMaxClasses(makeShape({ layoutItemMaxH: 100 })),
-    ).toContain('max-h-[100px]');
+    expect(layoutItemMinMaxClasses(makeShape({ layoutItemMaxH: 100 }))).toContain('max-h-[100px]');
   });
   it('combines multiple constraints', () => {
     const result = layoutItemMinMaxClasses(
@@ -229,30 +219,22 @@ describe('layoutItemZIndexClass', () => {
     expect(layoutItemZIndexClass(makeShape({ layoutItemZIndex: 0 }))).toBe('');
   });
   it('returns z-[N] for non-zero z-index', () => {
-    expect(layoutItemZIndexClass(makeShape({ layoutItemZIndex: 10 }))).toBe(
-      'z-[10]',
-    );
+    expect(layoutItemZIndexClass(makeShape({ layoutItemZIndex: 10 }))).toBe('z-[10]');
   });
   it('handles negative z-index', () => {
-    expect(layoutItemZIndexClass(makeShape({ layoutItemZIndex: -1 }))).toBe(
-      'z-[-1]',
-    );
+    expect(layoutItemZIndexClass(makeShape({ layoutItemZIndex: -1 }))).toBe('z-[-1]');
   });
 });
 
 describe('layoutItemAbsoluteClasses', () => {
   it('returns empty string when layoutItemAbsolute is false', () => {
-    expect(
-      layoutItemAbsoluteClasses(makeShape({ layoutItemAbsolute: false })),
-    ).toBe('');
+    expect(layoutItemAbsoluteClasses(makeShape({ layoutItemAbsolute: false }))).toBe('');
   });
   it('returns empty string when layoutItemAbsolute is undefined', () => {
     expect(layoutItemAbsoluteClasses(makeShape())).toBe('');
   });
   it('returns absolute with left/top when layoutItemAbsolute is true', () => {
-    const result = layoutItemAbsoluteClasses(
-      makeShape({ layoutItemAbsolute: true, x: 20, y: 30 }),
-    );
+    const result = layoutItemAbsoluteClasses(makeShape({ layoutItemAbsolute: true, x: 20, y: 30 }));
     expect(result).toContain('absolute');
     expect(result).toContain('left-[20px]');
     expect(result).toContain('top-[30px]');

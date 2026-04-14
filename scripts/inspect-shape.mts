@@ -41,9 +41,7 @@ try {
   page = JSON.parse(readFileSync(cacheFile, 'utf-8')) as Page;
 } catch {
   console.error(`Cache file not found: ${cacheFile}`);
-  console.error(
-    `Run first: pnpm penpot-to-html --file-id ${fileId} --page-id <page-id> --cache`,
-  );
+  console.error(`Run first: pnpm penpot-to-html --file-id ${fileId} --page-id <page-id> --cache`);
   process.exit(1);
 }
 
@@ -55,15 +53,8 @@ if (!shape) {
 }
 
 // Keys to omit — mostly geometry noise
-const OMIT = new Set([
-  'points',
-  'selrect',
-  'transform',
-  'transformInverse',
-  'pageId',
-]);
-const compact = (s: Shape) =>
-  Object.fromEntries(Object.entries(s).filter(([k]) => !OMIT.has(k)));
+const OMIT = new Set(['points', 'selrect', 'transform', 'transformInverse', 'pageId']);
+const compact = (s: Shape) => Object.fromEntries(Object.entries(s).filter(([k]) => !OMIT.has(k)));
 
 // Build parent chain (shape → … → root)
 const chain: Shape[] = [];
@@ -84,22 +75,17 @@ for (let i = 0; i < chain.length; i++) {
   console.log(
     `${indent}${label}  id=${s.id}  name="${(s as unknown as { name?: string }).name ?? ''}"  type=${s.type}`,
   );
-  const layout = (s as unknown as { layout?: string; layoutType?: string })
-    .layout;
+  const layout = (s as unknown as { layout?: string; layoutType?: string }).layout;
   const layoutType = (s as unknown as { layoutType?: string }).layoutType;
   if (layout || layoutType) {
     console.log(`${indent}         layout=${layout ?? layoutType}`);
   }
   const lDir = (s as unknown as { layoutFlexDir?: string }).layoutFlexDir;
   if (lDir) console.log(`${indent}         layoutFlexDir=${lDir}`);
-  const hSizing = (s as unknown as { layoutItemHSizing?: string })
-    .layoutItemHSizing;
-  const vSizing = (s as unknown as { layoutItemVSizing?: string })
-    .layoutItemVSizing;
-  if (hSizing || vSizing)
-    console.log(`${indent}         sizing h=${hSizing} v=${vSizing}`);
-  const abs = (s as unknown as { layoutItemAbsolute?: boolean })
-    .layoutItemAbsolute;
+  const hSizing = (s as unknown as { layoutItemHSizing?: string }).layoutItemHSizing;
+  const vSizing = (s as unknown as { layoutItemVSizing?: string }).layoutItemVSizing;
+  if (hSizing || vSizing) console.log(`${indent}         sizing h=${hSizing} v=${vSizing}`);
+  const abs = (s as unknown as { layoutItemAbsolute?: boolean }).layoutItemAbsolute;
   if (abs) console.log(`${indent}         ⚠ layoutItemAbsolute=true`);
 }
 
@@ -109,8 +95,7 @@ console.log(JSON.stringify(compact(shape), null, 2));
 if (renderHtml) {
   const tokens = extractTokens(objects);
   const ctx = {
-    resolveImageUrl: (id: string) =>
-      `https://design.penpot.app/assets/by-file-media-id/${id}`,
+    resolveImageUrl: (id: string) => `https://design.penpot.app/assets/by-file-media-id/${id}`,
     tokens,
   };
   const { html } = await convertShape(shape, objects, ctx);

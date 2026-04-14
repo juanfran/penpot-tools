@@ -40,6 +40,8 @@ export interface ConverterContext {
   _fontCollector?: Map<string, FontInfo>;
   /** Design token map (tokenName → cssColor). Used to emit `var(--token)` instead of raw hex values. */
   tokens?: Map<string, string>;
+  /** When true (default), format the output HTML with oxfmt */
+  format?: boolean;
 }
 
 /** Convert a full Penpot page to an HTML document string */

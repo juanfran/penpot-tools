@@ -33,9 +33,7 @@ export function renderBool(shape: BoolShape, ctx: ConverterContext): string {
     ? hexOpacityToCss(firstStroke.strokeColor, firstStroke.strokeOpacity)
     : undefined;
 
-  const strokeWidthAttr = firstStroke?.strokeWidth
-    ? String(firstStroke.strokeWidth)
-    : undefined;
+  const strokeWidthAttr = firstStroke?.strokeWidth ? String(firstStroke.strokeWidth) : undefined;
 
   const pathEl = tag('path', {
     d: shape.content,

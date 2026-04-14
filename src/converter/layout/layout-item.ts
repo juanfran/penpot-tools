@@ -1,8 +1,4 @@
-import type {
-  ShapeCommon,
-  FrameShape,
-  LayoutItemAlignSelf,
-} from '../../penpot.types';
+import type { ShapeCommon, FrameShape, LayoutItemAlignSelf } from '../../penpot.types';
 import { cls, pxClass } from '../utils/tailwind';
 
 /**
@@ -14,10 +10,7 @@ import { cls, pxClass } from '../utils/tailwind';
  *
  * The parent's `layoutFlexDir` determines which axis is main vs cross.
  */
-export function layoutItemSizingClasses(
-  shape: ShapeCommon,
-  parent: FrameShape,
-): string {
+export function layoutItemSizingClasses(shape: ShapeCommon, parent: FrameShape): string {
   const isRowDir =
     parent.layoutFlexDir === 'row' ||
     parent.layoutFlexDir === 'row-reverse' ||
@@ -97,18 +90,10 @@ export function layoutItemAlignSelfClass(shape: ShapeCommon): string {
  */
 export function layoutItemMinMaxClasses(shape: ShapeCommon): string {
   return cls(
-    shape.layoutItemMinW !== undefined
-      ? pxClass('min-w', shape.layoutItemMinW)
-      : undefined,
-    shape.layoutItemMaxW !== undefined
-      ? pxClass('max-w', shape.layoutItemMaxW)
-      : undefined,
-    shape.layoutItemMinH !== undefined
-      ? pxClass('min-h', shape.layoutItemMinH)
-      : undefined,
-    shape.layoutItemMaxH !== undefined
-      ? pxClass('max-h', shape.layoutItemMaxH)
-      : undefined,
+    shape.layoutItemMinW !== undefined ? pxClass('min-w', shape.layoutItemMinW) : undefined,
+    shape.layoutItemMaxW !== undefined ? pxClass('max-w', shape.layoutItemMaxW) : undefined,
+    shape.layoutItemMinH !== undefined ? pxClass('min-h', shape.layoutItemMinH) : undefined,
+    shape.layoutItemMaxH !== undefined ? pxClass('max-h', shape.layoutItemMaxH) : undefined,
   );
 }
 
@@ -116,8 +101,7 @@ export function layoutItemMinMaxClasses(shape: ShapeCommon): string {
  * Returns the Tailwind `z-[N]` class for a layout item with an explicit z-index override.
  */
 export function layoutItemZIndexClass(shape: ShapeCommon): string {
-  if (shape.layoutItemZIndex === undefined || shape.layoutItemZIndex === 0)
-    return '';
+  if (shape.layoutItemZIndex === undefined || shape.layoutItemZIndex === 0) return '';
   return `z-[${shape.layoutItemZIndex}]`;
 }
 
@@ -127,11 +111,7 @@ export function layoutItemZIndexClass(shape: ShapeCommon): string {
  * `offsetX` / `offsetY` must be the parent frame's canvas-absolute x/y so that the
  * position is expressed relative to the frame's top-left corner, not the canvas origin.
  */
-export function layoutItemAbsoluteClasses(
-  shape: ShapeCommon,
-  offsetX = 0,
-  offsetY = 0,
-): string {
+export function layoutItemAbsoluteClasses(shape: ShapeCommon, offsetX = 0, offsetY = 0): string {
   if (!shape.layoutItemAbsolute) return '';
   return cls(
     'absolute',

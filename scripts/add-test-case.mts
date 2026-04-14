@@ -46,18 +46,14 @@ try {
   page = JSON.parse(readFileSync(cacheFile, 'utf-8')) as Page;
 } catch {
   console.error(`Cache file not found: ${cacheFile}`);
-  console.error(
-    `Run first: pnpm penpot-to-html --file-id ${fileId} --page-id <page-id> --cache`,
-  );
+  console.error(`Run first: pnpm penpot-to-html --file-id ${fileId} --page-id <page-id> --cache`);
   process.exit(1);
 }
 
 const shape = page.objects[boardId];
 if (!shape) {
   console.error(`Shape "${boardId}" not found in ${cacheFile}`);
-  console.error(
-    'Tip: use --page-id when fetching to make sure you get the right page.',
-  );
+  console.error('Tip: use --page-id when fetching to make sure you get the right page.');
   process.exit(1);
 }
 

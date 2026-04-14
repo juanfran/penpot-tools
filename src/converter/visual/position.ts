@@ -62,8 +62,7 @@ export function absolutePositionClasses(
  */
 export function combinedTransformStyle(shape: ShapeCommon): string {
   const hasRotation = !!shape.rotation;
-  const hasMatrix =
-    shape.transform !== undefined && !isIdentityMatrix(shape.transform);
+  const hasMatrix = shape.transform !== undefined && !isIdentityMatrix(shape.transform);
 
   if (!hasRotation && !hasMatrix) return '';
 
@@ -79,11 +78,7 @@ export function combinedTransformStyle(shape: ShapeCommon): string {
  * Used when a shape is the export root (`convertShape`).
  */
 export function relativePositionClasses(shape: ShapeCommon): string {
-  return cls(
-    'relative',
-    pxClass('w', shape.width ?? 0),
-    pxClass('h', shape.height ?? 0),
-  );
+  return cls('relative', pxClass('w', shape.width ?? 0), pxClass('h', shape.height ?? 0));
 }
 
 /**
@@ -151,9 +146,7 @@ export function resolvePositionOutput(
 function pct(value: number, total: number): string {
   const rounded = Math.round((value / total) * 100 * 100) / 100;
   const formatted =
-    rounded % 1 === 0
-      ? String(rounded | 0)
-      : rounded.toFixed(2).replace(/\.?0+$/, '');
+    rounded % 1 === 0 ? String(rounded | 0) : rounded.toFixed(2).replace(/\.?0+$/, '');
   return `${formatted}%`;
 }
 
@@ -161,10 +154,7 @@ function pct(value: number, total: number): string {
  * Converts `shape.constraintsH` to CSS inline style properties for horizontal positioning.
  * Defaults to `'left'` when `constraintsH` is undefined.
  */
-export function constraintsHToStyle(
-  shape: ShapeCommon,
-  parent: ShapeCommon,
-): string {
+export function constraintsHToStyle(shape: ShapeCommon, parent: ShapeCommon): string {
   const x = shape.x ?? 0;
   const w = shape.width ?? 0;
   const pw = parent.width ?? 0;
@@ -178,11 +168,7 @@ export function constraintsHToStyle(
     case 'center':
       return 'left: 50%; transform: translateX(-50%);';
     case 'leftright':
-      return mergeStyles(
-        `left: ${x}px;`,
-        `right: ${pw - x - w}px;`,
-        'width: unset;',
-      );
+      return mergeStyles(`left: ${x}px;`, `right: ${pw - x - w}px;`, 'width: unset;');
     case 'scale':
       return mergeStyles(`left: ${pct(x, pw)};`, `width: ${pct(w, pw)};`);
   }
@@ -192,10 +178,7 @@ export function constraintsHToStyle(
  * Converts `shape.constraintsV` to CSS inline style properties for vertical positioning.
  * Defaults to `'top'` when `constraintsV` is undefined.
  */
-export function constraintsVToStyle(
-  shape: ShapeCommon,
-  parent: ShapeCommon,
-): string {
+export function constraintsVToStyle(shape: ShapeCommon, parent: ShapeCommon): string {
   const y = shape.y ?? 0;
   const h = shape.height ?? 0;
   const ph = parent.height ?? 0;
@@ -209,11 +192,7 @@ export function constraintsVToStyle(
     case 'center':
       return 'top: 50%; transform: translateY(-50%);';
     case 'topbottom':
-      return mergeStyles(
-        `top: ${y}px;`,
-        `bottom: ${ph - y - h}px;`,
-        'height: unset;',
-      );
+      return mergeStyles(`top: ${y}px;`, `bottom: ${ph - y - h}px;`, 'height: unset;');
     case 'scale':
       return mergeStyles(`top: ${pct(y, ph)};`, `height: ${pct(h, ph)};`);
   }

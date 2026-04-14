@@ -136,9 +136,7 @@ describe('strokeAlignmentToStyle', () => {
       strokeWidth: 4,
       strokeAlignment: 'inner',
     };
-    expect(strokeAlignmentToStyle(stroke)).toBe(
-      'box-shadow: inset 0 0 0 4px #0000ff;',
-    );
+    expect(strokeAlignmentToStyle(stroke)).toBe('box-shadow: inset 0 0 0 4px #0000ff;');
   });
 
   it('returns outer box-shadow for outer alignment', () => {
@@ -147,9 +145,7 @@ describe('strokeAlignmentToStyle', () => {
       strokeWidth: 4,
       strokeAlignment: 'outer',
     };
-    expect(strokeAlignmentToStyle(stroke)).toBe(
-      'box-shadow: 0 0 0 4px #0000ff;',
-    );
+    expect(strokeAlignmentToStyle(stroke)).toBe('box-shadow: 0 0 0 4px #0000ff;');
   });
 
   it('uses rgba color when strokeOpacity is set', () => {
@@ -159,9 +155,7 @@ describe('strokeAlignmentToStyle', () => {
       strokeWidth: 3,
       strokeAlignment: 'outer',
     };
-    expect(strokeAlignmentToStyle(stroke)).toBe(
-      'box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.5);',
-    );
+    expect(strokeAlignmentToStyle(stroke)).toBe('box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.5);');
   });
 
   it('returns empty string when no strokeColor is present', () => {

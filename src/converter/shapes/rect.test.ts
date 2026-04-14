@@ -37,11 +37,7 @@ describe('renderRect', () => {
   });
 
   it('includes absolute positioning classes', () => {
-    const html = renderRect(
-      makeRect({ x: 10, y: 20, width: 100, height: 50 }),
-      null,
-      ctx,
-    );
+    const html = renderRect(makeRect({ x: 10, y: 20, width: 100, height: 50 }), null, ctx);
     expect(html).toContain('absolute');
     expect(html).toContain('left-[10px]');
     expect(html).toContain('top-[20px]');
@@ -50,11 +46,7 @@ describe('renderRect', () => {
   });
 
   it('includes solid fill class', () => {
-    const html = renderRect(
-      makeRect({ fills: [{ fillColor: '#ff0000' as HexColor }] }),
-      null,
-      ctx,
-    );
+    const html = renderRect(makeRect({ fills: [{ fillColor: '#ff0000' as HexColor }] }), null, ctx);
     expect(html).toContain('bg-[#ff0000]');
   });
 
@@ -95,11 +87,7 @@ describe('renderRect', () => {
   });
 
   it('includes corner radius class', () => {
-    const html = renderRect(
-      makeRect({ r1: 8, r2: 8, r3: 8, r4: 8 }),
-      null,
-      ctx,
-    );
+    const html = renderRect(makeRect({ r1: 8, r2: 8, r3: 8, r4: 8 }), null, ctx);
     expect(html).toContain('rounded-[8px]');
   });
 

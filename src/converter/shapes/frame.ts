@@ -7,10 +7,7 @@ import { pxClass } from '../utils/tailwind';
 import { baseClasses } from '../visual/base';
 import { fillsToOutput } from '../visual/fills';
 import { solidStrokeToClasses } from '../visual/strokes';
-import {
-  relativePositionClasses,
-  resolvePositionOutput,
-} from '../visual/position';
+import { resolvePositionOutput } from '../visual/position';
 import { flexContainerClasses, flexSpacingClasses } from '../layout/flex';
 import {
   layoutItemSizingClasses,
@@ -20,11 +17,7 @@ import {
   layoutItemZIndexClass,
   layoutItemAbsoluteClasses,
 } from '../layout/layout-item';
-import {
-  gridTracksToClass,
-  gridCellClasses,
-  findCellForShape,
-} from '../layout/grid';
+import { gridTracksToClass, gridCellClasses, findCellForShape } from '../layout/grid';
 import { renderShape } from './dispatch';
 
 /**
@@ -49,7 +42,8 @@ export function renderFrame(
   const isGrid = shape.layoutType === 'grid' || rawLayout === 'grid';
   const base = baseClasses(shape, ctx);
   const fills = fillsToOutput(shape.fills, ctx, shape.appliedTokens?.fill);
-  const clipClass = shape.clipContent !== false && !shape.showContent ? 'overflow-hidden' : undefined;
+  const clipClass =
+    shape.clipContent !== false && !shape.showContent ? 'overflow-hidden' : undefined;
   const firstStroke = (shape.strokes ?? [])[0];
   const stroke = firstStroke
     ? solidStrokeToClasses(firstStroke, shape.appliedTokens?.strokeColor)
@@ -58,11 +52,7 @@ export function renderFrame(
   let positionClasses: string;
   let positionStyle = '';
   if (isRoot) {
-    positionClasses = cls(
-      'relative',
-      pxClass('w', shape.width),
-      pxClass('h', shape.height),
-    );
+    positionClasses = cls('relative', pxClass('w', shape.width), pxClass('h', shape.height));
   } else {
     const posOut = resolvePositionOutput(shape, ctx);
     positionClasses = posOut.classes;
@@ -84,8 +74,7 @@ export function renderFrame(
     layoutStyle = spacing.style;
   }
 
-  const bgClass =
-    isRoot && ctx._pageBackground ? `bg-[${ctx._pageBackground}]` : undefined;
+  const bgClass = isRoot && ctx._pageBackground ? `bg-[${ctx._pageBackground}]` : undefined;
 
   const hasAbsoluteChild =
     (isFlex || isGrid) &&
@@ -132,8 +121,7 @@ export function renderFrame(
         // also use explicit px to prevent descendant overflow from inflating the
         // flex container's cross-axis measurement in the browser.
         const autoW =
-          child.layoutItemHSizing === 'auto' ||
-          (!isRowDir && child.layoutItemHSizing === 'fill');
+          child.layoutItemHSizing === 'auto' || (!isRowDir && child.layoutItemHSizing === 'fill');
         const autoH = child.layoutItemVSizing === 'auto';
         const flexCtx: ConverterContext = {
           ...ctx,
@@ -182,9 +170,7 @@ export function renderFrame(
       _offsetX: shape.x ?? 0,
       _offsetY: shape.y ?? 0,
     };
-    inner = children
-      .map((child) => renderShape(child, objects, childCtx))
-      .join('');
+    inner = children.map((child) => renderShape(child, objects, childCtx)).join('');
   }
 
   return tag(

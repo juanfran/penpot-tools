@@ -11,9 +11,7 @@
       "y": 0,
       "width": 800,
       "height": 600,
-      "shapes": [
-        "col-container"
-      ],
+      "shapes": ["col-container"],
       "fills": [],
       "strokes": []
     },
@@ -41,10 +39,7 @@
         "rowGap": 0,
         "columnGap": 0
       },
-      "shapes": [
-        "body-item",
-        "header-item"
-      ],
+      "shapes": ["body-item", "header-item"],
       "fills": [
         {
           "fillColor": "#1a1a1a",

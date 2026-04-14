@@ -1352,10 +1352,7 @@ export interface SetRemoteSyncedOperation {
   val: boolean;
 }
 
-export type ShapeOperation =
-  | SetShapeOperation
-  | SetTouchedOperation
-  | SetRemoteSyncedOperation;
+export type ShapeOperation = SetShapeOperation | SetTouchedOperation | SetRemoteSyncedOperation;
 
 // ============================================================
 // Update File Request

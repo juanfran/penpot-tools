@@ -64,10 +64,7 @@ describe('renderBool', () => {
   });
 
   it('applies fill color from fills', () => {
-    const html = renderBool(
-      makeBool({ fills: [{ fillColor: '#ff0000' as HexColor }] }),
-      ctx,
-    );
+    const html = renderBool(makeBool({ fills: [{ fillColor: '#ff0000' as HexColor }] }), ctx);
     expect(html).toContain('fill="#ff0000"');
   });
 

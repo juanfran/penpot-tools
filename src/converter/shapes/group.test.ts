@@ -50,22 +50,12 @@ describe('renderGroup', () => {
   });
 
   it('includes data-id attribute', () => {
-    const html = renderGroup(
-      makeGroup({ id: 'my-group' as Uuid }),
-      [],
-      {},
-      ctx,
-    );
+    const html = renderGroup(makeGroup({ id: 'my-group' as Uuid }), [], {}, ctx);
     expect(html).toContain('data-id="my-group"');
   });
 
   it('positions absolutely', () => {
-    const html = renderGroup(
-      makeGroup({ x: 10, y: 20, width: 200, height: 100 }),
-      [],
-      {},
-      ctx,
-    );
+    const html = renderGroup(makeGroup({ x: 10, y: 20, width: 200, height: 100 }), [], {}, ctx);
     expect(html).toContain('absolute');
     expect(html).toContain('left-[10px]');
     expect(html).toContain('top-[20px]');

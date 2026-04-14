@@ -25,10 +25,7 @@ function sanitizeSvg(content: string): string {
  *
  * The `data-id` attribute carries the Penpot shape ID.
  */
-export function renderSvgRaw(
-  shape: SvgRawShape,
-  ctx: ConverterContext,
-): string {
+export function renderSvgRaw(shape: SvgRawShape, ctx: ConverterContext): string {
   const base = baseClasses(shape, ctx);
   const safeContent = sanitizeSvg(shape.content);
   const posOut = resolvePositionOutput(shape, ctx);

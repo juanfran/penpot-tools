@@ -68,9 +68,7 @@ describe('shadowsToClass', () => {
   });
 
   it('returns a Tailwind shadow-[...] class for one shadow', () => {
-    const shadows = [
-      makeShadow({ offsetX: 2, offsetY: 4, blur: 6, spread: 0 }),
-    ];
+    const shadows = [makeShadow({ offsetX: 2, offsetY: 4, blur: 6, spread: 0 })];
     expect(shadowsToClass(shadows)).toBe('shadow-[2px_4px_6px_0px_#000000]');
   });
 

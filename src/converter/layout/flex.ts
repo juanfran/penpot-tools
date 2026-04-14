@@ -38,12 +38,8 @@ const JUSTIFY_CONTENT_CLASS: Partial<Record<FlexAlign, string>> = {
  * `layoutJustifyContent`, and `layoutWrapType` to their Tailwind equivalents.
  */
 export function flexContainerClasses(shape: FrameShape): string {
-  const dirClass = shape.layoutFlexDir
-    ? FLEX_DIR_CLASS[shape.layoutFlexDir]
-    : undefined;
-  const alignClass = shape.layoutAlignItems
-    ? ALIGN_ITEMS_CLASS[shape.layoutAlignItems]
-    : undefined;
+  const dirClass = shape.layoutFlexDir ? FLEX_DIR_CLASS[shape.layoutFlexDir] : undefined;
+  const alignClass = shape.layoutAlignItems ? ALIGN_ITEMS_CLASS[shape.layoutAlignItems] : undefined;
   const justifyClass = shape.layoutJustifyContent
     ? JUSTIFY_CONTENT_CLASS[shape.layoutJustifyContent]
     : undefined;
@@ -69,9 +65,8 @@ export function flexSpacingClasses(shape: FrameShape): {
 } {
   const gapClasses: string[] = [];
 
-  const rawGap = (
-    shape as unknown as { layoutGap?: { rowGap?: number; columnGap?: number } }
-  ).layoutGap;
+  const rawGap = (shape as unknown as { layoutGap?: { rowGap?: number; columnGap?: number } })
+    .layoutGap;
   const rowGap = shape.layoutRowGap ?? rawGap?.rowGap;
   const colGap = shape.layoutColumnGap ?? rawGap?.columnGap;
 

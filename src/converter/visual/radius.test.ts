@@ -45,17 +45,13 @@ describe('radiusToOutput', () => {
   });
 
   it('treats undefined radii as 0 in inline style', () => {
-    const result = radiusToOutput(
-      makeShape({ r1: 10, r2: undefined, r3: undefined, r4: 5 }),
-    );
+    const result = radiusToOutput(makeShape({ r1: 10, r2: undefined, r3: undefined, r4: 5 }));
     expect(result.classes).toBe('');
     expect(result.style).toBe('border-radius: 10px 0px 0px 5px;');
   });
 
   it('returns rounded-[Npx] for single consistent radius value', () => {
-    const result = radiusToOutput(
-      makeShape({ r1: 16, r2: 16, r3: 16, r4: 16 }),
-    );
+    const result = radiusToOutput(makeShape({ r1: 16, r2: 16, r3: 16, r4: 16 }));
     expect(result.classes).toBe('rounded-[16px]');
     expect(result.style).toBe('');
   });

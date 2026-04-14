@@ -11,8 +11,7 @@ const makeSvgRaw = (overrides: Partial<SvgRawShape> = {}): SvgRawShape => ({
   id: 'svg-raw-1' as Uuid,
   name: 'SvgRaw',
   type: 'svg-raw',
-  content:
-    '<svg xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" /></svg>',
+  content: '<svg xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" /></svg>',
   x: 10,
   y: 20,
   width: 100,
@@ -39,18 +38,12 @@ describe('renderSvgRaw', () => {
   });
 
   it('embeds the raw SVG content inside the div', () => {
-    const html = renderSvgRaw(
-      makeSvgRaw({ content: '<svg><circle /></svg>' }),
-      ctx,
-    );
+    const html = renderSvgRaw(makeSvgRaw({ content: '<svg><circle /></svg>' }), ctx);
     expect(html).toContain('<svg><circle /></svg>');
   });
 
   it('positions the div absolutely', () => {
-    const html = renderSvgRaw(
-      makeSvgRaw({ x: 10, y: 20, width: 100, height: 100 }),
-      ctx,
-    );
+    const html = renderSvgRaw(makeSvgRaw({ x: 10, y: 20, width: 100, height: 100 }), ctx);
     expect(html).toContain('absolute');
     expect(html).toContain('left-[10px]');
     expect(html).toContain('top-[20px]');
@@ -65,8 +58,7 @@ describe('renderSvgRaw', () => {
   });
 
   it('strips on* event attributes for XSS safety', () => {
-    const content =
-      '<svg><circle onclick="alert(1)" onmouseover="evil()" /></svg>';
+    const content = '<svg><circle onclick="alert(1)" onmouseover="evil()" /></svg>';
     const html = renderSvgRaw(makeSvgRaw({ content }), ctx);
     expect(html).not.toContain('onclick');
     expect(html).not.toContain('onmouseover');

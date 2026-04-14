@@ -4,9 +4,7 @@ import type { Uuid } from '../../penpot.types';
 
 describe('buildFilePath', () => {
   it('builds the correct file:// URL', () => {
-    expect(buildFilePath('/assets', 'abc123' as Uuid)).toBe(
-      'file:///assets/images/abc123.png',
-    );
+    expect(buildFilePath('/assets', 'abc123' as Uuid)).toBe('file:///assets/images/abc123.png');
   });
 
   it('uses the baseDir correctly', () => {

@@ -63,10 +63,7 @@ describe('renderImage', () => {
   });
 
   it('includes absolute positioning classes', () => {
-    const html = renderImage(
-      makeImage({ x: 10, y: 20, width: 200, height: 150 }),
-      ctx,
-    );
+    const html = renderImage(makeImage({ x: 10, y: 20, width: 200, height: 150 }), ctx);
     expect(html).toContain('absolute');
     expect(html).toContain('left-[10px]');
     expect(html).toContain('top-[20px]');
