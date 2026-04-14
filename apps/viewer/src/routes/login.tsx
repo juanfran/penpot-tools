@@ -1,6 +1,13 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useForm } from '@tanstack/react-form';
+import { z } from 'zod';
 import { setApiKey } from '#/lib/auth';
+import { Input } from '#/components/ui/input';
+import { Button } from '#/components/ui/button';
+
+const loginSchema = z.object({
+  apiKey: z.string().min(1, 'Access token is required'),
+});
 
 export const Route = createFileRoute('/login')({ component: LoginPage });
 
@@ -21,12 +28,8 @@ function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            Penpot Viewer
-          </h1>
-          <p className="text-sm text-gray-500">
-            Enter your Penpot access token to continue.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Penpot Viewer</h1>
+          <p className="text-sm text-gray-500">Enter your Penpot access token to continue.</p>
         </div>
 
         <form
@@ -39,42 +42,36 @@ function LoginPage() {
           <form.Field
             name="apiKey"
             validators={{
-              onSubmit: ({ value }) =>
-                !value.trim() ? 'Access token is required' : undefined,
+              onSubmit: ({ value }) => {
+                const result = loginSchema.shape.apiKey.safeParse(value.trim());
+                return result.success ? undefined : result.error.issues[0]?.message;
+              },
             }}
           >
             {(field) => (
               <div className="space-y-1.5">
-                <label
-                  htmlFor="apiKey"
-                  className="block text-sm font-medium text-gray-700"
-                >
+                <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700">
                   Access token
                 </label>
-                <input
+                <Input
                   id="apiKey"
                   type="password"
                   placeholder="your-access-token"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
-                  className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-gray-900 focus:ring-1 focus:ring-gray-900 focus:outline-none"
+                  aria-invalid={field.state.meta.errors.length > 0 || undefined}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-red-600">
-                    {field.state.meta.errors[0]}
-                  </p>
+                  <p className="text-sm text-red-600">{field.state.meta.errors[0]}</p>
                 )}
               </div>
             )}
           </form.Field>
 
-          <button
-            type="submit"
-            className="w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 focus:outline-none"
-          >
+          <Button type="submit" className="w-full">
             Continue
-          </button>
+          </Button>
         </form>
 
         <p className="text-center text-xs text-gray-400">
