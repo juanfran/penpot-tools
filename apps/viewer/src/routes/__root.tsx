@@ -2,6 +2,7 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools';
+import { FormDevtoolsPanel } from '@tanstack/react-form-devtools';
 
 import appCss from '../styles.css?url';
 
@@ -50,6 +51,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               name: 'TanStack Query',
               render: <ReactQueryDevtoolsPanel />,
               defaultOpen: true,
+            },
+            {
+              name: 'Tanstack Form',
+              render: <FormDevtoolsPanel />,
             },
           ]}
         />
