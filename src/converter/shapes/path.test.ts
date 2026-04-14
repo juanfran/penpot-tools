@@ -43,6 +43,13 @@ describe('renderPath', () => {
     expect(html).toContain('height="50"');
   });
 
+  it('uses viewBox to map page coordinates to svg viewport', () => {
+    const html = renderPath(makePath({ x: 10, y: 20, width: 100, height: 50 }), ctx);
+    expect(html).toContain('viewBox="10 20 100 50"');
+    // path uses original page coordinates — no transform needed
+    expect(html).not.toContain('transform=');
+  });
+
   it('positions the svg absolutely', () => {
     const html = renderPath(makePath({ x: 10, y: 20 }), ctx);
     expect(html).toContain('absolute');
@@ -54,11 +61,6 @@ describe('renderPath', () => {
     const html = renderPath(makePath({ content: 'M 0 0 L 50 50' }), ctx);
     expect(html).toContain('<path');
     expect(html).toContain('M 0 0 L 50 50');
-  });
-
-  it('translates path by -x, -y so it starts at 0,0 within svg', () => {
-    const html = renderPath(makePath({ x: 10, y: 20 }), ctx);
-    expect(html).toContain('translate(-10, -20)');
   });
 
   it('applies fill color from fills', () => {
@@ -87,5 +89,43 @@ describe('renderPath', () => {
   it('includes opacity class when opacity is set', () => {
     const html = renderPath(makePath({ opacity: 0.5 }), ctx);
     expect(html).toContain('opacity-[50%]');
+  });
+
+  it('renders image fill as svg pattern anchored to page-absolute bounding box', () => {
+    // shape at x=10, y=20, 100x50. Pattern must use page coords so
+    // preserveAspectRatio works correctly with the viewBox coordinate system.
+    const html = renderPath(
+      makePath({
+        x: 10,
+        y: 20,
+        width: 100,
+        height: 50,
+        fills: [
+          {
+            fillImage: {
+              id: 'abc-123' as Uuid,
+              width: 200,
+              height: 100,
+              mtype: 'image/jpeg',
+            },
+            fillOpacity: 1,
+          },
+        ],
+      }),
+      ctx,
+    );
+    expect(html).toContain('<defs>');
+    expect(html).toContain('<pattern');
+    expect(html).toContain('patternUnits="userSpaceOnUse"');
+    // pattern anchored to page-absolute bounding box
+    expect(html).toContain('x="10"');
+    expect(html).toContain('y="20"');
+    expect(html).toContain('width="100"');
+    expect(html).toContain('height="50"');
+    expect(html).toContain('<image');
+    expect(html).toContain('href="https://assets.example.com/abc-123"');
+    // image covers the pattern tile with center alignment
+    expect(html).toContain('preserveAspectRatio="xMidYMid slice"');
+    expect(html).toContain('fill="url(#img-path-1)"');
   });
 });

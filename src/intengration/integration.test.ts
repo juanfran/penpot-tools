@@ -228,4 +228,11 @@ describe('integration', () => {
     expect(html).toContain('w-[400px]');
     expect(html).not.toMatch(/data-id="fill-child"[^>]*class="[^"]*w-full/);
   });
+
+  it('path-image-fill', async () => {
+    const page = getPage('path-image-fill');
+    const shape = page.objects['eaa1384c-05db-801a-8007-d9937f4003e2'];
+    const { html } = await convertShape(shape, page.objects, ctx);
+    expect(html.trim()).toBe(getExpected('path-image-fill'));
+  });
 });
