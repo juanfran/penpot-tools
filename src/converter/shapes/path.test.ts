@@ -145,7 +145,160 @@ describe('renderPath', () => {
     expect(html).toContain('height="133"');
   });
 
-  it('canvas-top-level path with rotation merges translate and rotation into one transform', () => {
+  it('renders line-arrow strokeCapStart as marker-start with defs', () => {
+    const html = renderPath(
+      makePath({
+        strokes: [
+          {
+            strokeColor: '#eb7ff5' as HexColor,
+            strokeOpacity: 1,
+            strokeWidth: 2,
+            strokeCapStart: 'line-arrow',
+          },
+        ],
+      }),
+      ctx,
+    );
+    expect(html).toContain('<defs>');
+    expect(html).toContain('<marker');
+    expect(html).toContain('id="marker-path-1-start"');
+    expect(html).toContain('orient="auto-start-reverse"');
+    // line-arrow path
+    expect(html).toContain('M 0.5 0.5 L 3 3 L 0.5 5.5 L 0 5 L 2 3 L 0 1 z');
+    expect(html).toContain('marker-start:url(#marker-path-1-start)');
+    expect(html).not.toContain('marker-end');
+  });
+
+  it('renders line-arrow strokeCapEnd as marker-end with defs', () => {
+    const html = renderPath(
+      makePath({
+        strokes: [
+          {
+            strokeColor: '#eb7ff5' as HexColor,
+            strokeWidth: 2,
+            strokeCapEnd: 'line-arrow',
+          },
+        ],
+      }),
+      ctx,
+    );
+    expect(html).toContain('id="marker-path-1-end"');
+    expect(html).toContain('marker-end:url(#marker-path-1-end)');
+    expect(html).not.toContain('marker-start:');
+  });
+
+  it('renders both strokeCapStart and strokeCapEnd markers', () => {
+    const html = renderPath(
+      makePath({
+        strokes: [
+          {
+            strokeColor: '#ff0000' as HexColor,
+            strokeWidth: 2,
+            strokeCapStart: 'line-arrow',
+            strokeCapEnd: 'triangle-arrow',
+          },
+        ],
+      }),
+      ctx,
+    );
+    expect(html).toContain('id="marker-path-1-start"');
+    expect(html).toContain('id="marker-path-1-end"');
+    expect(html).toContain('marker-start:url(#marker-path-1-start)');
+    expect(html).toContain('marker-end:url(#marker-path-1-end)');
+  });
+
+  it('renders triangle-arrow marker with correct path', () => {
+    const html = renderPath(
+      makePath({
+        strokes: [{ strokeColor: '#0000ff' as HexColor, strokeCapStart: 'triangle-arrow' }],
+      }),
+      ctx,
+    );
+    expect(html).toContain('M 0 0 L 6 3 L 0 6 z');
+  });
+
+  it('renders circle-marker with circle element', () => {
+    const html = renderPath(
+      makePath({
+        strokes: [{ strokeColor: '#0000ff' as HexColor, strokeCapStart: 'circle-marker' }],
+      }),
+      ctx,
+    );
+    expect(html).toContain('<circle');
+    expect(html).toContain('r="2.5"');
+  });
+
+  it('renders square-marker with rect element', () => {
+    const html = renderPath(
+      makePath({
+        strokes: [{ strokeColor: '#0000ff' as HexColor, strokeCapStart: 'square-marker' }],
+      }),
+      ctx,
+    );
+    expect(html).toContain('<rect');
+  });
+
+  it('renders diamond-marker with diamond path', () => {
+    const html = renderPath(
+      makePath({
+        strokes: [{ strokeColor: '#0000ff' as HexColor, strokeCapStart: 'diamond-marker' }],
+      }),
+      ctx,
+    );
+    expect(html).toContain('M 3 0 L 6 3 L 3 6 L 0 3 z');
+  });
+
+  it('renders round cap as stroke-linecap, not a marker', () => {
+    const html = renderPath(
+      makePath({
+        strokes: [{ strokeColor: '#0000ff' as HexColor, strokeCapStart: 'round' }],
+      }),
+      ctx,
+    );
+    expect(html).toContain('stroke-linecap:round');
+    expect(html).not.toContain('<marker');
+    expect(html).not.toContain('marker-start');
+  });
+
+  it('renders square cap as stroke-linecap, not a marker', () => {
+    const html = renderPath(
+      makePath({
+        strokes: [{ strokeColor: '#0000ff' as HexColor, strokeCapStart: 'square' }],
+      }),
+      ctx,
+    );
+    expect(html).toContain('stroke-linecap:square');
+    expect(html).not.toContain('<marker');
+  });
+
+  it('combines image fill pattern and stroke marker in a single defs block', () => {
+    const html = renderPath(
+      makePath({
+        fills: [
+          {
+            fillImage: {
+              id: 'img-1' as Uuid,
+              width: 100,
+              height: 50,
+              mtype: 'image/png',
+            },
+          },
+        ],
+        strokes: [{ strokeColor: '#ff0000' as HexColor, strokeCapStart: 'line-arrow' }],
+      }),
+      ctx,
+    );
+    // Only one <defs> block
+    const defsMatches = html.match(/<defs>/g) ?? [];
+    expect(defsMatches).toHaveLength(1);
+    expect(html).toContain('<pattern');
+    expect(html).toContain('<marker');
+  });
+
+  it('canvas-top-level rotated path uses only translate, no CSS rotation', () => {
+    // Path content coordinates are already in page-absolute space — rotation is
+    // baked into the path data. Only a translate is needed for placement; applying
+    // CSS rotate/matrix would double-transform and flip the shape.
     const canvasCtx: ConverterContext = {
       ...ctx,
       _isCanvasTopLevel: true,
@@ -162,14 +315,12 @@ describe('renderPath', () => {
       }),
       canvasCtx,
     );
-    // translate and rotation must be in a single transform declaration
     const styleMatch = /style="([^"]*)"/.exec(html);
     expect(styleMatch).not.toBeNull();
     const style = styleMatch![1];
-    // exactly one transform declaration
-    expect((style.match(/transform:/g) ?? []).length).toBe(1);
-    // both translate and rotate present in the same transform
+    // only translate — no rotation or matrix transform
     expect(style).toContain('translate(1601px, 530px)');
-    expect(style).toContain('rotate(-331deg)');
+    expect(style).not.toContain('rotate(');
+    expect(style).not.toContain('matrix(');
   });
 });
