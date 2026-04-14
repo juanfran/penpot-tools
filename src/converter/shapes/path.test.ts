@@ -128,4 +128,48 @@ describe('renderPath', () => {
     expect(html).toContain('preserveAspectRatio="xMidYMid slice"');
     expect(html).toContain('fill="url(#img-path-1)"');
   });
+
+  it('falls back to selrect when x/y/width/height are null', () => {
+    const html = renderPath(
+      makePath({
+        x: null as unknown as number,
+        y: null as unknown as number,
+        width: null as unknown as number,
+        height: null as unknown as number,
+        selrect: { x: 1601, y: 530, width: 52, height: 133 },
+      }),
+      ctx,
+    );
+    expect(html).toContain('viewBox="1601 530 52 133"');
+    expect(html).toContain('width="52"');
+    expect(html).toContain('height="133"');
+  });
+
+  it('canvas-top-level path with rotation merges translate and rotation into one transform', () => {
+    const canvasCtx: ConverterContext = {
+      ...ctx,
+      _isCanvasTopLevel: true,
+    };
+    const html = renderPath(
+      makePath({
+        x: null as unknown as number,
+        y: null as unknown as number,
+        width: null as unknown as number,
+        height: null as unknown as number,
+        selrect: { x: 1601, y: 530, width: 52, height: 133 },
+        rotation: 331,
+        transform: { a: -0.8775, b: 0.4795, c: -0.4795, d: -0.8775, e: 0, f: 0 },
+      }),
+      canvasCtx,
+    );
+    // translate and rotation must be in a single transform declaration
+    const styleMatch = /style="([^"]*)"/.exec(html);
+    expect(styleMatch).not.toBeNull();
+    const style = styleMatch![1];
+    // exactly one transform declaration
+    expect((style.match(/transform:/g) ?? []).length).toBe(1);
+    // both translate and rotate present in the same transform
+    expect(style).toContain('translate(1601px, 530px)');
+    expect(style).toContain('rotate(-331deg)');
+  });
 });

@@ -93,6 +93,11 @@ describe('renderFrame', () => {
     expect(html).not.toContain('overflow-hidden');
   });
 
+  it('does not include overflow-hidden when showContent is true', () => {
+    const html = renderFrame(makeFrame({ showContent: true }), [], {}, ctx);
+    expect(html).not.toContain('overflow-hidden');
+  });
+
   it('renders children inside', () => {
     const child = makeChild('child-1');
     const objects: Record<string, Shape> = { 'child-1': child };

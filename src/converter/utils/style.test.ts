@@ -79,4 +79,32 @@ describe('mergeStyles', () => {
   it('handles no parts', () => {
     expect(mergeStyles()).toBe('');
   });
+
+  it('merges two box-shadow declarations into a comma-separated value', () => {
+    expect(
+      mergeStyles('box-shadow: 0 2px 4px #000;', 'box-shadow: inset 0 0 0 2px red;'),
+    ).toBe('box-shadow: 0 2px 4px #000, inset 0 0 0 2px red;');
+  });
+
+  it('merges two transform declarations into a space-separated value', () => {
+    expect(
+      mergeStyles('transform: translate(10px, 20px);', 'transform: rotate(45deg);'),
+    ).toBe('transform: translate(10px, 20px) rotate(45deg);');
+  });
+
+  it('merges three transform declarations preserving order', () => {
+    expect(
+      mergeStyles(
+        'transform: translate(100px, 50px);',
+        'transform: rotate(-30deg);',
+        'transform: matrix(1, 0, 0, 1, 0, 0);',
+      ),
+    ).toBe('transform: translate(100px, 50px) rotate(-30deg) matrix(1, 0, 0, 1, 0, 0);');
+  });
+
+  it('keeps other properties alongside merged transform', () => {
+    expect(
+      mergeStyles('left: 0px;', 'transform: translate(10px, 20px);', 'transform: rotate(45deg);'),
+    ).toBe('left: 0px; transform: translate(10px, 20px) rotate(45deg);');
+  });
 });
