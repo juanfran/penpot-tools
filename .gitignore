@@ -13,9 +13,9 @@ count.txt
 *storybook.log
 storybook-static
 
-output.html
+**/output.html
 
-output/*
-cache/*
-tmp/*
-info.md
+**/output/*
+**/cache/*
+**/tmp/*
+**/info.md

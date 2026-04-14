@@ -1,8 +1,8 @@
-import type { Page, Shape } from "../penpot.types";
-import type { ConverterContext, ConvertResult, FontInfo } from "./types";
-import { renderShape } from "./render";
-import { renderPage } from "./page";
-import * as oxfmt from "oxfmt";
+import type { Page, Shape } from '../penpot.types';
+import type { ConverterContext, ConvertResult, FontInfo } from './types';
+import { renderShape } from './render';
+import { renderPage } from './page';
+import * as oxfmt from 'oxfmt';
 
 function extractFonts(collector: Map<string, FontInfo>): FontInfo[] {
   return Array.from(collector.values());
@@ -11,15 +11,12 @@ function extractFonts(collector: Map<string, FontInfo>): FontInfo[] {
 /**
  * Converts a full Penpot page to an HTML string (body content only, no `<html>` wrapper).
  */
-export async function convertPage(
-  page: Page,
-  ctx: ConverterContext,
-): Promise<ConvertResult> {
+export async function convertPage(page: Page, ctx: ConverterContext): Promise<ConvertResult> {
   const fontCollector = new Map<string, FontInfo>();
   const html = renderPage(page, { ...ctx, _fontCollector: fontCollector });
   const shouldFormat = ctx.format !== false;
   return {
-    html: shouldFormat ? (await oxfmt.format("index.html", html)).code : html,
+    html: shouldFormat ? (await oxfmt.format('index.html', html)).code : html,
     fonts: extractFonts(fontCollector),
   };
 }
@@ -51,9 +48,9 @@ export async function convertShape(
     html = childIds
       .map((id) => {
         const child = allObjects[id];
-        return child ? renderShape(child, allObjects, canvasCtx) : "";
+        return child ? renderShape(child, allObjects, canvasCtx) : '';
       })
-      .join("");
+      .join('');
   } else {
     html = renderShape(shape, allObjects, {
       ...ctx,
@@ -64,7 +61,7 @@ export async function convertShape(
 
   const shouldFormat = ctx.format !== false;
   return {
-    html: shouldFormat ? (await oxfmt.format("index.html", html)).code : html,
+    html: shouldFormat ? (await oxfmt.format('index.html', html)).code : html,
     fonts: extractFonts(fontCollector),
   };
 }

@@ -1,0 +1,22 @@
+{
+  "name": "@penpot-random/converter",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest",
+    "penpot-to-html": "tsx src/penpot-to-html.ts",
+    "preview": "tsx src/intengration/preview.mts"
+  },
+  "peerDependencies": {
+    "@types/node": "^25.5.2",
+    "globals": "^17.4.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}
