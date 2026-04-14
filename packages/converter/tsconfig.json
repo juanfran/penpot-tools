@@ -6,11 +6,11 @@
     "strict": true,
     "sourceMap": true,
     "outDir": "dist",
-    "rootDir": "packages/converter/src",
+    "rootDir": "src",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["packages/converter/src/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

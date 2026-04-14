@@ -4,23 +4,40 @@
 
 Converts Penpot design files (JSON) into Tailwind CSS HTML. Given a Penpot page or shape object, it emits a `<div>` tree with Tailwind classes that faithfully reproduces the visual design.
 
+## Monorepo structure
+
+```
+penpot-random/              # workspace root
+  package.json              # root scripts: test, lint, check, penpot-to-html
+  pnpm-workspace.yaml
+  packages/
+    converter/              # @penpot-random/converter
+      package.json
+      tsconfig.json
+      cache/                # gitignored; raw API responses
+      scripts/              # dev scripts (add-test-case, inspect-shape)
+      src/                  # all source and tests
+```
+
 ## Commands
 
+All commands run from the **workspace root** unless noted otherwise.
+
 ```bash
-pnpm test           # run all tests (vitest)
-pnpm test --run     # run once, no watch
-pnpm lint           # eslint
-pnpm check          # prettier + eslint --fix
+pnpm test                   # run all tests (vitest, all packages)
+pnpm test -- --run          # run once, no watch
+pnpm lint                   # oxlint
+pnpm check                  # oxlint --fix + oxfmt
 pnpm penpot-to-html --file-id <uuid> [--page-id <uuid>] [--shape-id <uuid>] [--output <path>] [--cache]
 ```
 
 Auth for `penpot-to-html`: set `PENPOT_TOKEN`, or both `PENPOT_EMAIL` + `PENPOT_PASSWORD`.  
-`--cache` reads/writes `cache/<file-id>.json` to avoid re-fetching.
+`--cache` reads/writes `packages/converter/cache/<file-id>.json` to avoid re-fetching.
 
 ## Source layout
 
 ```
-src/
+packages/converter/src/
   penpot.types.ts          # All Penpot API types (Page, Shape, FrameShape, …)
   penpot-to-html.ts        # CLI entry point
 
@@ -167,7 +184,7 @@ Penpot shapes may carry an `appliedTokens` map linking CSS properties to token n
 
 **How it works:**
 
-1. `extractTokens(objects)` in `src/converter/tokens.ts` scans all shapes for `appliedTokens` and resolves each token name to a CSS color (from the shape's own fills/strokes).
+1. `extractTokens(objects)` in `packages/converter/src/converter/tokens.ts` scans all shapes for `appliedTokens` and resolves each token name to a CSS color (from the shape's own fills/strokes).
 2. `ConverterContext.tokens` carries the `Map<tokenName, cssColor>` through the render tree.
 3. Visual functions accept an optional token name and emit `var(--token)` instead of a raw hex:
    - `fillsToOutput(fills, ctx, fillTokenName?)` → `bg-[var(--TOKEN)]`
@@ -228,7 +245,7 @@ cls('shadow-[2px_2px_#000]', 'shadow-[0_0_0_2px_red]');
 
 ## Generating HTML from a Penpot board URL
 
-When the user gives you fileId, pageId or shapeId, run this script:
+When the user gives you fileId, pageId or shapeId, run this script (from the workspace root):
 
 ```bash
 pnpm penpot-to-html \
@@ -239,7 +256,7 @@ pnpm penpot-to-html \
   --cache
 ```
 
-The `--cache` flag saves the fetched page to `cache/<file-id>.json` so subsequent runs don't re-fetch.
+The `--cache` flag saves the fetched page to `packages/converter/cache/<file-id>.json` so subsequent runs don't re-fetch.
 Omit `--shape-id` to render the entire page.
 
 You can also pass the full workspace URL directly:
@@ -252,37 +269,39 @@ pnpm penpot-to-html --url "https://design.penpot.app/#/workspace?file-id=...&pag
 
 ### From a real Penpot board (recommended)
 
-**Step 1** — fetch and cache the page:
+**Step 1** — fetch and cache the page (from workspace root):
 
 ```bash
 pnpm penpot-to-html --file-id <uuid> --page-id <uuid> --cache
 ```
 
-**Step 2** — create the test case files automatically:
+**Step 2** — create the test case files automatically (run from `packages/converter/`):
 
 ```bash
+cd packages/converter
 pnpm exec tsx scripts/add-test-case.mts --name <test-name> --file-id <uuid> --board-id <uuid>
 ```
 
 This script:
 
-1. Reads `cache/<file-id>.json`
-2. Copies it to `src/intengration/<name>.json`
+1. Reads `packages/converter/cache/<file-id>.json`
+2. Copies it to `packages/converter/src/intengration/<name>.json`
 3. Runs `convertShape` on the board shape
-4. Writes `src/intengration/<name>.expected.html`
+4. Writes `packages/converter/src/intengration/<name>.expected.html`
 5. Prints the test case snippet to add in `integration.test.ts`
 
-**Step 3** — add the printed test case to `src/intengration/integration.test.ts`.
+**Step 3** — add the printed test case to `packages/converter/src/intengration/integration.test.ts`.
 
 ### Manually (for hand-crafted JSON)
 
-1. Place the Penpot page JSON in `src/intengration/<name>.json`.
-2. Regenerate the expected HTML:
+1. Place the Penpot page JSON in `packages/converter/src/intengration/<name>.json`.
+2. Regenerate the expected HTML (from `packages/converter/`):
    ```bash
+   cd packages/converter
    pnpm exec tsx scripts/add-test-case.mts --name <name> --file-id <file-id-matching-cache> --board-id <shape-id>
    ```
    Or if the JSON is already in place, edit and re-run to overwrite only the `.expected.html`.
-3. Add a test case in `src/intengration/integration.test.ts` following the existing pattern.
+3. Add a test case in `packages/converter/src/intengration/integration.test.ts` following the existing pattern.
 
 ### Regenerating expected HTML after intentional output changes
 
@@ -290,18 +309,18 @@ Re-run the add-test-case script — do not hand-edit `.expected.html` files.
 
 ## Test fixture files
 
-Integration test fixtures live in `src/intengration/`:
+Integration test fixtures live in `packages/converter/src/intengration/`:
 
 | File                   | Purpose                                                           |
 | ---------------------- | ----------------------------------------------------------------- |
 | `<name>.json`          | Full Penpot page JSON (same shape as the API `get-page` response) |
 | `<name>.expected.html` | Expected converter output for the target shape                    |
 
-Cached raw API responses live in `cache/<file-id>.json` — these are gitignored and used only as a source when creating new test cases.
+Cached raw API responses live in `packages/converter/cache/<file-id>.json` — these are gitignored and used only as a source when creating new test cases.
 
 ## Cache JSON structure
 
-`cache/<file-id>.json` is a **flat** Penpot page object:
+`packages/converter/cache/<file-id>.json` is a **flat** Penpot page object:
 
 ```json
 {
@@ -322,9 +341,10 @@ All shapes from the fetched page live directly under `objects` — there is **no
 
 ## Inspecting a specific shape
 
-When debugging output for a specific shape, use the inspect script instead of ad-hoc Python one-liners:
+When debugging output for a specific shape, use the inspect script instead of ad-hoc Python one-liners (run from `packages/converter/`):
 
 ```bash
+cd packages/converter
 pnpm exec tsx scripts/inspect-shape.mts --file-id <uuid> --shape-id <uuid> [--html]
 ```
 
@@ -338,6 +358,6 @@ The HTML output file (`output.html`) is **minified to a single line** — do not
 
 ## Adding a new shape type
 
-1. Create `src/converter/shapes/<type>.ts` exporting `render<Type>(shape, ctx): string`.
+1. Create `packages/converter/src/converter/shapes/<type>.ts` exporting `render<Type>(shape, ctx): string`.
 2. Add a `case '<type>':` in `shapes/dispatch.ts`.
-3. Add a `src/converter/shapes/<type>.test.ts` with unit tests.
+3. Add a `packages/converter/src/converter/shapes/<type>.test.ts` with unit tests.

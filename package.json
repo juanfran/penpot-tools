@@ -6,9 +6,9 @@
   "license": "ISC",
   "author": "",
   "type": "module",
-  "main": "index.js",
   "scripts": {
     "test": "pnpm -r --parallel test",
+    "penpot-to-html": "pnpm --filter @penpot-random/converter penpot-to-html",
     "lint": "oxlint .",
     "format": "oxfmt --check",
     "check": "oxlint --fix-dangerously && oxfmt"
