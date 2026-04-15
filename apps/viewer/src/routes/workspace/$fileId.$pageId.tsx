@@ -1,8 +1,9 @@
-import { Render } from '#/components/render';
+import { getPageHtmlOptions, Render } from '#/components/render';
 import { getFileSummaryFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { Suspense } from 'react';
+import { z } from 'zod';
 
 const getFileSummaryQueryOptions = (fileId: string) => {
   return queryOptions({
@@ -14,8 +15,11 @@ const getFileSummaryQueryOptions = (fileId: string) => {
 };
 
 export const Route = createFileRoute('/workspace/$fileId/$pageId')({
+  validateSearch: z.object({
+    teamId: z.string().optional(),
+  }).parse,
   component: RouteComponent,
-  beforeLoad: async ({ params, context }) => {
+  beforeLoad: async ({ params, search, context }) => {
     if (params.pageId !== '0000-0000-0000-0000') {
       return;
     }
@@ -31,10 +35,33 @@ export const Route = createFileRoute('/workspace/$fileId/$pageId')({
     throw redirect({
       to: '/workspace/$fileId/$pageId',
       params: { fileId: params.fileId, pageId: firstPageId },
+      search: { teamId: search.teamId },
       replace: true,
     });
   },
+  loader: async ({ params, context }) => {
+    context.queryClient.prefetchQuery(getPageHtmlOptions(params.fileId, params.pageId));
+  },
 });
+
+function Header({ fileId }: { fileId: string }) {
+  const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
+  const { teamId } = Route.useSearch();
+
+  return (
+    <header className="flex h-12 items-center gap-3 border-b border-gray-200 px-4">
+      <Link
+        to="/"
+        search={{ teamId }}
+        className="text-sm font-semibold text-gray-900 hover:text-gray-600"
+      >
+        Penpot Viewer
+      </Link>
+      <span className="text-gray-300">/</span>
+      <span className="text-sm text-gray-600">{file.name}</span>
+    </header>
+  );
+}
 
 function PagesSidebar({ fileId }: { fileId: string }) {
   const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
@@ -48,6 +75,7 @@ function PagesSidebar({ fileId }: { fileId: string }) {
             key={pageId}
             to="/workspace/$fileId/$pageId"
             params={{ fileId, pageId }}
+            search={{ teamId: Route.useSearch().teamId ?? undefined }}
             className="rounded px-2 py-1 text-sm hover:bg-gray-100"
             activeProps={{ className: 'rounded px-2 py-1 text-sm bg-gray-200 font-medium' }}
           >
@@ -63,15 +91,20 @@ function RouteComponent() {
   const { fileId, pageId } = Route.useParams();
 
   return (
-    <div className="flex h-screen">
-      <Suspense fallback={<aside className="w-48 border-r border-gray-200" />}>
-        <PagesSidebar fileId={fileId} />
+    <div className="flex h-screen flex-col">
+      <Suspense fallback={<header className="h-12 border-b border-gray-200" />}>
+        <Header fileId={fileId} />
       </Suspense>
-      <main className="relative flex-1 overflow-auto">
-        <Suspense fallback={<div>Loading...</div>}>
-          <Render fileId={fileId} pageId={pageId} />
+      <div className="flex flex-1 overflow-hidden">
+        <Suspense fallback={<aside className="w-48 border-r border-gray-200" />}>
+          <PagesSidebar fileId={fileId} />
         </Suspense>
-      </main>
+        <main className="relative flex-1 overflow-auto">
+          <Suspense fallback={<div>Loading...</div>}>
+            <Render fileId={fileId} pageId={pageId} />
+          </Suspense>
+        </main>
+      </div>
     </div>
   );
 }

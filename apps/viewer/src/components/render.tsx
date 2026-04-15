@@ -1,7 +1,7 @@
 import { getPageHtmlFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 
-const getPageHtmlOptions = (fileId: string, pageId: string) => {
+export const getPageHtmlOptions = (fileId: string, pageId: string) => {
   return queryOptions({
     queryKey: ['get-page-html', fileId, pageId],
     queryFn: async () => {

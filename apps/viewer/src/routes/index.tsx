@@ -1,6 +1,5 @@
-import { createFileRoute, redirect, Link } from '@tanstack/react-router';
+import { createFileRoute, redirect, Link, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
 import { isAuthenticatedFn } from '#/lib/auth';
 import { getTeamsFn, getRecentFilesFn, getThumbnailUrl, type Team } from '#/lib/server/penpot-api';
 import {
@@ -12,6 +11,9 @@ import {
 } from '#/components/ui/select';
 
 export const Route = createFileRoute('/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    teamId: typeof search.teamId === 'string' ? search.teamId : undefined,
+  }),
   beforeLoad: async () => {
     const authenticated = await isAuthenticatedFn();
     if (!authenticated) {
@@ -22,7 +24,8 @@ export const Route = createFileRoute('/')({
 });
 
 function App() {
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const { teamId: selectedTeamId } = Route.useSearch();
+  const navigate = useNavigate({ from: '/' });
 
   const teamsQuery = useQuery({
     queryKey: ['teams'],
@@ -34,6 +37,13 @@ function App() {
     queryFn: () => getRecentFilesFn({ data: { teamId: selectedTeamId! } }),
     enabled: !!selectedTeamId,
   });
+
+  function handleTeamChange(value: string) {
+    navigate({
+      search: { teamId: value || undefined },
+      replace: true,
+    });
+  }
 
   return (
     <main className="mx-auto max-w-4xl px-4 pt-14 pb-8">
@@ -53,7 +63,7 @@ function App() {
           {teamsQuery.data && (
             <Select
               value={selectedTeamId ?? ''}
-              onValueChange={(value) => setSelectedTeamId(value || null)}
+              onValueChange={handleTeamChange}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a team">
@@ -90,6 +100,7 @@ function App() {
               key={file.id}
               to="/workspace/$fileId/$pageId"
               params={{ fileId: file.id, pageId: '0000-0000-0000-0000' }}
+              search={{ teamId: selectedTeamId ?? undefined }}
               className="border-border bg-card group overflow-hidden rounded-xl border transition-shadow hover:shadow-md"
             >
               <div className="bg-muted relative aspect-4/3 overflow-hidden">
