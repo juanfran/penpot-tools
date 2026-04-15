@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
-import { setApiKey } from '#/lib/auth';
+import { saveApiKeyFn } from '#/lib/auth';
 import { Input } from '#/components/ui/input';
 import { Button } from '#/components/ui/button';
 
@@ -18,8 +18,8 @@ function LoginPage() {
     defaultValues: {
       apiKey: '',
     },
-    onSubmit: ({ value }) => {
-      setApiKey(value.apiKey.trim());
+    onSubmit: async ({ value }) => {
+      await saveApiKeyFn({ data: { token: value.apiKey.trim() } });
       navigate({ to: '/' });
     },
   });

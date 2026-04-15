@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { getApiKey } from '#/lib/auth';
+import { isAuthenticatedFn } from '#/lib/auth';
 import { getTeamsFn, getRecentFilesFn, getThumbnailUrl, type Team } from '#/lib/server/penpot-api';
 import {
   Select,
@@ -12,8 +12,9 @@ import {
 } from '#/components/ui/select';
 
 export const Route = createFileRoute('/')({
-  beforeLoad: () => {
-    if (!getApiKey()) {
+  beforeLoad: async () => {
+    const authenticated = await isAuthenticatedFn();
+    if (!authenticated) {
       throw redirect({ to: '/login' });
     }
   },
@@ -23,21 +24,15 @@ export const Route = createFileRoute('/')({
 function App() {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
 
-  const token = getApiKey();
-
   const teamsQuery = useQuery({
     queryKey: ['teams'],
-    queryFn: () => getTeamsFn({ data: { token: token! } }),
-    enabled: !!token,
+    queryFn: () => getTeamsFn(),
   });
 
   const filesQuery = useQuery({
     queryKey: ['files', selectedTeamId],
-    queryFn: () =>
-      getRecentFilesFn({
-        data: { token: token!, teamId: selectedTeamId! },
-      }),
-    enabled: !!selectedTeamId && !!token,
+    queryFn: () => getRecentFilesFn({ data: { teamId: selectedTeamId! } }),
+    enabled: !!selectedTeamId,
   });
 
   return (

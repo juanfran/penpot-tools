@@ -1,5 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import ky from 'ky';
+import { authMiddleware } from '../middlewares/auth.middleware';
+import z from 'zod';
 
 const BASE_URL = 'https://design.penpot.app';
 
@@ -41,17 +43,20 @@ export function getThumbnailUrl(thumbnailId: string): string {
 }
 
 export const getTeamsFn = createServerFn({ method: 'GET' })
-  .inputValidator((data: { token: string }) => data)
-  .handler(async ({ data }) => {
-    return rpc<Team[]>(data.token, 'get-teams');
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    return rpc<Team[]>(context.token, 'get-teams');
   });
 
 export const getRecentFilesFn = createServerFn({ method: 'GET' })
-  .inputValidator((data: { token: string; teamId: string }) => data)
-  .handler(async ({ data }) => {
-    const result = await rpc<PenpotFile[]>(data.token, 'get-team-recent-files', {
+  .inputValidator(
+    z.object({
+      teamId: z.uuid(),
+    }),
+  )
+  .middleware([authMiddleware])
+  .handler(async ({ data, context }) => {
+    return rpc<PenpotFile[]>(context.token, 'get-team-recent-files', {
       params: { 'team-id': data.teamId },
     });
-
-    return result;
   });
