@@ -6,7 +6,10 @@
     "module": "ESNext",
     "paths": {
       "#/*": ["./src/*"],
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@penpot-random/converter": ["../../packages/converter/src/converter/index.ts"],
+      "@penpot-random/converter/tokens": ["../../packages/converter/src/converter/tokens.ts"],
+      "@penpot-random/penpot-types": ["../../packages/converter/src/penpot.types.ts"]
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],

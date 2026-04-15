@@ -1,19 +1,29 @@
-import { getPageFn } from '#/lib/server/penpot-api';
+import { getPageHtmlFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 
-const getPageOptions = (fileId: string, pageId: string) => {
+const getPageHtmlOptions = (fileId: string, pageId: string) => {
   return queryOptions({
-    queryKey: ['get-page', fileId, pageId],
+    queryKey: ['get-page-html', fileId, pageId],
     queryFn: async () => {
-      return getPageFn({ data: { fileId, pageId } });
+      return getPageHtmlFn({ data: { fileId, pageId } });
     },
   });
 };
 
 export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) => {
-  const page = useSuspenseQuery(getPageOptions(fileId, pageId));
+  const { data } = useSuspenseQuery(getPageHtmlOptions(fileId, pageId));
 
-  console.log({ page: page.data });
-
-  return <div>Hello Render!</div>;
+  return (
+    <>
+      {data.googleFontsUrl && (
+        <>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+          <link rel="stylesheet" href={data.googleFontsUrl} />
+        </>
+      )}
+      {data.tokensCss && <style>{data.tokensCss}</style>}
+      <div dangerouslySetInnerHTML={{ __html: data.html }} />
+    </>
+  );
 };
