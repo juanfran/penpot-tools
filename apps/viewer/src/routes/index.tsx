@@ -35,8 +35,6 @@ function App() {
     enabled: !!selectedTeamId,
   });
 
-  console.log(filesQuery);
-
   return (
     <main className="mx-auto max-w-4xl px-4 pt-14 pb-8">
       <h1 className="text-foreground mb-6 text-2xl font-semibold">Penpot Files</h1>
@@ -90,8 +88,8 @@ function App() {
           {filesQuery.data.map((file) => (
             <Link
               key={file.id}
-              to="/workspace/$fileId"
-              params={{ fileId: file.id }}
+              to="/workspace/$fileId/$pageId"
+              params={{ fileId: file.id, pageId: '0000-0000-0000-0000' }}
               className="border-border bg-card group overflow-hidden rounded-xl border transition-shadow hover:shadow-md"
             >
               <div className="bg-muted relative aspect-4/3 overflow-hidden">
