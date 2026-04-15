@@ -11,13 +11,13 @@ async function rpc<T>(
   options?: { params?: Record<string, string>; body?: Record<string, unknown> },
 ): Promise<T> {
   return ky
-    .post(`${BASE_URL}/api/rpc/command/${command}`, {
+    .get(`${BASE_URL}/api/rpc/command/${command}`, {
       headers: {
         Authorization: `Token ${token}`,
         'Content-Type': 'application/transit+json',
       },
       searchParams: options?.params,
-      json: options?.body ?? {},
+      // json: options?.body ?? {},
     })
     .json<T>();
 }
@@ -58,5 +58,26 @@ export const getRecentFilesFn = createServerFn({ method: 'GET' })
   .handler(async ({ data, context }) => {
     return rpc<PenpotFile[]>(context.token, 'get-team-recent-files', {
       params: { 'team-id': data.teamId },
+    });
+  });
+
+export interface PenpotFileSummary {
+  id: string;
+  name: string;
+  data: {
+    pages: string[];
+  };
+}
+
+export const getFileSummaryFn = createServerFn({ method: 'GET' })
+  .inputValidator(
+    z.object({
+      fileId: z.uuid(),
+    }),
+  )
+  .middleware([authMiddleware])
+  .handler(async ({ data, context }) => {
+    return rpc<PenpotFileSummary>(context.token, 'get-file', {
+      params: { id: data.fileId },
     });
   });

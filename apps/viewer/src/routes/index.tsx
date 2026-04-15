@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { isAuthenticatedFn } from '#/lib/auth';
@@ -34,6 +34,8 @@ function App() {
     queryFn: () => getRecentFilesFn({ data: { teamId: selectedTeamId! } }),
     enabled: !!selectedTeamId,
   });
+
+  console.log(filesQuery);
 
   return (
     <main className="mx-auto max-w-4xl px-4 pt-14 pb-8">
@@ -86,8 +88,10 @@ function App() {
       {filesQuery.data && filesQuery.data.length > 0 && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {filesQuery.data.map((file) => (
-            <div
+            <Link
               key={file.id}
+              to="/workspace/$fileId"
+              params={{ fileId: file.id }}
               className="border-border bg-card group overflow-hidden rounded-xl border transition-shadow hover:shadow-md"
             >
               <div className="bg-muted relative aspect-4/3 overflow-hidden">
@@ -129,7 +133,7 @@ function App() {
                   {new Date(file.modifiedAt).toLocaleDateString()}
                 </p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
