@@ -81,3 +81,17 @@ export const getFileSummaryFn = createServerFn({ method: 'GET' })
       params: { id: data.fileId },
     });
   });
+
+export const getPageFn = createServerFn({ method: 'GET' })
+  .inputValidator(
+    z.object({
+      fileId: z.uuid(),
+      pageId: z.uuid(),
+    }),
+  )
+  .middleware([authMiddleware])
+  .handler(async ({ data, context }) => {
+    return rpc<any>(context.token, 'get-page', {
+      params: { 'file-id': data.fileId, 'page-id': data.pageId },
+    });
+  });

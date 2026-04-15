@@ -1,6 +1,8 @@
+import { Render } from '#/components/render';
 import { getFileSummaryFn } from '#/lib/server/penpot-api';
 import { queryOptions } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
+import { Suspense } from 'react';
 
 const getFileSummaryQueryOptions = (fileId: string) => {
   return queryOptions({
@@ -32,12 +34,17 @@ export const Route = createFileRoute('/workspace/$fileId/$pageId')({
       replace: true,
     });
   },
-  loader: () => {
-    console.log('Loading page route');
-    return true;
-  },
 });
 
 function RouteComponent() {
-  return <div>Hello "/workspace/$fileId/$pageId"!</div>;
+  const { fileId, pageId } = Route.useParams();
+
+  return (
+    <div>
+      Hello "/workspace/$fileId/$pageId"!
+      <Suspense fallback={<div>Loading...</div>}>
+        <Render fileId={fileId} pageId={pageId} />
+      </Suspense>
+    </div>
+  );
 }
