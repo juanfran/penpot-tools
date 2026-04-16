@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start';
-import ky, { HTTPError } from 'ky';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import z from 'zod';
 import { convertPage } from '@penpot-random/converter';
@@ -26,24 +25,33 @@ async function rpc<T>(
       }
     }
   }
-  try {
-    const result = await ky
-      .get(`${BASE_URL}/api/main/methods/${command}`, {
-        headers: {
-          Authorization: `Token ${token}`,
-          'Content-Type': 'application/transit+json',
-        },
-        searchParams,
-      })
-      .json<T>();
-
-    return result;
-  } catch (error) {
-    if (error instanceof HTTPError && error.response.status === 401) {
-      throw redirect({ to: '/login' });
-    }
-    throw error;
+  const url = new URL(`${BASE_URL}/api/main/methods/${command}`);
+  if (searchParams) {
+    url.search = searchParams.toString();
   }
+
+  console.time(`RPC ${command}`);
+  const response = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Token ${token}`,
+      Accept: 'application/json',
+    },
+  });
+  console.timeEnd(`RPC ${command}`);
+
+  if (response.status === 401) {
+    throw redirect({ to: '/login' });
+  }
+
+  if (!response.ok) {
+    throw new Error(`HTTP error ${response.status}`);
+  }
+
+  console.time(`Parse response ${command}`);
+  const result = (await response.json()) as Promise<T>;
+  console.timeEnd(`Parse response ${command}`);
+
+  return result;
 }
 
 export interface Team {
@@ -102,7 +110,6 @@ export const getFileSummaryFn = createServerFn({ method: 'GET' })
   )
   .middleware([authMiddleware])
   .handler(async ({ data, context }) => {
-    console.time('Fetching file summary');
     const result = await rpc<PenpotFileSummary>(context.token, 'get-file', {
       params: {
         id: data.fileId,
@@ -118,7 +125,6 @@ export const getFileSummaryFn = createServerFn({ method: 'GET' })
         ],
       },
     });
-    console.timeEnd('Fetching file summary');
 
     return result;
   });
@@ -154,11 +160,9 @@ export const getPageHtmlFn = createServerFn({ method: 'GET' })
   )
   .middleware([authMiddleware])
   .handler(async ({ data, context }) => {
-    console.time('Fetching page for rendering');
     const page = await rpc<Page>(context.token, 'get-page', {
       params: { 'file-id': data.fileId, 'page-id': data.pageId },
     });
-    console.timeEnd('Fetching page for rendering');
     const tokens = extractTokens(page.objects);
     const ctx: ConverterContext = {
       resolveImageUrl: (id: Uuid) => `${BASE_URL}/assets/by-file-media-id/${id}`,

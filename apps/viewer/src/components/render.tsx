@@ -73,7 +73,7 @@ export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) =
       )}
       {data.tokensCss && <style>{data.tokensCss}</style>}
 
-      <div ref={containerRef} className="relative h-full w-full bg-[#e8e9ea]">
+      <div ref={containerRef} className="relative h-full w-full bg-[#e8e9ea] contain-strict">
         <TransformWrapper
           minScale={0.05}
           maxScale={10}
@@ -85,7 +85,7 @@ export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) =
           <ZoomControls />
           <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
             <div
-              className="pointer-events-none relative contain-strict"
+              className="pointer-events-none relative"
               style={{ width: containerSize.width, height: containerSize.height }}
               dangerouslySetInnerHTML={{ __html: data.html }}
             />
