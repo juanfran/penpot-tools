@@ -46,9 +46,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <div className="root">{children}</div>
-        <TanStackDevtools
+        {/* <TanStackDevtools
           config={{
-            position: 'bottom-right',
+            hideUntilHover: true,
+            position: 'bottom-left',
           }}
           plugins={[
             {
@@ -65,7 +66,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               render: <FormDevtoolsPanel />,
             },
           ]}
-        />
+        /> */}
         <Scripts />
       </body>
     </html>
