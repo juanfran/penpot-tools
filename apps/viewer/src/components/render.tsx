@@ -1,3 +1,4 @@
+import { useRef, useState, useEffect } from 'react';
 import { getPageHtmlFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
@@ -47,6 +48,20 @@ export const getPageHtmlOptions = (fileId: string, pageId: string) => {
 export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) => {
   const { data } = useSuspenseQuery(getPageHtmlOptions(fileId, pageId));
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setContainerSize({ width, height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <>
       {data.googleFontsUrl && (
@@ -58,7 +73,7 @@ export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) =
       )}
       {data.tokensCss && <style>{data.tokensCss}</style>}
 
-      <div className="relative h-full w-full bg-[#e8e9ea]">
+      <div ref={containerRef} className="relative h-full w-full bg-[#e8e9ea]">
         <TransformWrapper
           minScale={0.05}
           maxScale={10}
@@ -70,7 +85,8 @@ export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) =
           <ZoomControls />
           <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
             <div
-              className="pointer-events-none relative h-[3000px] w-[3000px] contain-strict"
+              className="pointer-events-none relative contain-strict"
+              style={{ width: containerSize.width, height: containerSize.height }}
               dangerouslySetInnerHTML={{ __html: data.html }}
             />
           </TransformComponent>
