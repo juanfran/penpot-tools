@@ -142,14 +142,20 @@ class PenpotClient {
 
     const url = `${this.apiBase}/methods/get-page?${new URLSearchParams(params).toString()}`;
 
+    console.log(`Fetching page from ${url}...`);
+
+    console.time('Fetch page');
     const res = await fetch(url, { method: 'GET', headers: this.headers });
+    console.timeEnd('Fetch page');
 
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`get-page failed (${res.status}): ${text}`);
     }
-
-    return res.json() as Promise<Page>;
+    console.time('Parse page response');
+    const result = (await res.json()) as Promise<Page>;
+    console.timeEnd('Parse page response');
+    return result;
   }
 }
 

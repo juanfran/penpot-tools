@@ -30,14 +30,15 @@ async function rpc<T>(
     url.search = searchParams.toString();
   }
 
-  console.time(`RPC ${command}`);
+  const id = crypto.randomUUID();
+  console.time(`RPC ${command} (${id})`);
   const response = await fetch(url.toString(), {
     headers: {
       Authorization: `Token ${token}`,
       Accept: 'application/json',
     },
   });
-  console.timeEnd(`RPC ${command}`);
+  console.timeEnd(`RPC ${command} (${id})`);
 
   if (response.status === 401) {
     throw redirect({ to: '/login' });
@@ -47,9 +48,9 @@ async function rpc<T>(
     throw new Error(`HTTP error ${response.status}`);
   }
 
-  console.time(`Parse response ${command}`);
+  console.time(`Parse response ${command} (${id})`);
   const result = (await response.json()) as Promise<T>;
-  console.timeEnd(`Parse response ${command}`);
+  console.timeEnd(`Parse response ${command} (${id})`);
 
   return result;
 }
