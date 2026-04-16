@@ -133,3 +133,18 @@
     @apply font-sans;
   }
 }
+
+@utility contain-* {
+  &-layout {
+    contain: layout;
+  }
+  &-style {
+    contain: style;
+  }
+  &-paint {
+    contain: paint;
+  }
+  &-strict {
+    contain: strict;
+  }
+}
