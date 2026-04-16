@@ -3,7 +3,7 @@ import { getFileSummaryFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { Suspense } from 'react';
-import { file, z } from 'zod';
+import { z } from 'zod';
 
 const getFileSummaryQueryOptions = (fileId: string) => {
   return queryOptions({
