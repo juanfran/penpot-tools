@@ -23,7 +23,10 @@ export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) =
         </>
       )}
       {data.tokensCss && <style>{data.tokensCss}</style>}
-      <div className="contain-strict" dangerouslySetInnerHTML={{ __html: data.html }} />
+      <div
+        className="h-full w-full contain-strict"
+        dangerouslySetInnerHTML={{ __html: data.html }}
+      />
     </>
   );
 };

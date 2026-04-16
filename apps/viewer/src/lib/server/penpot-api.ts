@@ -12,16 +12,26 @@ const BASE_URL = 'https://design.penpot.app';
 async function rpc<T>(
   token: string,
   command: string,
-  options?: { params?: Record<string, string>; body?: Record<string, unknown> },
+  options?: { params?: Record<string, string | string[]>; body?: Record<string, unknown> },
 ): Promise<T> {
+  let searchParams: URLSearchParams | undefined;
+  if (options?.params) {
+    searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(options.params)) {
+      if (Array.isArray(value)) {
+        for (const v of value) searchParams.append(key, v);
+      } else {
+        searchParams.set(key, value);
+      }
+    }
+  }
   return ky
-    .get(`${BASE_URL}/api/rpc/command/${command}`, {
+    .get(`${BASE_URL}/api/main/methods/${command}`, {
       headers: {
         Authorization: `Token ${token}`,
         'Content-Type': 'application/transit+json',
       },
-      searchParams: options?.params,
-      // json: options?.body ?? {},
+      searchParams,
     })
     .json<T>();
 }
@@ -82,23 +92,25 @@ export const getFileSummaryFn = createServerFn({ method: 'GET' })
   )
   .middleware([authMiddleware])
   .handler(async ({ data, context }) => {
-    return rpc<PenpotFileSummary>(context.token, 'get-file', {
-      params: { id: data.fileId },
+    console.time('Fetching file summary');
+    const result = await rpc<PenpotFileSummary>(context.token, 'get-file', {
+      params: {
+        id: data.fileId,
+        features: [
+          'fdata/path-data',
+          'design-tokens/v1',
+          'variants/v1',
+          'layout/grid',
+          'styles/v2',
+          'fdata/objects-map',
+          'components/v2',
+          'fdata/shape-data-type',
+        ],
+      },
     });
-  });
+    console.timeEnd('Fetching file summary');
 
-export const getPageFn = createServerFn({ method: 'GET' })
-  .inputValidator(
-    z.object({
-      fileId: z.uuid(),
-      pageId: z.uuid(),
-    }),
-  )
-  .middleware([authMiddleware])
-  .handler(async ({ data, context }) => {
-    return rpc<any>(context.token, 'get-page', {
-      params: { 'file-id': data.fileId, 'page-id': data.pageId },
-    });
+    return result;
   });
 
 function buildGoogleFontsUrl(fonts: FontInfo[]): string | null {
@@ -132,9 +144,11 @@ export const getPageHtmlFn = createServerFn({ method: 'GET' })
   )
   .middleware([authMiddleware])
   .handler(async ({ data, context }) => {
+    console.time('Fetching page for rendering');
     const page = await rpc<Page>(context.token, 'get-page', {
       params: { 'file-id': data.fileId, 'page-id': data.pageId },
     });
+    console.timeEnd('Fetching page for rendering');
     const tokens = extractTokens(page.objects);
     const ctx: ConverterContext = {
       resolveImageUrl: (id: Uuid) => `${BASE_URL}/assets/by-file-media-id/${id}`,
