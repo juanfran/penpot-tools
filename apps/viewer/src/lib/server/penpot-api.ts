@@ -1,11 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
-import ky from 'ky';
+import ky, { HTTPError } from 'ky';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import z from 'zod';
 import { convertPage } from '@penpot-random/converter';
 import { extractTokens, tokensToCss } from '@penpot-random/converter/tokens';
 import type { Page, Uuid } from '@penpot-random/penpot-types';
 import type { ConverterContext, FontInfo } from '@penpot-random/converter';
+import { redirect } from '@tanstack/react-router';
 
 const BASE_URL = 'https://design.penpot.app';
 
@@ -25,15 +26,24 @@ async function rpc<T>(
       }
     }
   }
-  return ky
-    .get(`${BASE_URL}/api/main/methods/${command}`, {
-      headers: {
-        Authorization: `Token ${token}`,
-        'Content-Type': 'application/transit+json',
-      },
-      searchParams,
-    })
-    .json<T>();
+  try {
+    const result = await ky
+      .get(`${BASE_URL}/api/main/methods/${command}`, {
+        headers: {
+          Authorization: `Token ${token}`,
+          'Content-Type': 'application/transit+json',
+        },
+        searchParams,
+      })
+      .json<T>();
+
+    return result;
+  } catch (error) {
+    if (error instanceof HTTPError && error.response.status === 401) {
+      throw redirect({ to: '/login' });
+    }
+    throw error;
+  }
 }
 
 export interface Team {

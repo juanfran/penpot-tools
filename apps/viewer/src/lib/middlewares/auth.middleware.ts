@@ -1,5 +1,6 @@
 import { createMiddleware } from '@tanstack/react-start';
 import { getTokenFromCookie } from '../auth';
+import { redirect } from '@tanstack/react-router';
 
 export const authMiddleware = createMiddleware().server(({ next }) => {
   const token = getTokenFromCookie();
@@ -12,6 +13,3 @@ export const authMiddleware = createMiddleware().server(({ next }) => {
     context: { token },
   });
 });
-function redirect(arg0: { to: string }) {
-  throw new Error('Function not implemented.');
-}

@@ -58,7 +58,7 @@ export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) =
       )}
       {data.tokensCss && <style>{data.tokensCss}</style>}
 
-      <div className="relative h-full w-full">
+      <div className="relative h-full w-full bg-[#e8e9ea]">
         <TransformWrapper
           minScale={0.05}
           maxScale={10}
