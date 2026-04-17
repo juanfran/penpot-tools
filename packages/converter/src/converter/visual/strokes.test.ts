@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { solidStrokeToClasses, strokeAlignmentToStyle } from './strokes';
+import { solidStrokeToClasses } from './strokes';
 import type { Stroke, HexColor } from '../../penpot.types';
 
 describe('solidStrokeToClasses', () => {
@@ -109,57 +109,5 @@ describe('solidStrokeToClasses', () => {
     expect(result.classes).toContain('border-[2px]');
     expect(result.classes).toContain('rgba(255,_0,_0,_0.5)');
     expect(result.style).toBe('');
-  });
-});
-
-describe('strokeAlignmentToStyle', () => {
-  it('returns empty string for center alignment', () => {
-    const stroke: Stroke = {
-      strokeColor: '#ff0000' as HexColor,
-      strokeWidth: 2,
-      strokeAlignment: 'center',
-    };
-    expect(strokeAlignmentToStyle(stroke)).toBe('');
-  });
-
-  it('returns empty string when strokeAlignment is undefined', () => {
-    const stroke: Stroke = {
-      strokeColor: '#ff0000' as HexColor,
-      strokeWidth: 2,
-    };
-    expect(strokeAlignmentToStyle(stroke)).toBe('');
-  });
-
-  it('returns inset box-shadow for inner alignment', () => {
-    const stroke: Stroke = {
-      strokeColor: '#0000ff' as HexColor,
-      strokeWidth: 4,
-      strokeAlignment: 'inner',
-    };
-    expect(strokeAlignmentToStyle(stroke)).toBe('box-shadow: inset 0 0 0 4px #0000ff;');
-  });
-
-  it('returns outer box-shadow for outer alignment', () => {
-    const stroke: Stroke = {
-      strokeColor: '#0000ff' as HexColor,
-      strokeWidth: 4,
-      strokeAlignment: 'outer',
-    };
-    expect(strokeAlignmentToStyle(stroke)).toBe('box-shadow: 0 0 0 4px #0000ff;');
-  });
-
-  it('uses rgba color when strokeOpacity is set', () => {
-    const stroke: Stroke = {
-      strokeColor: '#ff0000' as HexColor,
-      strokeOpacity: 0.5,
-      strokeWidth: 3,
-      strokeAlignment: 'outer',
-    };
-    expect(strokeAlignmentToStyle(stroke)).toBe('box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.5);');
-  });
-
-  it('returns empty string when no strokeColor is present', () => {
-    const stroke: Stroke = { strokeWidth: 2, strokeAlignment: 'inner' };
-    expect(strokeAlignmentToStyle(stroke)).toBe('');
   });
 });

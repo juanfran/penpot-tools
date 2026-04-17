@@ -1,47 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildStyle, mergeStyles } from './style';
-
-describe('buildStyle', () => {
-  it('builds a style string from a simple object', () => {
-    expect(buildStyle({ position: 'absolute', left: '10px', top: '20px' })).toBe(
-      'position: absolute; left: 10px; top: 20px;',
-    );
-  });
-
-  it('converts camelCase keys to kebab-case', () => {
-    expect(buildStyle({ backgroundColor: '#ff0000' })).toBe('background-color: #ff0000;');
-    expect(buildStyle({ fontSize: '16px' })).toBe('font-size: 16px;');
-    expect(buildStyle({ borderTopLeftRadius: '4px' })).toBe('border-top-left-radius: 4px;');
-  });
-
-  it('skips undefined values', () => {
-    expect(buildStyle({ left: '10px', top: undefined })).toBe('left: 10px;');
-  });
-
-  it('skips null values', () => {
-    expect(buildStyle({ left: '10px', top: null })).toBe('left: 10px;');
-  });
-
-  it('skips empty string values', () => {
-    expect(buildStyle({ left: '10px', top: '' })).toBe('left: 10px;');
-  });
-
-  it('includes numeric zero values', () => {
-    expect(buildStyle({ left: 0, top: 0 })).toBe('left: 0; top: 0;');
-  });
-
-  it('includes non-zero numeric values', () => {
-    expect(buildStyle({ width: 120, height: 80 })).toBe('width: 120; height: 80;');
-  });
-
-  it('returns empty string for empty object', () => {
-    expect(buildStyle({})).toBe('');
-  });
-
-  it('returns empty string when all values are skipped', () => {
-    expect(buildStyle({ left: null, top: undefined, right: '' })).toBe('');
-  });
-});
+import { mergeStyles } from './style';
 
 describe('mergeStyles', () => {
   it('joins two style strings', () => {

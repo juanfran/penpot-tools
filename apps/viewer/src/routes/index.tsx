@@ -61,10 +61,7 @@ function App() {
             </p>
           )}
           {teamsQuery.data && (
-            <Select
-              value={selectedTeamId ?? ''}
-              onValueChange={handleTeamChange}
-            >
+            <Select value={selectedTeamId ?? ''} onValueChange={handleTeamChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a team">
                   {selectedTeamId

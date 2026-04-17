@@ -1,4 +1,4 @@
-import type { Page, Shape, Uuid } from '../penpot.types';
+import type { Uuid } from '../penpot.types';
 
 /** Information about a font used in the converted output */
 export interface FontInfo {
@@ -42,18 +42,4 @@ export interface ConverterContext {
   tokens?: Map<string, string>;
   /** When true (default), format the output HTML with oxfmt */
   format?: boolean;
-}
-
-/** Convert a full Penpot page to an HTML document string */
-export function convertPage(_page: Page, _ctx: ConverterContext): ConvertResult {
-  throw new Error('not implemented');
-}
-
-/** Convert a single shape and all its descendants to an HTML snippet */
-export function convertShape(
-  _shape: Shape,
-  _allObjects: Record<string, Shape>,
-  _ctx: ConverterContext,
-): Promise<ConvertResult> {
-  throw new Error('not implemented');
 }

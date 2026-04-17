@@ -1,7 +1,7 @@
 import type { Shape, Uuid } from '../penpot.types';
 
 /** A shape node in the built tree, augmented with resolved children. */
-export type ShapeNode = Shape & { _children: ShapeNode[] };
+type ShapeNode = Shape & { _children: ShapeNode[] };
 
 /** Returns true if the shape has an ordered list of child IDs. */
 function hasShapes(shape: Shape): shape is Shape & { shapes: Uuid[] } {

@@ -6,11 +6,15 @@
   "license": "ISC",
   "author": "",
   "type": "module",
-  "main": "index.js",
   "scripts": {
     "test": "vitest",
     "penpot-to-html": "tsx src/penpot-to-html.ts",
-    "preview": "tsx src/intengration/preview.mts"
+    "preview": "tsx src/intengration/preview.mts",
+    "knip": "knip"
+  },
+  "dependencies": {
+    "knip": "^6.4.1",
+    "oxfmt": "^0.45.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.2",

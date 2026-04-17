@@ -11,7 +11,8 @@
     "penpot-to-html": "pnpm --filter @penpot-random/converter penpot-to-html",
     "lint": "oxlint .",
     "format": "oxfmt --check",
-    "check": "oxlint --fix-dangerously && oxfmt"
+    "check": "oxlint --fix-dangerously && oxfmt",
+    "knip": "pnpm --filter @penpot-random/converter knip"
   },
   "devDependencies": {
     "@types/node": "^25.5.2",

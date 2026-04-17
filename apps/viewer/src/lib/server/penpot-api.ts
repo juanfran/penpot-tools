@@ -5,7 +5,7 @@ import { convertPage } from '@penpot-random/converter';
 import { extractTokens, tokensToCss } from '@penpot-random/converter/tokens';
 import type { Page, Uuid } from '@penpot-random/penpot-types';
 import type { ConverterContext, FontInfo } from '@penpot-random/converter';
-import { getFileSummary, rpc, rpcPick } from './penpot-api-utils.server';
+import { getFileSummary, rpc } from './penpot-api-utils.server';
 
 const BASE_URL = 'https://design.penpot.app';
 

@@ -51,22 +51,3 @@ export function solidStrokeToClasses(
 
   return { classes, style: '' };
 }
-
-/**
- * Converts a Penpot stroke alignment to a CSS `box-shadow` inline style string.
- *
- * - `inner`: `box-shadow: inset 0 0 0 Npx color`
- * - `outer`: `box-shadow: 0 0 0 Npx color`
- * - `center` (default) or missing strokeColor: returns `''` (handled by CSS border)
- *
- * Use `hexOpacityToCss` for the color to support opacity.
- */
-export function strokeAlignmentToStyle(stroke: Stroke): string {
-  const alignment = stroke.strokeAlignment ?? 'center';
-  if (alignment === 'center' || !stroke.strokeColor) return '';
-
-  const color = hexOpacityToCss(stroke.strokeColor, stroke.strokeOpacity);
-  const width = stroke.strokeWidth ?? 1;
-  const inset = alignment === 'inner' ? 'inset ' : '';
-  return `box-shadow: ${inset}0 0 0 ${width}px ${color};`;
-}
