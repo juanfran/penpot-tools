@@ -145,6 +145,8 @@ class PenpotClient {
     console.log(`Fetching page from ${url}...`);
 
     console.time('Fetch page');
+    console.log(`GET ${url}`);
+    console.log('Headers:', this.headers);
     const res = await fetch(url, { method: 'GET', headers: this.headers });
     console.timeEnd('Fetch page');
 
