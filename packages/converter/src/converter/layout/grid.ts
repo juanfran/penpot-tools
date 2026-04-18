@@ -1,5 +1,4 @@
 import type { GridTrack, GridCell, GridCellAlign, FrameShape, Uuid } from '../../penpot.types';
-import { cls } from '../utils/tailwind';
 
 function trackValue(track: GridTrack): string {
   switch (track.type) {
@@ -14,21 +13,11 @@ function trackValue(track: GridTrack): string {
   }
 }
 
-/**
- * Converts an array of `GridTrack` into a Tailwind arbitrary-value class for
- * `grid-template-columns` or `grid-template-rows`.
- *
- * Spaces in the value are replaced with underscores per Tailwind syntax.
- * Returns an empty string when `tracks` is empty.
- *
- * Example: `[{type:'flex',value:1}, {type:'flex',value:1}]` columns
- *          → `'grid-cols-[1fr_1fr]'`
- */
-export function gridTracksToClass(tracks: GridTrack[], axis: 'columns' | 'rows'): string {
+export function gridTracksToStyle(tracks: GridTrack[], axis: 'columns' | 'rows'): string {
   if (tracks.length === 0) return '';
-  const prefix = axis === 'columns' ? 'grid-cols' : 'grid-rows';
-  const value = tracks.map(trackValue).join(' ').replace(/ /g, '_');
-  return `${prefix}-[${value}]`;
+  const prop = axis === 'columns' ? 'grid-template-columns' : 'grid-template-rows';
+  const value = tracks.map(trackValue).join(' ');
+  return `${prop}: ${value};`;
 }
 
 const ALIGN_MAP: Partial<Record<GridCellAlign, string>> = {
@@ -38,40 +27,24 @@ const ALIGN_MAP: Partial<Record<GridCellAlign, string>> = {
   stretch: 'stretch',
 };
 
-/**
- * Returns Tailwind grid placement classes for a single `GridCell`.
- *
- * - `row` → `row-start-[N]`
- * - `rowSpan > 1` → `row-span-[N]`
- * - `column` → `col-start-[N]`
- * - `columnSpan > 1` → `col-span-[N]`
- * - `alignSelf` → `self-*` (skipped for 'auto' or undefined)
- * - `justifySelf` → `justify-self-*` (skipped for 'auto' or undefined)
- */
-export function gridCellClasses(cell: GridCell): string {
-  const alignClass =
-    cell.alignSelf && ALIGN_MAP[cell.alignSelf] ? `self-${ALIGN_MAP[cell.alignSelf]}` : undefined;
+export function gridCellStyle(cell: GridCell): string {
+  const parts: string[] = [];
 
-  const justifyClass =
-    cell.justifySelf && ALIGN_MAP[cell.justifySelf]
-      ? `justify-self-${ALIGN_MAP[cell.justifySelf]}`
-      : undefined;
+  parts.push(`grid-row-start: ${cell.row};`);
+  if (cell.rowSpan > 1) parts.push(`grid-row-end: span ${cell.rowSpan};`);
+  parts.push(`grid-column-start: ${cell.column};`);
+  if (cell.columnSpan > 1) parts.push(`grid-column-end: span ${cell.columnSpan};`);
 
-  return cls(
-    `row-start-[${cell.row}]`,
-    cell.rowSpan > 1 ? `row-span-[${cell.rowSpan}]` : undefined,
-    `col-start-[${cell.column}]`,
-    cell.columnSpan > 1 ? `col-span-[${cell.columnSpan}]` : undefined,
-    alignClass,
-    justifyClass,
-  );
+  if (cell.alignSelf && ALIGN_MAP[cell.alignSelf]) {
+    parts.push(`align-self: ${ALIGN_MAP[cell.alignSelf]};`);
+  }
+  if (cell.justifySelf && ALIGN_MAP[cell.justifySelf]) {
+    parts.push(`justify-self: ${ALIGN_MAP[cell.justifySelf]};`);
+  }
+
+  return parts.join(' ');
 }
 
-/**
- * Finds the `GridCell` in `frame.layoutGridCells` that contains `shapeId`.
- *
- * Returns `undefined` if no cell contains the shape.
- */
 export function findCellForShape(frame: FrameShape, shapeId: Uuid): GridCell | undefined {
   if (!frame.layoutGridCells) return undefined;
   return Object.values(frame.layoutGridCells).find((cell) => cell.shapes.includes(shapeId));

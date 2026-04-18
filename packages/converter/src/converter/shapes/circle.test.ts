@@ -36,49 +36,47 @@ describe('renderCircle', () => {
     expect(html).toContain('data-id="my-circle"');
   });
 
-  it('includes absolute positioning classes', () => {
+  it('includes absolute positioning in style', () => {
     const html = renderCircle(makeCircle({ x: 10, y: 20, width: 80, height: 80 }), null, ctx);
-    expect(html).toContain('absolute');
-    expect(html).toContain('left-[10px]');
-    expect(html).toContain('top-[20px]');
-    expect(html).toContain('w-[80px]');
-    expect(html).toContain('h-[80px]');
+    expect(html).toContain('position: absolute;');
+    expect(html).toContain('left: 10px;');
+    expect(html).toContain('top: 20px;');
+    expect(html).toContain('width: 80px;');
+    expect(html).toContain('height: 80px;');
   });
 
-  it('uses rounded-full when width equals height (perfect circle)', () => {
-    const html = renderCircle(makeCircle({ width: 80, height: 80 }), null, ctx);
-    expect(html).toContain('rounded-full');
-    expect(html).not.toContain('border-radius: 50%');
+  it('uses border-radius: 50% for both circles and ellipses', () => {
+    const circle = renderCircle(makeCircle({ width: 80, height: 80 }), null, ctx);
+    expect(circle).toContain('border-radius: 50%;');
+
+    const ellipse = renderCircle(makeCircle({ width: 120, height: 80 }), null, ctx);
+    expect(ellipse).toContain('border-radius: 50%;');
   });
 
-  it('uses rounded-[50%] class for ellipse (width !== height)', () => {
-    const html = renderCircle(makeCircle({ width: 120, height: 80 }), null, ctx);
-    expect(html).toContain('rounded-[50%]');
-    expect(html).not.toContain('rounded-full');
-    expect(html).not.toContain('border-radius: 50%');
-  });
-
-  it('includes fill class', () => {
+  it('includes fill as background-color', () => {
     const html = renderCircle(
       makeCircle({ fills: [{ fillColor: '#ff0000' as HexColor }] }),
       null,
       ctx,
     );
-    expect(html).toContain('bg-[#ff0000]');
+    expect(html).toContain('background-color: #ff0000;');
   });
 
-  it('includes opacity class', () => {
-    const html = renderCircle(makeCircle({ opacity: 0.5 }), null, ctx);
-    expect(html).toContain('opacity-[50%]');
+  it('includes opacity style', () => {
+    expect(renderCircle(makeCircle({ opacity: 0.5 }), null, ctx)).toContain('opacity: 0.5;');
   });
 
-  it('includes hidden class when hidden', () => {
-    const html = renderCircle(makeCircle({ hidden: true }), null, ctx);
-    expect(html).toContain('hidden');
+  it('includes display: none when hidden', () => {
+    expect(renderCircle(makeCircle({ hidden: true }), null, ctx)).toContain('display: none;');
   });
 
-  it('includes blend mode class', () => {
-    const html = renderCircle(makeCircle({ blendMode: 'multiply' }), null, ctx);
-    expect(html).toContain('mix-blend-multiply');
+  it('includes blend mode style', () => {
+    expect(renderCircle(makeCircle({ blendMode: 'multiply' }), null, ctx)).toContain(
+      'mix-blend-mode: multiply;',
+    );
+  });
+
+  it('has no class attribute', () => {
+    expect(renderCircle(makeCircle(), null, ctx)).not.toContain('class=');
   });
 });

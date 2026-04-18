@@ -41,8 +41,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
-        {/* TODO */}
-        <script src="https://cdn.tailwindcss.com" />
       </head>
       <body>
         <div className="root">{children}</div>

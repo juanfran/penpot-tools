@@ -1,44 +1,51 @@
 import { describe, it, expect } from 'vitest';
-import { gridTracksToClass, gridCellClasses, findCellForShape } from './grid';
+import { gridTracksToStyle, gridCellStyle, findCellForShape } from './grid';
 import type { GridTrack, GridCell, FrameShape, Uuid } from '../../penpot.types';
 
-const makeTrack = (type: GridTrack['type'], value?: number): GridTrack => ({
-  type,
-  value,
-});
+const makeTrack = (type: GridTrack['type'], value?: number): GridTrack => ({ type, value });
 
-describe('gridTracksToClass', () => {
+describe('gridTracksToStyle', () => {
   it('returns empty string for empty tracks', () => {
-    expect(gridTracksToClass([], 'columns')).toBe('');
+    expect(gridTracksToStyle([], 'columns')).toBe('');
   });
 
   it('converts fixed tracks to px', () => {
-    expect(gridTracksToClass([makeTrack('fixed', 100)], 'columns')).toBe('grid-cols-[100px]');
+    expect(gridTracksToStyle([makeTrack('fixed', 100)], 'columns')).toBe(
+      'grid-template-columns: 100px;',
+    );
   });
 
   it('converts percent tracks to %', () => {
-    expect(gridTracksToClass([makeTrack('percent', 50)], 'rows')).toBe('grid-rows-[50%]');
+    expect(gridTracksToStyle([makeTrack('percent', 50)], 'rows')).toBe(
+      'grid-template-rows: 50%;',
+    );
   });
 
   it('converts flex tracks to fr', () => {
-    expect(gridTracksToClass([makeTrack('flex', 2)], 'columns')).toBe('grid-cols-[2fr]');
+    expect(gridTracksToStyle([makeTrack('flex', 2)], 'columns')).toBe(
+      'grid-template-columns: 2fr;',
+    );
   });
 
   it('defaults flex track value to 1 when missing', () => {
-    expect(gridTracksToClass([makeTrack('flex')], 'columns')).toBe('grid-cols-[1fr]');
+    expect(gridTracksToStyle([makeTrack('flex')], 'columns')).toBe(
+      'grid-template-columns: 1fr;',
+    );
   });
 
   it('converts auto tracks', () => {
-    expect(gridTracksToClass([makeTrack('auto')], 'columns')).toBe('grid-cols-[auto]');
+    expect(gridTracksToStyle([makeTrack('auto')], 'columns')).toBe(
+      'grid-template-columns: auto;',
+    );
   });
 
-  it('joins multiple tracks with underscores', () => {
+  it('joins multiple tracks with spaces', () => {
     expect(
-      gridTracksToClass(
+      gridTracksToStyle(
         [makeTrack('fixed', 100), makeTrack('flex', 1), makeTrack('auto')],
         'columns',
       ),
-    ).toBe('grid-cols-[100px_1fr_auto]');
+    ).toBe('grid-template-columns: 100px 1fr auto;');
   });
 });
 
@@ -52,55 +59,51 @@ const makeCell = (overrides: Partial<GridCell> = {}): GridCell => ({
   ...overrides,
 });
 
-describe('gridCellClasses', () => {
-  it('emits row-start and col-start', () => {
-    const result = gridCellClasses(makeCell({ row: 2, column: 3 }));
-    expect(result).toContain('row-start-[2]');
-    expect(result).toContain('col-start-[3]');
+describe('gridCellStyle', () => {
+  it('emits grid-row-start and grid-column-start', () => {
+    const result = gridCellStyle(makeCell({ row: 2, column: 3 }));
+    expect(result).toContain('grid-row-start: 2;');
+    expect(result).toContain('grid-column-start: 3;');
   });
 
-  it('emits row-span when rowSpan > 1', () => {
-    const result = gridCellClasses(makeCell({ rowSpan: 2 }));
-    expect(result).toContain('row-span-[2]');
+  it('emits grid-row-end when rowSpan > 1', () => {
+    expect(gridCellStyle(makeCell({ rowSpan: 2 }))).toContain('grid-row-end: span 2;');
   });
 
-  it('does not emit row-span when rowSpan === 1', () => {
-    const result = gridCellClasses(makeCell({ rowSpan: 1 }));
-    expect(result).not.toContain('row-span');
+  it('does not emit grid-row-end when rowSpan === 1', () => {
+    expect(gridCellStyle(makeCell({ rowSpan: 1 }))).not.toContain('grid-row-end');
   });
 
-  it('emits col-span when columnSpan > 1', () => {
-    const result = gridCellClasses(makeCell({ columnSpan: 3 }));
-    expect(result).toContain('col-span-[3]');
+  it('emits grid-column-end when columnSpan > 1', () => {
+    expect(gridCellStyle(makeCell({ columnSpan: 3 }))).toContain('grid-column-end: span 3;');
   });
 
-  it('does not emit col-span when columnSpan === 1', () => {
-    const result = gridCellClasses(makeCell({ columnSpan: 1 }));
-    expect(result).not.toContain('col-span');
+  it('does not emit grid-column-end when columnSpan === 1', () => {
+    expect(gridCellStyle(makeCell({ columnSpan: 1 }))).not.toContain('grid-column-end');
   });
 
-  it('maps alignSelf to self-* class', () => {
-    expect(gridCellClasses(makeCell({ alignSelf: 'center' }))).toContain('self-center');
-    expect(gridCellClasses(makeCell({ alignSelf: 'start' }))).toContain('self-start');
-    expect(gridCellClasses(makeCell({ alignSelf: 'end' }))).toContain('self-end');
-    expect(gridCellClasses(makeCell({ alignSelf: 'stretch' }))).toContain('self-stretch');
+  it('maps alignSelf to align-self style', () => {
+    expect(gridCellStyle(makeCell({ alignSelf: 'center' }))).toContain('align-self: center;');
+    expect(gridCellStyle(makeCell({ alignSelf: 'start' }))).toContain('align-self: start;');
+    expect(gridCellStyle(makeCell({ alignSelf: 'end' }))).toContain('align-self: end;');
+    expect(gridCellStyle(makeCell({ alignSelf: 'stretch' }))).toContain('align-self: stretch;');
   });
 
   it('skips alignSelf when auto or undefined', () => {
-    expect(gridCellClasses(makeCell({ alignSelf: 'auto' }))).not.toContain('self-');
-    expect(gridCellClasses(makeCell())).not.toContain('self-');
+    expect(gridCellStyle(makeCell({ alignSelf: 'auto' }))).not.toContain('align-self');
+    expect(gridCellStyle(makeCell())).not.toContain('align-self');
   });
 
-  it('maps justifySelf to justify-self-* class', () => {
-    expect(gridCellClasses(makeCell({ justifySelf: 'center' }))).toContain('justify-self-center');
-    expect(gridCellClasses(makeCell({ justifySelf: 'start' }))).toContain('justify-self-start');
-    expect(gridCellClasses(makeCell({ justifySelf: 'end' }))).toContain('justify-self-end');
-    expect(gridCellClasses(makeCell({ justifySelf: 'stretch' }))).toContain('justify-self-stretch');
+  it('maps justifySelf to justify-self style', () => {
+    expect(gridCellStyle(makeCell({ justifySelf: 'center' }))).toContain('justify-self: center;');
+    expect(gridCellStyle(makeCell({ justifySelf: 'start' }))).toContain('justify-self: start;');
+    expect(gridCellStyle(makeCell({ justifySelf: 'end' }))).toContain('justify-self: end;');
+    expect(gridCellStyle(makeCell({ justifySelf: 'stretch' }))).toContain('justify-self: stretch;');
   });
 
   it('skips justifySelf when auto or undefined', () => {
-    expect(gridCellClasses(makeCell({ justifySelf: 'auto' }))).not.toContain('justify-self-');
-    expect(gridCellClasses(makeCell())).not.toContain('justify-self-');
+    expect(gridCellStyle(makeCell({ justifySelf: 'auto' }))).not.toContain('justify-self');
+    expect(gridCellStyle(makeCell())).not.toContain('justify-self');
   });
 });
 
@@ -124,15 +127,11 @@ const makeFrame = (overrides: Partial<FrameShape> = {}): FrameShape => ({
 
 describe('findCellForShape', () => {
   it('returns undefined when no layoutGridCells', () => {
-    const frame = makeFrame();
-    expect(findCellForShape(frame, 'shape-1' as Uuid)).toBeUndefined();
+    expect(findCellForShape(makeFrame(), 'shape-1' as Uuid)).toBeUndefined();
   });
 
   it('finds the cell containing the shape', () => {
-    const cell = makeCell({
-      id: 'cell-1' as Uuid,
-      shapes: ['shape-1' as Uuid],
-    });
+    const cell = makeCell({ id: 'cell-1' as Uuid, shapes: ['shape-1' as Uuid] });
     const frame = makeFrame({ layoutGridCells: { 'cell-1': cell } });
     expect(findCellForShape(frame, 'shape-1' as Uuid)).toBe(cell);
   });

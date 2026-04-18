@@ -3,41 +3,15 @@ import type { ConverterContext } from '../types';
 import { hexOpacityToCss } from '../utils/color';
 import { tokenToCssVarName } from '../tokens';
 
-/**
- * Converts a solid-color fill to a Tailwind arbitrary background-color class.
- * Returns `''` if no fill color is present.
- *
- * Examples:
- *  - `bg-[#ff0000]`
- *  - `bg-[rgba(255,_0,_0,_0.5)]`
- */
-export function solidFillToClass(fill: Fill): string {
-  if (!fill.fillColor) return '';
-
-  const cssColor = hexOpacityToCss(fill.fillColor, fill.fillOpacity);
-  // Tailwind arbitrary values require spaces to be represented with underscores
-  const tailwindColor = cssColor.replace(/ /g, '_');
-  return `bg-[${tailwindColor}]`;
-}
-
 function gradientStopToCss(stop: GradientStop): string {
   const color = hexOpacityToCss(stop.color, stop.opacity);
   const offset = Math.round(stop.offset * 100);
   return `${color} ${offset}%`;
 }
 
-/**
- * Converts a Penpot linear gradient to a CSS `background: linear-gradient(...)`
- * inline style string.
- *
- * The angle is computed from the start→end vector (relative 0–1 coordinates)
- * using `Math.atan2`, converting the screen-space vector to CSS clockwise-from-north
- * degrees (e.g. rightward → 90deg, downward → 180deg).
- */
 export function linearGradientToStyle(gradient: Gradient): string {
   const dx = gradient.endX - gradient.startX;
   const dy = gradient.endY - gradient.startY;
-  // CSS angle is clockwise from north; atan2(dx, -dy) maps screen-space vector to that convention
   const angleRad = Math.atan2(dx, -dy);
   const angleDeg = Math.round(angleRad * (180 / Math.PI));
   const normalizedAngle = ((angleDeg % 360) + 360) % 360;
@@ -46,14 +20,6 @@ export function linearGradientToStyle(gradient: Gradient): string {
   return `background: linear-gradient(${normalizedAngle}deg, ${stops});`;
 }
 
-/**
- * Converts a Penpot radial gradient to a CSS `background: radial-gradient(...)`
- * inline style string.
- *
- * The center is encoded as `(startX, startY)` in relative 0–1 coordinates.
- * The radius is the Euclidean distance from `(startX, startY)` to `(endX, endY)`.
- * If start and end are the same point, defaults to a centered circle.
- */
 export function radialGradientToStyle(gradient: Gradient): string {
   const dx = gradient.endX - gradient.startX;
   const dy = gradient.endY - gradient.startY;
@@ -71,35 +37,19 @@ export function radialGradientToStyle(gradient: Gradient): string {
   return `background: radial-gradient(circle at ${centerX}% ${centerY}%, ${stops});`;
 }
 
-/**
- * Converts an image fill to Tailwind background classes.
- * Returns `{ classes: '', style: '' }` if no `fillImage` is present.
- *
- * Uses `bg-contain` when `keepAspectRatio` is true, otherwise `bg-cover`.
- */
-export function imageFillToStyle(
-  fill: Fill,
-  ctx: ConverterContext,
-): { classes: string; style: string } {
-  if (!fill.fillImage) return { classes: '', style: '' };
-
-  const url = ctx.resolveImageUrl(fill.fillImage.id);
-  // Escape single quotes in the URL to prevent breaking the CSS string
-  const safeUrl = url.replace(/'/g, '%27');
-  // keepAspectRatio is a design-editor hint (locks shape proportions when resizing),
-  // not a CSS background-size selector. Image fills always cover the shape area.
-  const sizeClass = 'bg-cover';
-
-  return {
-    classes: `bg-[url('${safeUrl}')] ${sizeClass} bg-center bg-no-repeat`,
-    style: '',
-  };
+export function solidFillToStyle(fill: Fill): string {
+  if (!fill.fillColor) return '';
+  const cssColor = hexOpacityToCss(fill.fillColor, fill.fillOpacity);
+  return `background-color: ${cssColor};`;
 }
 
-/**
- * Extracts the CSS image-layer value for a gradient (without the `background:` prefix).
- * Used when composing multi-layer backgrounds.
- */
+export function imageFillToStyle(fill: Fill, ctx: ConverterContext): string {
+  if (!fill.fillImage) return '';
+  const url = ctx.resolveImageUrl(fill.fillImage.id);
+  const safeUrl = url.replace(/'/g, '%27');
+  return `background-image: url('${safeUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
+}
+
 function gradientToImageValue(gradient: Gradient): string {
   const stops = gradient.stops.map(gradientStopToCss).join(', ');
   if (gradient.type === 'linear') {
@@ -120,7 +70,6 @@ function gradientToImageValue(gradient: Gradient): string {
     : `radial-gradient(circle at ${cx}% ${cy}%, ${stops})`;
 }
 
-/** Converts a solid fill to a solid-color CSS image layer (for use in multi-layer backgrounds). */
 function solidToImageValue(fill: Fill): string {
   const color = hexOpacityToCss(fill.fillColor!, fill.fillOpacity);
   return `linear-gradient(${color}, ${color})`;
@@ -162,43 +111,27 @@ function fillToBgLayer(fill: Fill, ctx: ConverterContext): BgLayer | null {
   return null;
 }
 
-/**
- * Dispatches each fill to the appropriate converter and accumulates
- * the result into `{ classes, style }`.
- *
- * - Single solid fill → Tailwind `bg-[color]` class
- * - All other cases (gradients, images, multiple fills) → CSS `background-*` inline styles
- *   using layered backgrounds (first fill = topmost CSS layer).
- */
 export function fillsToOutput(
   fills: Fill[] | null | undefined,
   ctx: ConverterContext,
   fillTokenName?: string,
-): { classes: string; style: string } {
-  if (!fills || fills.length === 0) return { classes: '', style: '' };
+): string {
+  if (!fills || fills.length === 0) return '';
 
-  // Token override: emit CSS variable instead of raw color
   if (fillTokenName && ctx.tokens?.has(fillTokenName)) {
-    return { classes: `bg-[var(--${tokenToCssVarName(fillTokenName)})]`, style: '' };
+    return `background-color: var(--${tokenToCssVarName(fillTokenName)});`;
   }
 
-  // Fast path: single fill
   if (fills.length === 1) {
     const fill = fills[0];
     if (fill.fillColorGradient) {
-      const style =
-        fill.fillColorGradient.type === 'linear'
-          ? linearGradientToStyle(fill.fillColorGradient)
-          : radialGradientToStyle(fill.fillColorGradient);
-      return { classes: '', style };
+      return fill.fillColorGradient.type === 'linear'
+        ? linearGradientToStyle(fill.fillColorGradient)
+        : radialGradientToStyle(fill.fillColorGradient);
     }
-    if (fill.fillImage) {
-      return imageFillToStyle(fill, ctx);
-    }
-    if (fill.fillColor) {
-      return { classes: solidFillToClass(fill), style: '' };
-    }
-    return { classes: '', style: '' };
+    if (fill.fillImage) return imageFillToStyle(fill, ctx);
+    if (fill.fillColor) return solidFillToStyle(fill);
+    return '';
   }
 
   // Multiple fills: build CSS layered background-image.
@@ -210,7 +143,7 @@ export function fillsToOutput(
     if (layer) layers.push(layer);
   }
 
-  if (layers.length === 0) return { classes: '', style: '' };
+  if (layers.length === 0) return '';
 
   const parts = [
     `background-image: ${layers.map((l) => l.image).join(', ')}`,
@@ -218,5 +151,5 @@ export function fillsToOutput(
     `background-position: ${layers.map((l) => l.position).join(', ')}`,
     `background-repeat: ${layers.map((l) => l.repeat).join(', ')}`,
   ];
-  return { classes: '', style: parts.join('; ') + ';' };
+  return parts.join('; ') + ';';
 }

@@ -1,10 +1,10 @@
 import { createServerFn } from '@tanstack/react-start';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import z from 'zod';
-import { convertPage } from '@penpot-random/converter';
+import { convertPage, buildGoogleFontsUrls } from '@penpot-random/converter';
 import { extractTokens, tokensToCss } from '@penpot-random/converter/tokens';
 import type { Page, Uuid } from '@penpot-random/penpot-types';
-import type { ConverterContext, FontInfo } from '@penpot-random/converter';
+import type { ConverterContext } from '@penpot-random/converter';
 import { getFileSummary, rpc } from './penpot-api-utils.server';
 
 const BASE_URL = 'https://design.penpot.app';
@@ -99,28 +99,6 @@ export const getFileSummaryFn = createServerFn({ method: 'GET' })
     return getFileSummary(context.token, data.fileId);
   });
 
-function buildGoogleFontsUrl(fonts: FontInfo[]): string | null {
-  if (fonts.length === 0) return null;
-  const byFamily = new Map<string, Array<{ weight: string; italic: boolean }>>();
-  for (const font of fonts) {
-    const family = font.fontFamily;
-    if (!byFamily.has(family)) byFamily.set(family, []);
-    byFamily.get(family)!.push({
-      weight: font.fontWeight ?? '400',
-      italic: font.fontStyle === 'italic',
-    });
-  }
-  const familyParams: string[] = [];
-  for (const [family, variants] of byFamily) {
-    const sorted = [...variants].sort((a, b) =>
-      a.italic !== b.italic ? (a.italic ? 1 : -1) : Number(a.weight) - Number(b.weight),
-    );
-    const tuples = sorted.map((v) => `${v.italic ? 1 : 0},${v.weight}`).join(';');
-    familyParams.push(`family=${family.replace(/ /g, '+')}:ital,wght@${tuples}`);
-  }
-  return `https://fonts.googleapis.com/css2?${familyParams.join('&')}&display=swap`;
-}
-
 export const getPageHtmlFn = createServerFn({ method: 'GET' })
   .inputValidator(
     z.object({
@@ -142,7 +120,7 @@ export const getPageHtmlFn = createServerFn({ method: 'GET' })
     const { html, fonts } = await convertPage(page, ctx);
     return {
       html,
-      googleFontsUrl: buildGoogleFontsUrl(fonts),
+      googleFontsUrls: buildGoogleFontsUrls(fonts),
       tokensCss: tokensToCss(tokens),
     };
   });

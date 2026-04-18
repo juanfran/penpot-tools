@@ -1,69 +1,58 @@
 import type { FrameShape, FlexAlign, FlexDirection } from '../../penpot.types';
-import { cls, pxClass } from '../utils/tailwind';
+import { px } from '../utils/css';
 
-const FLEX_DIR_CLASS: Record<FlexDirection, string> = {
-  row: 'flex-row',
-  column: 'flex-col',
+const FLEX_DIR_VALUE: Record<FlexDirection, string> = {
+  row: 'row',
+  column: 'column',
   // Penpot's reverse directions store children in visual order (leftmost/topmost first),
   // unlike regular row/column where children are in Z-order (rightmost/bottommost first).
-  // Using flex-row / flex-col (not CSS reverse) keeps the same justify-content semantics.
-  'row-reverse': 'flex-row',
-  'column-reverse': 'flex-col',
+  // Using row / column (not CSS reverse) keeps the same justify-content semantics.
+  'row-reverse': 'row',
+  'column-reverse': 'column',
 };
 
-const ALIGN_ITEMS_CLASS: Partial<Record<FlexAlign, string>> = {
-  start: 'items-start',
-  center: 'items-center',
-  end: 'items-end',
-  stretch: 'items-stretch',
-  'space-between': 'items-between',
-  'space-around': 'items-around',
-  'space-evenly': 'items-evenly',
+const ALIGN_ITEMS_VALUE: Partial<Record<FlexAlign, string>> = {
+  start: 'flex-start',
+  center: 'center',
+  end: 'flex-end',
+  stretch: 'stretch',
+  'space-between': 'space-between',
+  'space-around': 'space-around',
+  'space-evenly': 'space-evenly',
 };
 
-const JUSTIFY_CONTENT_CLASS: Partial<Record<FlexAlign, string>> = {
-  start: 'justify-start',
-  center: 'justify-center',
-  end: 'justify-end',
-  stretch: 'justify-stretch',
-  'space-between': 'justify-between',
-  'space-around': 'justify-around',
-  'space-evenly': 'justify-evenly',
+const JUSTIFY_CONTENT_VALUE: Partial<Record<FlexAlign, string>> = {
+  start: 'flex-start',
+  center: 'center',
+  end: 'flex-end',
+  stretch: 'stretch',
+  'space-between': 'space-between',
+  'space-around': 'space-around',
+  'space-evenly': 'space-evenly',
 };
 
-/**
- * Returns Tailwind flex container classes for a `FrameShape` with `layoutType === 'flex'`.
- *
- * Always includes `flex`. Maps `layoutFlexDir`, `layoutAlignItems`,
- * `layoutJustifyContent`, and `layoutWrapType` to their Tailwind equivalents.
- */
-export function flexContainerClasses(shape: FrameShape): string {
-  const dirClass = shape.layoutFlexDir ? FLEX_DIR_CLASS[shape.layoutFlexDir] : undefined;
-  const alignClass = shape.layoutAlignItems ? ALIGN_ITEMS_CLASS[shape.layoutAlignItems] : undefined;
-  const justifyClass = shape.layoutJustifyContent
-    ? JUSTIFY_CONTENT_CLASS[shape.layoutJustifyContent]
+export function flexContainerStyle(shape: FrameShape): string {
+  const parts: string[] = ['display: flex;'];
+
+  if (shape.layoutFlexDir) {
+    parts.push(`flex-direction: ${FLEX_DIR_VALUE[shape.layoutFlexDir]};`);
+  }
+  const alignValue = shape.layoutAlignItems ? ALIGN_ITEMS_VALUE[shape.layoutAlignItems] : undefined;
+  if (alignValue) parts.push(`align-items: ${alignValue};`);
+
+  const justifyValue = shape.layoutJustifyContent
+    ? JUSTIFY_CONTENT_VALUE[shape.layoutJustifyContent]
     : undefined;
-  const wrapClass =
-    shape.layoutWrapType === 'wrap'
-      ? 'flex-wrap'
-      : shape.layoutWrapType === 'no-wrap'
-        ? 'flex-nowrap'
-        : undefined;
+  if (justifyValue) parts.push(`justify-content: ${justifyValue};`);
 
-  return cls('flex', dirClass, alignClass, justifyClass, wrapClass);
+  if (shape.layoutWrapType === 'wrap') parts.push('flex-wrap: wrap;');
+  else if (shape.layoutWrapType === 'no-wrap') parts.push('flex-wrap: nowrap;');
+
+  return parts.join(' ');
 }
 
-/**
- * Returns Tailwind gap and padding classes (and inline style fallback) for a flex frame.
- *
- * Gap: equal row/col → `gap-[Npx]`; unequal → `gap-x-[Npx] gap-y-[Npx]`.
- * Padding: all equal → `p-[Npx]`; top=bottom & left=right → `px py`; else inline style.
- */
-export function flexSpacingClasses(shape: FrameShape): {
-  classes: string;
-  style: string;
-} {
-  const gapClasses: string[] = [];
+export function flexSpacingStyle(shape: FrameShape): string {
+  const parts: string[] = [];
 
   const rawGap = (shape as unknown as { layoutGap?: { rowGap?: number; columnGap?: number } })
     .layoutGap;
@@ -72,37 +61,26 @@ export function flexSpacingClasses(shape: FrameShape): {
 
   if (rowGap !== undefined && colGap !== undefined) {
     if (rowGap === colGap) {
-      gapClasses.push(pxClass('gap', rowGap));
+      parts.push(`gap: ${px(rowGap)};`);
     } else {
-      gapClasses.push(pxClass('gap-y', rowGap));
-      gapClasses.push(pxClass('gap-x', colGap));
+      parts.push(`row-gap: ${px(rowGap)};`);
+      parts.push(`column-gap: ${px(colGap)};`);
     }
   } else if (rowGap !== undefined) {
-    gapClasses.push(pxClass('gap-y', rowGap));
+    parts.push(`row-gap: ${px(rowGap)};`);
   } else if (colGap !== undefined) {
-    gapClasses.push(pxClass('gap-x', colGap));
+    parts.push(`column-gap: ${px(colGap)};`);
   }
 
   const pad = shape.layoutPadding;
-  if (!pad) {
-    return { classes: cls(...gapClasses), style: '' };
+  if (pad) {
+    const { p1, p2, p3, p4 } = pad;
+    if (p1 === p2 && p2 === p3 && p3 === p4) {
+      parts.push(`padding: ${px(p1)};`);
+    } else {
+      parts.push(`padding: ${p1}px ${p2}px ${p3}px ${p4}px;`);
+    }
   }
 
-  const { p1, p2, p3, p4 } = pad;
-
-  if (p1 === p2 && p2 === p3 && p3 === p4) {
-    return { classes: cls(...gapClasses, pxClass('p', p1)), style: '' };
-  }
-
-  if (p1 === p3 && p2 === p4) {
-    return {
-      classes: cls(...gapClasses, pxClass('py', p1), pxClass('px', p2)),
-      style: '',
-    };
-  }
-
-  return {
-    classes: cls(...gapClasses),
-    style: `padding: ${p1}px ${p2}px ${p3}px ${p4}px;`,
-  };
+  return parts.join(' ');
 }

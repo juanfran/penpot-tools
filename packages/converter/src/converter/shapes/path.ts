@@ -1,22 +1,14 @@
 import type { PathShape, StrokeCap } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 import { tag } from '../utils/html';
-import { cls } from '../utils/tailwind';
+import { mergeStyles } from '../utils/style';
 import { resolvePositionOutput } from '../visual/position';
-import { baseClasses } from '../visual/base';
+import { blendModeToStyle, opacityToStyle, hiddenToStyle } from '../visual/blend';
+import { blurToStyle } from '../visual/blur';
+import { shadowsToStyle } from '../visual/shadows';
+import { radiusToStyle } from '../visual/radius';
 import { hexOpacityToCss } from '../utils/color';
 
-/**
- * Builds an SVG `<marker>` element for a given stroke cap type and color.
- *
- * `orient="auto-start-reverse"` is used for all markers so that the same
- * definition works correctly when referenced by both `marker-start` and
- * `marker-end`: for start markers the browser automatically adds 180° of
- * rotation so the arrowhead points outward.
- *
- * Returns null for cap types that are not rendered as SVG markers (`round`,
- * `square`) — those are handled via `stroke-linecap` on the `<path>` itself.
- */
 function buildMarkerDef(capType: StrokeCap, color: string, id: string): string | null {
   if (!capType || capType === 'round' || capType === 'square') return null;
 
@@ -93,65 +85,24 @@ function buildMarkerDef(capType: StrokeCap, color: string, id: string): string |
 
   return tag(
     'marker',
-    {
-      id,
-      viewBox,
-      refX,
-      refY,
-      markerWidth,
-      markerHeight,
-      orient: 'auto-start-reverse',
-    },
+    { id, viewBox, refX, refY, markerWidth, markerHeight, orient: 'auto-start-reverse' },
     inner,
   );
 }
 
-/**
- * Renders a Penpot `PathShape` as an inline `<svg>` element.
- *
- * The SVG uses a `viewBox` set to the shape's page-absolute bounding box so
- * the inner `<path>` can use its original page coordinates without a transform.
- *
- * When `shape.x/y/width/height` are null (e.g. boolean/difference path ops),
- * `shape.selrect` is used as the authoritative bounding box — it is the exact
- * value Penpot computes and what the design tool displays.
- *
- * Image fills use an SVG `<pattern>` anchored to the page-absolute bounding
- * box with `patternUnits="userSpaceOnUse"`. The `<image>` inside the pattern
- * covers the tile with `preserveAspectRatio="xMidYMid slice"`, which is
- * equivalent to CSS `background-size: cover; background-position: center`.
- *
- * Fill and stroke are taken from the first fill/stroke entry respectively.
- * The `data-id` attribute carries the Penpot shape ID.
- *
- * Stroke caps (`strokeCapStart`, `strokeCapEnd`) that represent arrowheads or
- * shape markers are rendered as SVG `<marker>` elements inside `<defs>` and
- * referenced via `marker-start`/`marker-end` on the `<path>`. Round and square
- * caps are expressed via `stroke-linecap` instead.
- */
 export function renderPath(shape: PathShape, ctx: ConverterContext): string {
-  const base = baseClasses(shape, ctx);
-
   const fills = shape.fills ?? [];
   const strokes = shape.strokes ?? [];
 
   const firstFill = fills[0];
   const firstStroke = strokes[0];
 
-  // When shape geometry is null (boolean/difference path ops), fall back to
-  // selrect — the exact bounding box Penpot computes (matches design tool).
   const x = shape.x ?? shape.selrect?.x ?? 0;
   const y = shape.y ?? shape.selrect?.y ?? 0;
   const width = shape.width ?? shape.selrect?.width ?? 0;
   const height = shape.height ?? shape.selrect?.height ?? 0;
 
-  // For image fills: use an SVG <pattern> anchored to the page-absolute bounding
-  // box. The <image> inside uses preserveAspectRatio="xMidYMid slice" which
-  // centers and covers the shape area (equivalent to CSS background: cover center).
-  // The pattern's patternUnits="userSpaceOnUse" means its x/y/width/height are in
-  // the same coordinate system as the SVG viewBox (page coordinates).
   let fillAttr: string;
-  // defsInner accumulates inner content for the single <defs> block (pattern + markers).
   let defsInner = '';
   if (firstFill?.fillImage) {
     const patternId = `img-${shape.id}`;
@@ -190,7 +141,6 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
 
   const strokeWidthAttr = firstStroke?.strokeWidth ? String(firstStroke.strokeWidth) : undefined;
 
-  // Build SVG marker defs and marker-start/marker-end references.
   let markerStartAttr: string | undefined;
   let markerEndAttr: string | undefined;
   let linecap: string | undefined;
@@ -199,7 +149,6 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
     const { strokeCapStart, strokeCapEnd } = firstStroke;
     const markerColor = strokeColor ?? 'black';
 
-    // Round/square caps use stroke-linecap; all other caps use SVG markers.
     const linecapCap = strokeCapStart ?? strokeCapEnd;
     if (linecapCap === 'round' || linecapCap === 'square') {
       linecap = linecapCap;
@@ -224,15 +173,12 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
     }
   }
 
-  // Compose path style for properties that can't be expressed as plain SVG attributes.
   const pathStyleParts: string[] = [];
   if (linecap) pathStyleParts.push(`stroke-linecap:${linecap}`);
   if (markerStartAttr) pathStyleParts.push(`marker-start:${markerStartAttr}`);
   if (markerEndAttr) pathStyleParts.push(`marker-end:${markerEndAttr}`);
   const pathStyle = pathStyleParts.length ? pathStyleParts.join(';') : undefined;
 
-  // The path uses its original page-absolute coordinates. The viewBox on the
-  // SVG maps the bounding box region to the SVG viewport, so no transform is needed.
   const pathEl = tag('path', {
     d: shape.content,
     fill: fillAttr,
@@ -241,15 +187,22 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
     style: pathStyle,
   });
 
-  // Supply computed geometry so resolvePositionOutput emits the right classes.
   const effectiveShape = { ...shape, x, y, width, height };
-  const posOut = resolvePositionOutput(effectiveShape, ctx);
-  const classes = cls(posOut.classes, base.classes);
+  const posStyle = resolvePositionOutput(effectiveShape, ctx);
+
   // Path coordinates in `content` are already in page-absolute space — rotation
-  // and matrix are baked into the path data. Applying base.style (which contains
-  // combinedTransformStyle) would double-transform and flip the shape.
-  // posOut.style (translate for canvas-top-level) is still needed for placement.
-  const style = posOut.style;
+  // and matrix are baked into the path data. Applying transform styles would
+  // double-transform and distort the shape. Only apply visual styles (not transform).
+  const baseNoTransform = mergeStyles(
+    opacityToStyle(shape.opacity),
+    blendModeToStyle(shape.blendMode),
+    hiddenToStyle(shape.hidden),
+    blurToStyle(shape.blur),
+    radiusToStyle(shape),
+    shadowsToStyle(shape.shadow),
+  );
+
+  const style = mergeStyles(posStyle, baseNoTransform);
 
   const defs = defsInner ? tag('defs', {}, defsInner) : '';
 
@@ -262,7 +215,6 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
       viewBox: `${x} ${y} ${width} ${height}`,
       overflow: 'visible',
       xmlns: 'http://www.w3.org/2000/svg',
-      class: classes || undefined,
       style: style || undefined,
     },
     defs + pathEl,

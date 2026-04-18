@@ -64,11 +64,13 @@ export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) =
 
   return (
     <>
-      {data.googleFontsUrl && (
+      {data.googleFontsUrls && data.googleFontsUrls.length > 0 && (
         <>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-          <link rel="stylesheet" href={data.googleFontsUrl} />
+          {data.googleFontsUrls.map((url) => (
+            <link key={url} rel="stylesheet" href={url} />
+          ))}
         </>
       )}
       {data.tokensCss && <style>{data.tokensCss}</style>}

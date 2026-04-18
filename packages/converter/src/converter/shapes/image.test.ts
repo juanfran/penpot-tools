@@ -32,23 +32,19 @@ const makeImage = (overrides: Partial<ImageShape> = {}): ImageShape => ({
 
 describe('renderImage', () => {
   it('renders an img element', () => {
-    const html = renderImage(makeImage(), ctx);
-    expect(html).toMatch(/^<img/);
+    expect(renderImage(makeImage(), ctx)).toMatch(/^<img/);
   });
 
   it('is self-closing', () => {
-    const html = renderImage(makeImage(), ctx);
-    expect(html).toMatch(/\/>$/);
+    expect(renderImage(makeImage(), ctx)).toMatch(/\/>$/);
   });
 
   it('includes data-id attribute', () => {
-    const html = renderImage(makeImage({ id: 'my-img' as Uuid }), ctx);
-    expect(html).toContain('data-id="my-img"');
+    expect(renderImage(makeImage({ id: 'my-img' as Uuid }), ctx)).toContain('data-id="my-img"');
   });
 
   it('resolves and sets src from metadata.id', () => {
-    const html = renderImage(makeImage(), ctx);
-    expect(html).toContain('src="https://assets.example.com/asset-uuid-1"');
+    expect(renderImage(makeImage(), ctx)).toContain('src="https://assets.example.com/asset-uuid-1"');
   });
 
   it('sets width and height attributes', () => {
@@ -58,44 +54,40 @@ describe('renderImage', () => {
   });
 
   it('sets alt to empty string (decorative)', () => {
-    const html = renderImage(makeImage(), ctx);
-    expect(html).toContain('alt=""');
+    expect(renderImage(makeImage(), ctx)).toContain('alt=""');
   });
 
-  it('includes absolute positioning classes', () => {
+  it('includes absolute positioning in style', () => {
     const html = renderImage(makeImage({ x: 10, y: 20, width: 200, height: 150 }), ctx);
-    expect(html).toContain('absolute');
-    expect(html).toContain('left-[10px]');
-    expect(html).toContain('top-[20px]');
+    expect(html).toContain('position: absolute;');
+    expect(html).toContain('left: 10px;');
+    expect(html).toContain('top: 20px;');
   });
 
-  it('includes opacity class when opacity is set', () => {
-    const html = renderImage(makeImage({ opacity: 0.5 }), ctx);
-    expect(html).toContain('opacity-[50%]');
+  it('includes opacity style when opacity is set', () => {
+    expect(renderImage(makeImage({ opacity: 0.5 }), ctx)).toContain('opacity: 0.5;');
   });
 
-  it('includes blend mode class', () => {
-    const html = renderImage(makeImage({ blendMode: 'multiply' }), ctx);
-    expect(html).toContain('mix-blend-multiply');
+  it('includes blend mode style', () => {
+    expect(renderImage(makeImage({ blendMode: 'multiply' }), ctx)).toContain('mix-blend-mode: multiply;');
   });
 
   it('includes rotation in transform style when rotation is set', () => {
-    const html = renderImage(makeImage({ rotation: 45 }), ctx);
-    expect(html).toContain('rotate(-45deg)');
+    expect(renderImage(makeImage({ rotation: 45 }), ctx)).toContain('rotate(-45deg)');
   });
 
-  it('includes hidden class when hidden', () => {
-    const html = renderImage(makeImage({ hidden: true }), ctx);
-    expect(html).toContain('hidden');
+  it('includes display: none when hidden', () => {
+    expect(renderImage(makeImage({ hidden: true }), ctx)).toContain('display: none;');
+  });
+
+  it('has no class attribute', () => {
+    expect(renderImage(makeImage(), ctx)).not.toContain('class=');
   });
 
   it('calls resolveImageUrl with the metadata id', () => {
     const resolved: string[] = [];
     const testCtx: ConverterContext = {
-      resolveImageUrl: (id) => {
-        resolved.push(id);
-        return `url-${id}`;
-      },
+      resolveImageUrl: (id) => { resolved.push(id); return `url-${id}`; },
     };
     renderImage(makeImage(), testCtx);
     expect(resolved).toContain('asset-uuid-1');

@@ -15,7 +15,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { convertPage, convertShape } from './converter/index.js';
+import { convertPage, convertShape, buildGoogleFontsUrls } from './converter/index.js';
 import { extractTokens, tokensToCss } from './converter/tokens.js';
 import type { Page, Uuid } from './penpot.types.js';
 import type { ConverterContext, FontInfo } from './converter/types.js';
@@ -174,39 +174,12 @@ function makeImageResolver(apiBase: string): (id: Uuid) => string {
 // HTML wrapper
 // ---------------------------------------------------------------------------
 
-function buildGoogleFontsUrl(fonts: FontInfo[]): string | null {
-  if (fonts.length === 0) return null;
-
-  // Group variants by font family
-  const byFamily = new Map<string, Array<{ weight: string; italic: boolean }>>();
-  for (const font of fonts) {
-    const family = font.fontFamily;
-    if (!byFamily.has(family)) byFamily.set(family, []);
-    byFamily.get(family)!.push({
-      weight: font.fontWeight ?? '400',
-      italic: font.fontStyle === 'italic',
-    });
-  }
-
-  const familyParams: string[] = [];
-  for (const [family, variants] of byFamily) {
-    // Sort: non-italic first, then by weight
-    const sorted = [...variants].sort((a, b) =>
-      a.italic !== b.italic ? (a.italic ? 1 : -1) : Number(a.weight) - Number(b.weight),
-    );
-    const tuples = sorted.map((v) => `${v.italic ? 1 : 0},${v.weight}`).join(';');
-    const encoded = family.replace(/ /g, '+');
-    familyParams.push(`family=${encoded}:ital,wght@${tuples}`);
-  }
-
-  return `https://fonts.googleapis.com/css2?${familyParams.join('&')}&display=swap`;
-}
-
 function wrapHtml(body: string, fonts: FontInfo[], tokens?: Map<string, string>): string {
-  const googleFontsUrl = buildGoogleFontsUrl(fonts);
-  const fontLink = googleFontsUrl
-    ? `  <link rel="preconnect" href="https://fonts.googleapis.com" />\n  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n  <link rel="stylesheet" href="${googleFontsUrl}" />`
-    : '';
+  const fontUrls = buildGoogleFontsUrls(fonts);
+  const fontLink =
+    fontUrls.length > 0
+      ? `  <link rel="preconnect" href="https://fonts.googleapis.com" />\n  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n${fontUrls.map((u) => `  <link rel="stylesheet" href="${u}" />`).join('\n')}`
+      : '';
 
   const tokensCss = tokens ? tokensToCss(tokens) : '';
   const styleBlock = tokensCss

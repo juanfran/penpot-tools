@@ -2,6 +2,7 @@ import type { Page, Shape } from '../penpot.types';
 import type { ConverterContext, ConvertResult, FontInfo } from './types';
 import { renderShape } from './render';
 import { renderPage } from './page';
+export { buildGoogleFontsUrls } from './utils/fonts';
 import * as oxfmt from 'oxfmt';
 
 function extractFonts(collector: Map<string, FontInfo>): FontInfo[] {

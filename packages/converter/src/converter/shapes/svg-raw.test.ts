@@ -33,8 +33,7 @@ describe('renderSvgRaw', () => {
   });
 
   it('includes data-id attribute', () => {
-    const html = renderSvgRaw(makeSvgRaw({ id: 'my-svg' as Uuid }), ctx);
-    expect(html).toContain('data-id="my-svg"');
+    expect(renderSvgRaw(makeSvgRaw({ id: 'my-svg' as Uuid }), ctx)).toContain('data-id="my-svg"');
   });
 
   it('embeds the raw SVG content inside the div', () => {
@@ -42,11 +41,11 @@ describe('renderSvgRaw', () => {
     expect(html).toContain('<svg><circle /></svg>');
   });
 
-  it('positions the div absolutely', () => {
+  it('positions the div absolutely using style', () => {
     const html = renderSvgRaw(makeSvgRaw({ x: 10, y: 20, width: 100, height: 100 }), ctx);
-    expect(html).toContain('absolute');
-    expect(html).toContain('left-[10px]');
-    expect(html).toContain('top-[20px]');
+    expect(html).toContain('position: absolute;');
+    expect(html).toContain('left: 10px;');
+    expect(html).toContain('top: 20px;');
   });
 
   it('strips script elements from raw content for XSS safety', () => {
@@ -65,23 +64,23 @@ describe('renderSvgRaw', () => {
     expect(html).toContain('<circle');
   });
 
-  it('includes opacity class when set', () => {
-    const html = renderSvgRaw(makeSvgRaw({ opacity: 0.5 }), ctx);
-    expect(html).toContain('opacity-[50%]');
+  it('includes opacity style when set', () => {
+    expect(renderSvgRaw(makeSvgRaw({ opacity: 0.5 }), ctx)).toContain('opacity: 0.5;');
   });
 
-  it('includes blend mode class when set', () => {
-    const html = renderSvgRaw(makeSvgRaw({ blendMode: 'multiply' }), ctx);
-    expect(html).toContain('mix-blend-multiply');
+  it('includes blend mode style when set', () => {
+    expect(renderSvgRaw(makeSvgRaw({ blendMode: 'multiply' }), ctx)).toContain('mix-blend-mode: multiply;');
   });
 
-  it('includes hidden class when hidden', () => {
-    const html = renderSvgRaw(makeSvgRaw({ hidden: true }), ctx);
-    expect(html).toContain('hidden');
+  it('includes display: none when hidden', () => {
+    expect(renderSvgRaw(makeSvgRaw({ hidden: true }), ctx)).toContain('display: none;');
   });
 
   it('includes rotation in transform style when rotation is set', () => {
-    const html = renderSvgRaw(makeSvgRaw({ rotation: 90 }), ctx);
-    expect(html).toContain('rotate(-90deg)');
+    expect(renderSvgRaw(makeSvgRaw({ rotation: 90 }), ctx)).toContain('rotate(-90deg)');
+  });
+
+  it('has no class attribute', () => {
+    expect(renderSvgRaw(makeSvgRaw(), ctx)).not.toContain('class=');
   });
 });

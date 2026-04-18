@@ -1,43 +1,17 @@
 import type { TextLeaf, ParagraphNode, TextShape, Typography } from '../../penpot.types';
 import type { ConverterContext, FontInfo } from '../types';
 import { tag } from '../utils/html';
-import { cls, pxClass } from '../utils/tailwind';
+import { px } from '../utils/css';
 import { mergeStyles } from '../utils/style';
 import { hexOpacityToCss } from '../utils/color';
 import { tokenToCssVarName } from '../tokens';
 import { resolvePositionOutput } from '../visual/position';
-import { baseClasses } from '../visual/base';
+import { baseStyles } from '../visual/base';
 
-const FONT_WEIGHT_CLASS: Record<string, string> = {
-  '100': 'font-thin',
-  '200': 'font-extralight',
-  '300': 'font-light',
-  '400': 'font-normal',
-  '500': 'font-medium',
-  '600': 'font-semibold',
-  '700': 'font-bold',
-  '800': 'font-extrabold',
-  '900': 'font-black',
-};
-
-const TEXT_ALIGN_CLASS: Record<string, string> = {
-  left: 'text-left',
-  center: 'text-center',
-  right: 'text-right',
-  justify: 'text-justify',
-};
-
-/**
- * Converts a `TextLeaf`'s typography properties to Tailwind classes and inline styles.
- *
- * When `typographies` is provided and the leaf has a `typographyRefId`, the typography's
- * fields act as defaults — the leaf's own fields always take precedence (override).
- */
-export function textLeafToClasses(
+export function textLeafToStyles(
   leaf: TextLeaf,
   typographies?: Record<string, Typography>,
-): { classes: string; style: string } {
-  // Merge typography defaults under leaf overrides
+): string {
   const resolved: Partial<Typography & TextLeaf> = {};
   if (typographies && leaf.typographyRefId) {
     const typo = typographies[leaf.typographyRefId];
@@ -45,89 +19,54 @@ export function textLeafToClasses(
   }
   Object.assign(resolved, leaf);
 
-  const fontWeightClass = resolved.fontWeight
-    ? (FONT_WEIGHT_CLASS[resolved.fontWeight] ?? `font-[${resolved.fontWeight}]`)
-    : undefined;
+  const parts: string[] = [];
 
-  const classes = cls(
-    resolved.fontSize ? pxClass('text', Number(resolved.fontSize)) : undefined,
-    fontWeightClass,
-    resolved.fontFamily ? `font-['${resolved.fontFamily}']` : undefined,
-    resolved.lineHeight ? `leading-[${resolved.lineHeight}]` : undefined,
-    resolved.textAlign ? TEXT_ALIGN_CLASS[resolved.textAlign] : undefined,
-    resolved.fontStyle === 'italic' ? 'italic' : undefined,
-    resolved.textDecoration === 'underline' ? 'underline' : undefined,
-    resolved.textDecoration === 'line-through' ? 'line-through' : undefined,
-    resolved.textTransform === 'uppercase' ? 'uppercase' : undefined,
-    resolved.textTransform === 'lowercase' ? 'lowercase' : undefined,
-    resolved.textTransform === 'capitalize' ? 'capitalize' : undefined,
-    resolved.letterSpacing && resolved.letterSpacing !== '0'
-      ? `tracking-[${resolved.letterSpacing}px]`
-      : undefined,
-  );
+  if (resolved.fontSize) parts.push(`font-size: ${px(Number(resolved.fontSize))};`);
+  if (resolved.fontWeight) parts.push(`font-weight: ${resolved.fontWeight};`);
+  if (resolved.fontFamily) parts.push(`font-family: '${resolved.fontFamily}';`);
+  if (resolved.lineHeight) parts.push(`line-height: ${resolved.lineHeight};`);
+  if (resolved.textAlign) parts.push(`text-align: ${resolved.textAlign};`);
+  if (resolved.fontStyle === 'italic') parts.push('font-style: italic;');
+  if (resolved.textDecoration === 'underline') parts.push('text-decoration: underline;');
+  if (resolved.textDecoration === 'line-through') parts.push('text-decoration: line-through;');
+  if (resolved.textTransform) parts.push(`text-transform: ${resolved.textTransform};`);
+  if (resolved.letterSpacing && resolved.letterSpacing !== '0') {
+    parts.push(`letter-spacing: ${resolved.letterSpacing}px;`);
+  }
 
-  return { classes, style: '' };
+  return parts.join(' ');
 }
 
-/**
- * Returns a Tailwind text color class for the first solid fill on a text leaf.
- * Uses arbitrary-value syntax: `text-[#RRGGBB]` (uppercase hex) or `text-[rgba(...)]`.
- * When `fillTokenName` is provided, emits `text-[var(--token)]` instead.
- */
-export function textLeafColorClass(leaf: TextLeaf, fillTokenName?: string): string {
-  if (fillTokenName) return `text-[var(--${tokenToCssVarName(fillTokenName)})]`;
+export function textLeafColorStyle(leaf: TextLeaf, fillTokenName?: string): string {
+  if (fillTokenName) return `color: var(--${tokenToCssVarName(fillTokenName)});`;
   const fills = leaf.fills;
   if (!fills || fills.length === 0) return '';
   const first = fills[0];
   if (!first.fillColor) return '';
   const cssColor = hexOpacityToCss(first.fillColor, first.fillOpacity);
-  const displayColor = cssColor.startsWith('#') ? cssColor.toUpperCase() : cssColor;
-  return `text-[${displayColor}]`;
+  return `color: ${cssColor};`;
 }
 
-/**
- * Renders a `ParagraphNode` as a `<p>` element.
- *
- * The first leaf's color is promoted to the paragraph level.
- * Leaves are wrapped in `<span>` only when their combined classes/style
- * differ from the paragraph's baseline.
- * When `fillTokenName` is provided, all leaf colors use `text-[var(--token)]`.
- */
 export function renderParagraph(para: ParagraphNode, fillTokenName?: string): string {
   const paraLeaf: TextLeaf = { text: '', ...para };
-  const paraOutput = textLeafToClasses(paraLeaf);
-
-  // Promote the first leaf's color to the paragraph level
+  const paraBaseStyle = textLeafToStyles(paraLeaf);
   const firstLeaf = para.children[0];
-  const paraColorClass = firstLeaf ? textLeafColorClass(firstLeaf, fillTokenName) : '';
-  const paraClasses = cls(paraOutput.classes, paraColorClass);
+  const paraColorStyle = firstLeaf ? textLeafColorStyle(firstLeaf, fillTokenName) : '';
+  const paraStyle = mergeStyles(paraBaseStyle, paraColorStyle);
 
   const inner = para.children
     .map((leaf) => {
-      const leafOutput = textLeafToClasses(leaf);
-      const leafColorClass = textLeafColorClass(leaf, fillTokenName);
-      const leafClasses = cls(leafOutput.classes, leafColorClass);
-      const leafStyle = leafOutput.style;
+      const leafBaseStyle = textLeafToStyles(leaf);
+      const leafColorStyle = textLeafColorStyle(leaf, fillTokenName);
+      const leafStyle = mergeStyles(leafBaseStyle, leafColorStyle);
 
-      // Skip span when leaf styling matches the paragraph baseline
-      if (leafClasses === paraClasses && !leafStyle) return leaf.text;
+      if (leafStyle === paraStyle) return leaf.text;
 
-      return tag(
-        'span',
-        { class: leafClasses || undefined, style: leafStyle || undefined },
-        leaf.text,
-      );
+      return tag('span', { style: leafStyle || undefined }, leaf.text);
     })
     .join('');
 
-  return tag(
-    'p',
-    {
-      class: paraClasses || undefined,
-      style: paraOutput.style || undefined,
-    },
-    inner,
-  );
+  return tag('p', { style: paraStyle || undefined }, inner);
 }
 
 function collectLeafFont(
@@ -169,29 +108,23 @@ function collectTextFonts(
   }
 }
 
-/**
- * Renders a `TextShape` as an absolutely-positioned `<div>` containing paragraphs.
- *
- * If `content` is null, renders an empty div with positioning only.
- */
 export function renderText(shape: TextShape, ctx: ConverterContext): string {
   collectTextFonts(shape, ctx);
-  const base = baseClasses(shape, ctx);
-  const posOut = resolvePositionOutput(shape, ctx);
+  const base = baseStyles(shape, ctx);
+  const posStyle = resolvePositionOutput(shape, ctx);
 
-  const sizeClasses = cls(
-    shape.width !== undefined ? pxClass('w', shape.width) : undefined,
-    shape.height !== undefined ? pxClass('h', shape.height) : undefined,
-  );
+  const sizeParts: string[] = [];
+  if (shape.width !== undefined) sizeParts.push(`width: ${px(shape.width)};`);
+  if (shape.height !== undefined) sizeParts.push(`height: ${px(shape.height)};`);
+  const sizeStyle = sizeParts.join(' ');
 
-  const noWrap = shape.growType === 'auto-width' ? 'whitespace-nowrap' : undefined;
+  const noWrapStyle = shape.growType === 'auto-width' ? 'white-space: nowrap;' : '';
 
-  // When inside a flex/grid layout, posOut returns w-full/h-full which conflicts with
-  // the text shape's own explicit sizeClasses — use sizeClasses only in that case.
-  const classes = ctx._parentIsLayout
-    ? cls(sizeClasses, noWrap, base.classes)
-    : cls(posOut.classes, sizeClasses, noWrap, base.classes);
-  const style = mergeStyles(posOut.style, base.style);
+  // When inside a flex/grid layout, posStyle already has width/height (100% or px).
+  // In that case use the explicit sizeStyle instead of posStyle to preserve the text shape's own dimensions.
+  const style = ctx._parentIsLayout
+    ? mergeStyles(sizeStyle, noWrapStyle, base)
+    : mergeStyles(posStyle, sizeStyle, noWrapStyle, base);
 
   const fillTokenName = shape.appliedTokens?.fill;
 
@@ -203,13 +136,5 @@ export function renderText(shape: TextShape, ctx: ConverterContext): string {
       .join('');
   }
 
-  return tag(
-    'div',
-    {
-      'data-id': shape.id,
-      class: classes || undefined,
-      style: style || undefined,
-    },
-    inner,
-  );
+  return tag('div', { 'data-id': shape.id, style: style || undefined }, inner);
 }

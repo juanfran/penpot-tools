@@ -30,7 +30,7 @@ describe('renderShape', () => {
   it('renders a rect', () => {
     const html = renderShape(makeRect(), {}, ctx);
     expect(html).toContain('data-id="rect-1"');
-    expect(html).toContain('bg-[#aabbcc]');
+    expect(html).toContain('background-color: #aabbcc;');
   });
 
   it('accepts a parent parameter without changing output', () => {
@@ -42,33 +42,26 @@ describe('renderShape', () => {
   it('returns empty string for unknown shape type', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const unknown = { ...makeRect(), type: 'unknown-type' } as any;
-    const html = renderShape(unknown, {}, ctx);
-    expect(html).toBe('');
+    expect(renderShape(unknown, {}, ctx)).toBe('');
   });
 
   it('renders component instances like their type (no special handling)', () => {
-    // Component instances carry componentId but render normally by type
-    const rect = makeRect();
-    const withComponent = { ...rect, componentId: 'comp-1' as Uuid };
-    const html = renderShape(withComponent as Shape, {}, ctx);
-    expect(html).toContain('data-id="rect-1"');
+    const withComponent = { ...makeRect(), componentId: 'comp-1' as Uuid };
+    expect(renderShape(withComponent as Shape, {}, ctx)).toContain('data-id="rect-1"');
   });
 
   it('does not add data-penpot-name attribute', () => {
-    const html = renderShape(makeRect({ name: 'My Rect' } as Partial<Shape>), {}, ctx);
-    expect(html).not.toContain('data-penpot-name');
+    expect(renderShape(makeRect({ name: 'My Rect' } as Partial<Shape>), {}, ctx)).not.toContain('data-penpot-name');
   });
 
   it('adds data-penpot-locked when shape is locked', () => {
     const locked = { ...makeRect(), locked: true } as Shape;
-    const html = renderShape(locked, {}, ctx);
-    expect(html).toContain('data-penpot-locked="true"');
+    expect(renderShape(locked, {}, ctx)).toContain('data-penpot-locked="true"');
   });
 
   it('adds data-penpot-blocked when shape is blocked', () => {
     const blocked = { ...makeRect(), blocked: true } as Shape;
-    const html = renderShape(blocked, {}, ctx);
-    expect(html).toContain('data-penpot-blocked="true"');
+    expect(renderShape(blocked, {}, ctx)).toContain('data-penpot-blocked="true"');
   });
 
   it('does not add locked/blocked attrs when not set', () => {
@@ -79,16 +72,16 @@ describe('renderShape', () => {
 });
 
 describe('convertShape', () => {
-  it('renders the shape with relative positioning', async () => {
+  it('renders the shape with position: relative', async () => {
     const { html } = await convertShape(makeRect(), {}, ctx);
-    expect(html).toContain('relative');
-    expect(html).not.toContain('absolute');
+    expect(html).toContain('position: relative;');
+    expect(html).not.toContain('position: absolute;');
   });
 
   it('does not emit left/top for the root shape', async () => {
     const { html } = await convertShape(makeRect({ x: 50, y: 100 } as Partial<Shape>), {}, ctx);
-    expect(html).not.toContain('left-[50px]');
-    expect(html).not.toContain('top-[100px]');
+    expect(html).not.toContain('left: 50px;');
+    expect(html).not.toContain('top: 100px;');
   });
 
   it('includes data-id', async () => {

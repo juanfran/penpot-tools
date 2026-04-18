@@ -54,13 +54,13 @@ describe('renderGroup', () => {
     expect(html).toContain('data-id="my-group"');
   });
 
-  it('positions absolutely', () => {
+  it('positions absolutely using style', () => {
     const html = renderGroup(makeGroup({ x: 10, y: 20, width: 200, height: 100 }), [], {}, ctx);
-    expect(html).toContain('absolute');
-    expect(html).toContain('left-[10px]');
-    expect(html).toContain('top-[20px]');
-    expect(html).toContain('w-[200px]');
-    expect(html).toContain('h-[100px]');
+    expect(html).toContain('position: absolute;');
+    expect(html).toContain('left: 10px;');
+    expect(html).toContain('top: 20px;');
+    expect(html).toContain('width: 200px;');
+    expect(html).toContain('height: 100px;');
   });
 
   it('renders children inside the group', () => {
@@ -82,23 +82,23 @@ describe('renderGroup', () => {
     expect(html).toContain('data-id="child-2"');
   });
 
-  it('includes opacity class', () => {
-    const html = renderGroup(makeGroup({ opacity: 0.5 }), [], {}, ctx);
-    expect(html).toContain('opacity-[50%]');
+  it('includes opacity style', () => {
+    expect(renderGroup(makeGroup({ opacity: 0.5 }), [], {}, ctx)).toContain('opacity: 0.5;');
   });
 
-  it('includes blend mode class', () => {
-    const html = renderGroup(makeGroup({ blendMode: 'multiply' }), [], {}, ctx);
-    expect(html).toContain('mix-blend-multiply');
+  it('includes blend mode style', () => {
+    expect(renderGroup(makeGroup({ blendMode: 'multiply' }), [], {}, ctx)).toContain('mix-blend-mode: multiply;');
   });
 
-  it('includes hidden class when hidden', () => {
-    const html = renderGroup(makeGroup({ hidden: true }), [], {}, ctx);
-    expect(html).toContain('hidden');
+  it('includes display: none when hidden', () => {
+    expect(renderGroup(makeGroup({ hidden: true }), [], {}, ctx)).toContain('display: none;');
   });
 
-  it('adds overflow-hidden for masked groups', () => {
-    const html = renderGroup(makeGroup({ maskedGroup: true }), [], {}, ctx);
-    expect(html).toContain('overflow-hidden');
+  it('adds overflow: hidden for masked groups', () => {
+    expect(renderGroup(makeGroup({ maskedGroup: true }), [], {}, ctx)).toContain('overflow: hidden;');
+  });
+
+  it('has no class attribute', () => {
+    expect(renderGroup(makeGroup(), [], {}, ctx)).not.toContain('class=');
   });
 });

@@ -8,6 +8,7 @@
   "type": "module",
   "scripts": {
     "test": "pnpm -r --parallel test",
+    "viewer-dev": "pnpm --filter viewer dev",
     "penpot-to-html": "pnpm --filter @penpot-random/converter penpot-to-html",
     "lint": "oxlint .",
     "format": "oxfmt --check",

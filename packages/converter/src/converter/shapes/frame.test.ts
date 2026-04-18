@@ -54,38 +54,38 @@ describe('renderFrame', () => {
     expect(html).toContain('data-id="my-frame"');
   });
 
-  it('root frame (parentId === id) uses relative positioning', () => {
-    const frame = makeFrame(); // parentId === id
+  it('root frame (parentId === id) uses position: relative', () => {
+    const frame = makeFrame();
     const html = renderFrame(frame, [], {}, ctx);
-    expect(html).toContain('relative');
-    expect(html).not.toContain('absolute');
+    expect(html).toContain('position: relative;');
+    expect(html).not.toContain('position: absolute;');
   });
 
-  it('nested frame uses absolute positioning', () => {
+  it('nested frame uses position: absolute', () => {
     const frame = makeFrame({ parentId: 'other-frame' as Uuid });
     const html = renderFrame(frame, [], {}, ctx);
-    expect(html).toContain('absolute');
+    expect(html).toContain('position: absolute;');
   });
 
-  it('includes width and height classes', () => {
+  it('includes width and height in style', () => {
     const html = renderFrame(makeFrame({ width: 400, height: 300 }), [], {}, ctx);
-    expect(html).toContain('w-[400px]');
-    expect(html).toContain('h-[300px]');
+    expect(html).toContain('width: 400px;');
+    expect(html).toContain('height: 300px;');
   });
 
-  it('includes overflow-hidden when clipContent is true', () => {
+  it('includes overflow: hidden when clipContent is true', () => {
     const html = renderFrame(makeFrame({ clipContent: true }), [], {}, ctx);
-    expect(html).toContain('overflow-hidden');
+    expect(html).toContain('overflow: hidden;');
   });
 
-  it('does not include overflow-hidden when clipContent is false', () => {
+  it('does not include overflow: hidden when clipContent is false', () => {
     const html = renderFrame(makeFrame({ clipContent: false }), [], {}, ctx);
-    expect(html).not.toContain('overflow-hidden');
+    expect(html).not.toContain('overflow: hidden;');
   });
 
-  it('does not include overflow-hidden when showContent is true', () => {
+  it('does not include overflow: hidden when showContent is true', () => {
     const html = renderFrame(makeFrame({ showContent: true }), [], {}, ctx);
-    expect(html).not.toContain('overflow-hidden');
+    expect(html).not.toContain('overflow: hidden;');
   });
 
   it('renders children inside', () => {
@@ -95,67 +95,58 @@ describe('renderFrame', () => {
     expect(html).toContain('data-id="child-1"');
   });
 
-  it('applies fills', () => {
+  it('applies fills as background-color', () => {
     const html = renderFrame(
       makeFrame({ fills: [{ fillColor: '#ffffff' as HexColor }] }),
       [],
       {},
       ctx,
     );
-    expect(html).toContain('bg-[#ffffff]');
+    expect(html).toContain('background-color: #ffffff;');
   });
 
-  it('includes opacity class', () => {
+  it('includes opacity style', () => {
     const html = renderFrame(makeFrame({ opacity: 0.5 }), [], {}, ctx);
-    expect(html).toContain('opacity-[50%]');
+    expect(html).toContain('opacity: 0.5;');
   });
 
-  it('includes hidden class when hidden', () => {
+  it('includes display: none when hidden', () => {
     const html = renderFrame(makeFrame({ hidden: true }), [], {}, ctx);
-    expect(html).toContain('hidden');
+    expect(html).toContain('display: none;');
   });
 
-  it('includes corner radius class', () => {
+  it('includes corner radius style', () => {
     const html = renderFrame(makeFrame({ r1: 8, r2: 8, r3: 8, r4: 8 }), [], {}, ctx);
-    expect(html).toContain('rounded-[8px]');
+    expect(html).toContain('border-radius: 8px;');
+  });
+
+  it('has no class attribute', () => {
+    const html = renderFrame(makeFrame(), [], {}, ctx);
+    expect(html).not.toContain('class=');
   });
 
   describe('flex layout mode', () => {
-    it('emits flex class when layoutType is flex', () => {
+    it('emits display: flex when layoutType is flex', () => {
+      const html = renderFrame(makeFrame({ layoutType: 'flex', layoutFlexDir: 'row' }), [], {}, ctx);
+      expect(html).toContain('display: flex;');
+    });
+
+    it('emits flex-direction: column for column direction', () => {
+      const html = renderFrame(makeFrame({ layoutType: 'flex', layoutFlexDir: 'column' }), [], {}, ctx);
+      expect(html).toContain('flex-direction: column;');
+    });
+
+    it('emits gap style when layoutRowGap and layoutColumnGap are equal', () => {
       const html = renderFrame(
-        makeFrame({ layoutType: 'flex', layoutFlexDir: 'row' }),
+        makeFrame({ layoutType: 'flex', layoutRowGap: 10, layoutColumnGap: 10 }),
         [],
         {},
         ctx,
       );
-      expect(html).toContain('flex');
+      expect(html).toContain('gap: 10px;');
     });
 
-    it('emits flex-col for column direction', () => {
-      const html = renderFrame(
-        makeFrame({ layoutType: 'flex', layoutFlexDir: 'column' }),
-        [],
-        {},
-        ctx,
-      );
-      expect(html).toContain('flex-col');
-    });
-
-    it('emits gap class when layoutRowGap and layoutColumnGap are equal', () => {
-      const html = renderFrame(
-        makeFrame({
-          layoutType: 'flex',
-          layoutRowGap: 10,
-          layoutColumnGap: 10,
-        }),
-        [],
-        {},
-        ctx,
-      );
-      expect(html).toContain('gap-[10px]');
-    });
-
-    it('emits layout-item sizing classes for children', () => {
+    it('emits flex: 1 for fill HSizing child in row parent', () => {
       const child = makeChild('child-1');
       const flexChild = { ...child, layoutItemHSizing: 'fill' as const };
       const objects: Record<string, Shape> = { 'child-1': flexChild };
@@ -165,10 +156,10 @@ describe('renderFrame', () => {
         objects,
         ctx,
       );
-      expect(html).toContain('flex-1');
+      expect(html).toContain('flex: 1;');
     });
 
-    it('does not apply absolutePositionClasses to flex children', () => {
+    it('does not apply absolute positioning to flex children', () => {
       const child = makeChild('child-1');
       const objects: Record<string, Shape> = { 'child-1': child };
       const html = renderFrame(
@@ -177,15 +168,11 @@ describe('renderFrame', () => {
         objects,
         ctx,
       );
-      // The child rendered inside flex should NOT have absolute left-[10px] top-[10px]
-      expect(html).not.toContain('left-[10px]');
-      expect(html).not.toContain('top-[10px]');
+      expect(html).not.toContain('left: 10px;');
+      expect(html).not.toContain('top: 10px;');
     });
 
-    it('column flex: fill hSizing child uses explicit w-[Npx] on wrapper and child (not w-full)', () => {
-      // Regression: w-full (percentage) on a cross-axis fill child in a column
-      // container allows descendant overflow to inflate the container width.
-      // Explicit px prevents the browser from expanding the container.
+    it('column flex: fill hSizing child uses explicit width in px (not 100%)', () => {
       const child: Shape = {
         ...makeChild('child-1'),
         width: 400,
@@ -205,48 +192,41 @@ describe('renderFrame', () => {
         objects,
         ctx,
       );
-      // Wrapper div must use explicit pixel width
-      expect(html).toContain('w-[400px]');
-      expect(html).not.toContain('w-full');
+      expect(html).toContain('width: 400px;');
+      expect(html).not.toContain('width: 100%;');
     });
   });
 
   describe('grid layout mode', () => {
-    it('emits grid class when layoutType is grid', () => {
+    it('emits display: grid when layoutType is grid', () => {
       const html = renderFrame(makeFrame({ layoutType: 'grid' }), [], {}, ctx);
-      expect(html).toContain('grid');
+      expect(html).toContain('display: grid;');
     });
 
-    it('emits grid-cols-[...] class when layoutGridColumns is set', () => {
+    it('emits grid-template-columns when layoutGridColumns is set', () => {
       const html = renderFrame(
         makeFrame({
           layoutType: 'grid',
-          layoutGridColumns: [
-            { type: 'fixed', value: 100 },
-            { type: 'flex', value: 1 },
-          ],
+          layoutGridColumns: [{ type: 'fixed', value: 100 }, { type: 'flex', value: 1 }],
         }),
         [],
         {},
         ctx,
       );
-      expect(html).toContain('grid-cols-[100px_1fr]');
+      expect(html).toContain('grid-template-columns: 100px 1fr;');
     });
 
-    it('emits grid-rows-[...] class when layoutGridRows is set', () => {
+    it('emits grid-template-rows when layoutGridRows is set', () => {
       const html = renderFrame(
-        makeFrame({
-          layoutType: 'grid',
-          layoutGridRows: [{ type: 'fixed', value: 50 }],
-        }),
+        makeFrame({ layoutType: 'grid', layoutGridRows: [{ type: 'fixed', value: 50 }] }),
         [],
         {},
         ctx,
       );
-      expect(html).toContain('grid-rows-[50px]');
+      expect(html).toContain('grid-template-rows: 50px;');
     });
 
-    it('applies grid cell classes to children via cell lookup', () => {
+    it('applies grid cell styles to children via cell lookup', () => {
       const child = makeChild('child-1');
       const objects: Record<string, Shape> = { 'child-1': child };
       const html = renderFrame(
@@ -267,60 +247,37 @@ describe('renderFrame', () => {
         objects,
         ctx,
       );
-      expect(html).toContain('row-start-[2]');
-      expect(html).toContain('col-start-[3]');
+      expect(html).toContain('grid-row-start: 2;');
+      expect(html).toContain('grid-column-start: 3;');
     });
 
     it('does not apply absolute positioning to grid children', () => {
       const child = makeChild('child-1');
       const objects: Record<string, Shape> = { 'child-1': child };
       const html = renderFrame(makeFrame({ layoutType: 'grid' }), [child], objects, ctx);
-      expect(html).not.toContain('left-[10px]');
-      expect(html).not.toContain('top-[10px]');
+      expect(html).not.toContain('left: 10px;');
+      expect(html).not.toContain('top: 10px;');
     });
   });
 
   describe('plain frame inside a flex/grid parent', () => {
-    const layoutCtx: ConverterContext = {
-      ...ctx,
-      _parentIsLayout: true,
-    };
+    const layoutCtx: ConverterContext = { ...ctx, _parentIsLayout: true };
 
-    it('gets relative class so its absolutely-positioned children have a containing block', () => {
-      // When a plain frame is a flex/grid child, positionClasses is `w-full h-full`
-      // (no CSS position property). Without `relative`, the frame is position:static
-      // and cannot act as a containing block for absolutely-positioned children.
-      const frame = makeFrame({
-        parentId: 'parent-frame' as Uuid,
-        id: 'frame-1' as Uuid,
-      });
+    it('gets position: relative so its absolutely-positioned children have a containing block', () => {
+      const frame = makeFrame({ parentId: 'parent-frame' as Uuid, id: 'frame-1' as Uuid });
       const child = makeChild('child-1');
       const objects: Record<string, Shape> = { 'child-1': child };
       const html = renderFrame(frame, [child], objects, layoutCtx);
-
-      expect(html).toContain('relative');
+      expect(html).toContain('position: relative;');
     });
 
-    it('children of a plain frame inside flex parent use absolute positioning, not w-full h-full', () => {
-      // The plain frame must reset _parentIsLayout so its own children get
-      // absolute top/left coordinates, not the flex-fill `w-full h-full`.
-      const frame = makeFrame({
-        parentId: 'parent-frame' as Uuid,
-        id: 'frame-1' as Uuid,
-        x: 0,
-        y: 0,
-      });
+    it('children of a plain frame inside flex parent use absolute positioning', () => {
+      const frame = makeFrame({ parentId: 'parent-frame' as Uuid, id: 'frame-1' as Uuid, x: 0, y: 0 });
       const child = makeChild('child-1'); // x:10, y:10
       const objects: Record<string, Shape> = { 'child-1': child };
       const html = renderFrame(frame, [child], objects, layoutCtx);
-
-      // Child must be absolutely positioned relative to the plain frame
-      expect(html).toContain('left-[10px]');
-      expect(html).toContain('top-[10px]');
-      // The child div itself must NOT have w-full or h-full (only the frame wrapper may)
-      const childMatch = html.match(/data-id="child-1"[^>]*class="([^"]+)"/);
-      expect(childMatch?.[1]).not.toContain('w-full');
-      expect(childMatch?.[1]).not.toContain('h-full');
+      expect(html).toContain('left: 10px;');
+      expect(html).toContain('top: 10px;');
     });
   });
 });

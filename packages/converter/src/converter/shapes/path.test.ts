@@ -50,11 +50,11 @@ describe('renderPath', () => {
     expect(html).not.toContain('transform=');
   });
 
-  it('positions the svg absolutely', () => {
+  it('positions the svg absolutely using style', () => {
     const html = renderPath(makePath({ x: 10, y: 20 }), ctx);
-    expect(html).toContain('absolute');
-    expect(html).toContain('left-[10px]');
-    expect(html).toContain('top-[20px]');
+    expect(html).toContain('position: absolute;');
+    expect(html).toContain('left: 10px;');
+    expect(html).toContain('top: 20px;');
   });
 
   it('contains a path element with the content', () => {
@@ -83,9 +83,9 @@ describe('renderPath', () => {
     expect(html).toContain('fill="none"');
   });
 
-  it('includes opacity class when opacity is set', () => {
+  it('includes opacity style when opacity is set', () => {
     const html = renderPath(makePath({ opacity: 0.5 }), ctx);
-    expect(html).toContain('opacity-[50%]');
+    expect(html).toContain('opacity: 0.5;');
   });
 
   it('renders image fill as svg pattern anchored to page-absolute bounding box', () => {

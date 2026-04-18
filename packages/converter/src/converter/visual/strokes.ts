@@ -1,53 +1,34 @@
 import type { Stroke } from '../../penpot.types';
 import { hexOpacityToCss } from '../utils/color';
-import { cls } from '../utils/tailwind';
 import { tokenToCssVarName } from '../tokens';
 
-const STROKE_STYLE_CLASS: Record<string, string> = {
-  solid: 'border-solid',
-  dashed: 'border-dashed',
-  dotted: 'border-dotted',
+const STROKE_STYLE_VALUE: Record<string, string> = {
+  solid: 'solid',
+  dashed: 'dashed',
+  dotted: 'dotted',
 };
 
-/**
- * Converts a Penpot stroke to Tailwind border classes and/or inline box-shadow style.
- *
- * - `center` alignment (default): emits `border-[Npx] border-[color] border-style` classes.
- * - `inner` alignment: emits `box-shadow: inset 0 0 0 Npx color` inline style.
- * - `outer` alignment: emits `box-shadow: 0 0 0 Npx color` inline style.
- *
- * Returns `{ classes: '', style: '' }` when the stroke has no color or width.
- */
-export function solidStrokeToClasses(
+export function solidStrokeToStyle(
   stroke: Stroke,
   strokeTokenName?: string,
-): {
-  classes: string;
-  style: string;
-} {
+): string {
   if (!stroke.strokeColor && !stroke.strokeWidth) {
-    return { classes: '', style: '' };
+    return '';
   }
 
   const rawColor = stroke.strokeColor
     ? hexOpacityToCss(stroke.strokeColor, stroke.strokeOpacity)
     : 'transparent';
-  // When a token name is provided, use the CSS variable instead of the raw color
   const color = strokeTokenName ? `var(--${tokenToCssVarName(strokeTokenName)})` : rawColor;
   const width = stroke.strokeWidth ?? 1;
   const alignment = stroke.strokeAlignment ?? 'center';
 
   if (alignment === 'outer') {
-    const tailwindValue = `0_0_0_${width}px_${color.replace(/ /g, '_')}`;
-    return { classes: `shadow-[${tailwindValue}]`, style: '' };
+    return `box-shadow: 0 0 0 ${width}px ${color};`;
   }
 
-  // inner and center alignment — use Tailwind border classes.
-  // With box-sizing: border-box (Tailwind default), border is drawn inside
-  // the element's dimensions, matching Penpot's inner stroke behaviour.
-  const tailwindColor = color.replace(/ /g, '_');
-  const styleClass = stroke.strokeStyle ? STROKE_STYLE_CLASS[stroke.strokeStyle] : undefined;
-  const classes = cls(`border-[${width}px]`, `border-[${tailwindColor}]`, styleClass);
-
-  return { classes, style: '' };
+  // inner and center alignment — border is drawn inside the element's dimensions
+  // (box-sizing: border-box keeps it within bounds).
+  const borderStyle = stroke.strokeStyle ? (STROKE_STYLE_VALUE[stroke.strokeStyle] ?? 'solid') : 'solid';
+  return `border: ${width}px ${borderStyle} ${color};`;
 }

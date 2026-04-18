@@ -36,21 +36,21 @@ describe('renderRect', () => {
     expect(html).toContain('data-id="abc-123"');
   });
 
-  it('includes absolute positioning classes', () => {
+  it('includes absolute positioning in style', () => {
     const html = renderRect(makeRect({ x: 10, y: 20, width: 100, height: 50 }), null, ctx);
-    expect(html).toContain('absolute');
-    expect(html).toContain('left-[10px]');
-    expect(html).toContain('top-[20px]');
-    expect(html).toContain('w-[100px]');
-    expect(html).toContain('h-[50px]');
+    expect(html).toContain('position: absolute;');
+    expect(html).toContain('left: 10px;');
+    expect(html).toContain('top: 20px;');
+    expect(html).toContain('width: 100px;');
+    expect(html).toContain('height: 50px;');
   });
 
-  it('includes solid fill class', () => {
+  it('includes solid fill as background-color', () => {
     const html = renderRect(makeRect({ fills: [{ fillColor: '#ff0000' as HexColor }] }), null, ctx);
-    expect(html).toContain('bg-[#ff0000]');
+    expect(html).toContain('background-color: #ff0000;');
   });
 
-  it('includes fill as inline style for gradient', () => {
+  it('includes gradient fill as background', () => {
     const html = renderRect(
       makeRect({
         fills: [
@@ -76,25 +76,28 @@ describe('renderRect', () => {
     expect(html).toContain('linear-gradient');
   });
 
-  it('includes opacity class when opacity is set', () => {
+  it('includes opacity style when opacity is set', () => {
     const html = renderRect(makeRect({ opacity: 0.5 }), null, ctx);
-    expect(html).toContain('opacity-[50%]');
+    expect(html).toContain('opacity: 0.5;');
   });
 
-  it('includes hidden class when hidden', () => {
+  it('includes display: none when hidden', () => {
     const html = renderRect(makeRect({ hidden: true }), null, ctx);
-    expect(html).toContain('hidden');
+    expect(html).toContain('display: none;');
   });
 
-  it('includes corner radius class', () => {
+  it('includes corner radius style', () => {
     const html = renderRect(makeRect({ r1: 8, r2: 8, r3: 8, r4: 8 }), null, ctx);
-    expect(html).toContain('rounded-[8px]');
+    expect(html).toContain('border-radius: 8px;');
+  });
+
+  it('has no class attribute', () => {
+    const html = renderRect(makeRect(), null, ctx);
+    expect(html).not.toContain('class=');
   });
 
   it('is self-contained with no children inside', () => {
     const html = renderRect(makeRect(), null, ctx);
-    expect(html).toBe(html.trim());
-    // div with no inner content
     expect(html).toMatch(/<div[^>]*><\/div>/);
   });
 });

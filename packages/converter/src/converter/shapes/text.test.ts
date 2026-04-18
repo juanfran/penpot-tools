@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { textLeafToClasses, textLeafColorClass, renderParagraph, renderText } from './text';
+import { textLeafToStyles, textLeafColorStyle, renderParagraph, renderText } from './text';
 import type {
   TextLeaf,
   ParagraphNode,
@@ -19,70 +19,67 @@ const makeLeaf = (overrides: Partial<TextLeaf> = {}): TextLeaf => ({
   ...overrides,
 });
 
-describe('textLeafToClasses', () => {
-  it('returns empty for a bare leaf', () => {
-    const { classes, style } = textLeafToClasses(makeLeaf());
-    expect(classes).toBe('');
-    expect(style).toBe('');
+describe('textLeafToStyles', () => {
+  it('returns empty string for a bare leaf', () => {
+    expect(textLeafToStyles(makeLeaf())).toBe('');
   });
 
-  it('maps fontSize to text-[Npx]', () => {
-    const { classes } = textLeafToClasses(makeLeaf({ fontSize: '16' }));
-    expect(classes).toContain('text-[16px]');
+  it('maps fontSize to font-size style', () => {
+    expect(textLeafToStyles(makeLeaf({ fontSize: '16' }))).toContain('font-size: 16px;');
   });
 
-  it('maps fontWeight 700 to font-bold', () => {
-    const { classes } = textLeafToClasses(makeLeaf({ fontWeight: '700' }));
-    expect(classes).toContain('font-bold');
+  it('maps fontWeight to font-weight style', () => {
+    expect(textLeafToStyles(makeLeaf({ fontWeight: '700' }))).toContain('font-weight: 700;');
   });
 
-  it('maps fontStyle italic to italic class', () => {
-    const { classes } = textLeafToClasses(makeLeaf({ fontStyle: 'italic' }));
-    expect(classes).toContain('italic');
+  it('maps fontStyle italic to font-style: italic', () => {
+    expect(textLeafToStyles(makeLeaf({ fontStyle: 'italic' }))).toContain('font-style: italic;');
   });
 
-  it('maps textDecoration underline', () => {
-    const { classes } = textLeafToClasses(makeLeaf({ textDecoration: 'underline' }));
-    expect(classes).toContain('underline');
+  it('maps textDecoration underline to text-decoration: underline', () => {
+    expect(textLeafToStyles(makeLeaf({ textDecoration: 'underline' }))).toContain(
+      'text-decoration: underline;',
+    );
   });
 
-  it('maps textDecoration line-through', () => {
-    const { classes } = textLeafToClasses(makeLeaf({ textDecoration: 'line-through' }));
-    expect(classes).toContain('line-through');
+  it('maps textDecoration line-through to text-decoration: line-through', () => {
+    expect(textLeafToStyles(makeLeaf({ textDecoration: 'line-through' }))).toContain(
+      'text-decoration: line-through;',
+    );
   });
 
-  it('maps textTransform uppercase', () => {
-    const { classes } = textLeafToClasses(makeLeaf({ textTransform: 'uppercase' }));
-    expect(classes).toContain('uppercase');
+  it('maps textTransform uppercase to text-transform: uppercase', () => {
+    expect(textLeafToStyles(makeLeaf({ textTransform: 'uppercase' }))).toContain(
+      'text-transform: uppercase;',
+    );
   });
 
-  it('maps textTransform lowercase', () => {
-    const { classes } = textLeafToClasses(makeLeaf({ textTransform: 'lowercase' }));
-    expect(classes).toContain('lowercase');
+  it('maps textTransform lowercase to text-transform: lowercase', () => {
+    expect(textLeafToStyles(makeLeaf({ textTransform: 'lowercase' }))).toContain(
+      'text-transform: lowercase;',
+    );
   });
 
-  it('maps textTransform capitalize', () => {
-    const { classes } = textLeafToClasses(makeLeaf({ textTransform: 'capitalize' }));
-    expect(classes).toContain('capitalize');
+  it('maps textTransform capitalize to text-transform: capitalize', () => {
+    expect(textLeafToStyles(makeLeaf({ textTransform: 'capitalize' }))).toContain(
+      'text-transform: capitalize;',
+    );
   });
 
-  it('maps letterSpacing to tracking-[Xpx] Tailwind class', () => {
-    const { classes } = textLeafToClasses(makeLeaf({ letterSpacing: '2' }));
-    expect(classes).toContain('tracking-[2px]');
+  it('maps letterSpacing to letter-spacing style', () => {
+    expect(textLeafToStyles(makeLeaf({ letterSpacing: '2' }))).toContain('letter-spacing: 2px;');
   });
 
-  it('maps lineHeight to leading-[value] class', () => {
-    const { classes } = textLeafToClasses(makeLeaf({ lineHeight: '1.5' }));
-    expect(classes).toContain('leading-[1.5]');
+  it('maps lineHeight to line-height style', () => {
+    expect(textLeafToStyles(makeLeaf({ lineHeight: '1.5' }))).toContain('line-height: 1.5;');
   });
 
-  it('maps fontFamily to font-[name] Tailwind class', () => {
-    const { classes } = textLeafToClasses(makeLeaf({ fontFamily: 'Inter' }));
-    expect(classes).toContain("font-['Inter']");
+  it('maps fontFamily to font-family style', () => {
+    expect(textLeafToStyles(makeLeaf({ fontFamily: 'Inter' }))).toContain("font-family: 'Inter';");
   });
 });
 
-describe('textLeafToClasses with typography resolution', () => {
+describe('textLeafToStyles with typography resolution', () => {
   const makeTypography = (overrides: Partial<Typography> = {}): Typography => ({
     id: 'typo-1' as Uuid,
     name: 'Heading',
@@ -100,56 +97,46 @@ describe('textLeafToClasses with typography resolution', () => {
 
   it('uses typography defaults when leaf has no inline values', () => {
     const typos: Record<string, Typography> = { 'typo-1': makeTypography() };
-    const { classes } = textLeafToClasses(makeLeaf({ typographyRefId: 'typo-1' as Uuid }), typos);
-    expect(classes).toContain('text-[24px]');
-    expect(classes).toContain('font-bold');
-    expect(classes).toContain("font-['Inter']");
+    const result = textLeafToStyles(makeLeaf({ typographyRefId: 'typo-1' as Uuid }), typos);
+    expect(result).toContain('font-size: 24px;');
+    expect(result).toContain('font-weight: 700;');
+    expect(result).toContain("font-family: 'Inter';");
   });
 
   it('leaf inline values override typography defaults', () => {
-    const typos: Record<string, Typography> = {
-      'typo-1': makeTypography({ fontSize: '24' }),
-    };
-    const { classes } = textLeafToClasses(
+    const typos: Record<string, Typography> = { 'typo-1': makeTypography({ fontSize: '24' }) };
+    const result = textLeafToStyles(
       makeLeaf({ typographyRefId: 'typo-1' as Uuid, fontSize: '32' }),
       typos,
     );
-    expect(classes).toContain('text-[32px]');
-    expect(classes).not.toContain('text-[24px]');
+    expect(result).toContain('font-size: 32px;');
+    expect(result).not.toContain('font-size: 24px;');
   });
 
   it('ignores missing typography ref gracefully', () => {
-    const typos: Record<string, Typography> = {};
-    const { classes } = textLeafToClasses(
+    const result = textLeafToStyles(
       makeLeaf({ typographyRefId: 'missing' as Uuid, fontSize: '16' }),
-      typos,
+      {},
     );
-    expect(classes).toContain('text-[16px]');
-  });
-
-  it('works without typographies parameter (no change)', () => {
-    const { classes } = textLeafToClasses(makeLeaf({ fontSize: '14' }));
-    expect(classes).toContain('text-[14px]');
+    expect(result).toContain('font-size: 16px;');
   });
 });
 
-describe('textLeafColorClass', () => {
+describe('textLeafColorStyle', () => {
   it('returns empty string when no fills', () => {
-    expect(textLeafColorClass(makeLeaf())).toBe('');
+    expect(textLeafColorStyle(makeLeaf())).toBe('');
   });
 
-  it('returns text-[#color] for solid fill', () => {
-    const result = textLeafColorClass(makeLeaf({ fills: [{ fillColor: '#ff0000' as HexColor }] }));
-    expect(result).toContain('text-[#FF0000]');
+  it('returns color style for solid fill', () => {
+    const result = textLeafColorStyle(makeLeaf({ fills: [{ fillColor: '#ff0000' as HexColor }] }));
+    expect(result).toContain('color: #ff0000;');
   });
 
-  it('returns text-[rgba(...)] for solid fill with opacity', () => {
-    const result = textLeafColorClass(
-      makeLeaf({
-        fills: [{ fillColor: '#ff0000' as HexColor, fillOpacity: 0.5 }],
-      }),
+  it('returns color with rgba for solid fill with opacity', () => {
+    const result = textLeafColorStyle(
+      makeLeaf({ fills: [{ fillColor: '#ff0000' as HexColor, fillOpacity: 0.5 }] }),
     );
-    expect(result).toContain('text-[rgba(');
+    expect(result).toContain('color: rgba(');
   });
 });
 
@@ -183,9 +170,14 @@ describe('renderParagraph', () => {
     expect(html).toContain('<span');
   });
 
-  it('applies paragraph-level font size', () => {
+  it('applies paragraph-level font size as style', () => {
     const html = renderParagraph(makeParagraph({ fontSize: '20' }));
-    expect(html).toContain('text-[20px]');
+    expect(html).toContain('font-size: 20px;');
+  });
+
+  it('has no class attribute', () => {
+    const html = renderParagraph(makeParagraph());
+    expect(html).not.toContain('class=');
   });
 });
 
@@ -208,12 +200,7 @@ const makeTextShape = (overrides: Partial<TextShape> = {}): TextShape => ({
     children: [
       {
         type: 'paragraph-set',
-        children: [
-          {
-            type: 'paragraph',
-            children: [{ text: 'Hello world' }],
-          },
-        ],
+        children: [{ type: 'paragraph', children: [{ text: 'Hello world' }] }],
       },
     ],
   },
@@ -222,13 +209,11 @@ const makeTextShape = (overrides: Partial<TextShape> = {}): TextShape => ({
 
 describe('renderText', () => {
   it('renders a div with data-id', () => {
-    const html = renderText(makeTextShape(), ctx);
-    expect(html).toContain('data-id="text-1"');
+    expect(renderText(makeTextShape(), ctx)).toContain('data-id="text-1"');
   });
 
   it('renders text content', () => {
-    const html = renderText(makeTextShape(), ctx);
-    expect(html).toContain('Hello world');
+    expect(renderText(makeTextShape(), ctx)).toContain('Hello world');
   });
 
   it('renders empty div when content is null', () => {
@@ -237,44 +222,38 @@ describe('renderText', () => {
     expect(html).not.toContain('Hello');
   });
 
-  it('applies absolute positioning', () => {
+  it('applies absolute positioning in style', () => {
     const html = renderText(makeTextShape(), ctx);
-    expect(html).toContain('absolute');
-    expect(html).toContain('left-[10px]');
-    expect(html).toContain('top-[20px]');
+    expect(html).toContain('position: absolute;');
+    expect(html).toContain('left: 10px;');
+    expect(html).toContain('top: 20px;');
   });
 
-  it('applies width and height', () => {
+  it('applies width and height in style', () => {
     const html = renderText(makeTextShape(), ctx);
-    expect(html).toContain('w-[200px]');
-    expect(html).toContain('h-[50px]');
+    expect(html).toContain('width: 200px;');
+    expect(html).toContain('height: 50px;');
   });
 
-  it('adds whitespace-nowrap for growType auto-width', () => {
-    const html = renderText(makeTextShape({ growType: 'auto-width' }), ctx);
-    expect(html).toContain('whitespace-nowrap');
+  it('adds white-space: nowrap for growType auto-width', () => {
+    expect(renderText(makeTextShape({ growType: 'auto-width' }), ctx)).toContain('white-space: nowrap;');
   });
 
-  it('does not add whitespace-nowrap for growType auto-height', () => {
-    const html = renderText(makeTextShape({ growType: 'auto-height' }), ctx);
-    expect(html).not.toContain('whitespace-nowrap');
+  it('does not add white-space: nowrap for growType auto-height', () => {
+    expect(renderText(makeTextShape({ growType: 'auto-height' }), ctx)).not.toContain('white-space: nowrap;');
   });
 
-  it('does not add whitespace-nowrap for growType fixed', () => {
-    const html = renderText(makeTextShape({ growType: 'fixed' }), ctx);
-    expect(html).not.toContain('whitespace-nowrap');
+  it('does not add white-space: nowrap when growType is absent', () => {
+    expect(renderText(makeTextShape(), ctx)).not.toContain('white-space: nowrap;');
   });
 
-  it('does not add whitespace-nowrap when growType is absent', () => {
-    const html = renderText(makeTextShape(), ctx);
-    expect(html).not.toContain('whitespace-nowrap');
+  it('adds white-space: nowrap for auto-width inside flex layout', () => {
+    expect(
+      renderText(makeTextShape({ growType: 'auto-width' }), { ...ctx, _parentIsLayout: true }),
+    ).toContain('white-space: nowrap;');
   });
 
-  it('adds whitespace-nowrap for auto-width inside flex layout', () => {
-    const html = renderText(makeTextShape({ growType: 'auto-width' }), {
-      ...ctx,
-      _parentIsLayout: true,
-    });
-    expect(html).toContain('whitespace-nowrap');
+  it('has no class attribute', () => {
+    expect(renderText(makeTextShape(), ctx)).not.toContain('class=');
   });
 });

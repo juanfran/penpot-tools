@@ -1,6 +1,6 @@
 # penpot-to-html
 
-Fetches a Penpot page via the API and outputs its HTML (with Tailwind CDN).
+Fetches a Penpot page via the API and outputs its HTML
 
 ## Usage
 

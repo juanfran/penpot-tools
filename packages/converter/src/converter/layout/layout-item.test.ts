@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
-  layoutItemSizingClasses,
-  layoutItemMarginClasses,
-  layoutItemAlignSelfClass,
-  layoutItemMinMaxClasses,
-  layoutItemZIndexClass,
-  layoutItemAbsoluteClasses,
+  layoutItemSizingStyle,
+  layoutItemMarginStyle,
+  layoutItemAlignSelfStyle,
+  layoutItemMinMaxStyle,
+  layoutItemZIndexStyle,
+  layoutItemAbsoluteStyle,
 } from './layout-item';
 import type { ShapeCommon, FrameShape, Uuid } from '../../penpot.types';
 
@@ -45,69 +45,48 @@ const makeRowParent = (): FrameShape => ({
   layoutFlexDir: 'row',
 });
 
-const makeColParent = (): FrameShape => ({
-  ...makeRowParent(),
-  layoutFlexDir: 'column',
-});
+const makeColParent = (): FrameShape => ({ ...makeRowParent(), layoutFlexDir: 'column' });
 
-describe('layoutItemSizingClasses', () => {
-  it('returns explicit w/h when no sizing is set (defaults to fix)', () => {
-    const result = layoutItemSizingClasses(makeShape(), makeRowParent());
-    expect(result).toContain('w-[100px]');
-    expect(result).toContain('h-[50px]');
+describe('layoutItemSizingStyle', () => {
+  it('returns explicit width/height when no sizing is set (defaults to fix)', () => {
+    const result = layoutItemSizingStyle(makeShape(), makeRowParent());
+    expect(result).toContain('width: 100px;');
+    expect(result).toContain('height: 50px;');
   });
 
-  it('returns flex-1 for fill HSizing in row parent (main axis)', () => {
-    const result = layoutItemSizingClasses(
-      makeShape({ layoutItemHSizing: 'fill' }),
-      makeRowParent(),
-    );
-    expect(result).toContain('flex-1');
+  it('returns flex: 1 for fill HSizing in row parent (main axis)', () => {
+    const result = layoutItemSizingStyle(makeShape({ layoutItemHSizing: 'fill' }), makeRowParent());
+    expect(result).toContain('flex: 1;');
   });
 
-  it('returns h-full for fill VSizing in row parent (cross axis)', () => {
-    const result = layoutItemSizingClasses(
-      makeShape({ layoutItemVSizing: 'fill' }),
-      makeRowParent(),
-    );
-    expect(result).toContain('h-full');
+  it('returns height: 100% for fill VSizing in row parent (cross axis)', () => {
+    const result = layoutItemSizingStyle(makeShape({ layoutItemVSizing: 'fill' }), makeRowParent());
+    expect(result).toContain('height: 100%;');
   });
 
-  it('returns flex-1 for fill VSizing in column parent (main axis)', () => {
-    const result = layoutItemSizingClasses(
-      makeShape({ layoutItemVSizing: 'fill' }),
-      makeColParent(),
-    );
-    expect(result).toContain('flex-1');
+  it('returns flex: 1 for fill VSizing in column parent (main axis)', () => {
+    const result = layoutItemSizingStyle(makeShape({ layoutItemVSizing: 'fill' }), makeColParent());
+    expect(result).toContain('flex: 1;');
   });
 
-  it('returns w-[Npx] for fill HSizing in column parent (cross axis — prevents overflow inflation)', () => {
-    const result = layoutItemSizingClasses(
-      makeShape({ layoutItemHSizing: 'fill' }),
-      makeColParent(),
-    );
-    expect(result).toContain('w-[100px]');
-    expect(result).not.toContain('w-full');
+  it('returns explicit width for fill HSizing in column parent (cross axis — prevents overflow inflation)', () => {
+    const result = layoutItemSizingStyle(makeShape({ layoutItemHSizing: 'fill' }), makeColParent());
+    expect(result).toContain('width: 100px;');
+    expect(result).not.toContain('width: 100%;');
   });
 
-  it('returns w-[Npx] for fix HSizing', () => {
-    const result = layoutItemSizingClasses(
-      makeShape({ layoutItemHSizing: 'fix', width: 120 }),
-      makeRowParent(),
-    );
-    expect(result).toContain('w-[120px]');
+  it('returns explicit width for fix HSizing', () => {
+    const result = layoutItemSizingStyle(makeShape({ layoutItemHSizing: 'fix', width: 120 }), makeRowParent());
+    expect(result).toContain('width: 120px;');
   });
 
-  it('returns h-[Npx] for fix VSizing', () => {
-    const result = layoutItemSizingClasses(
-      makeShape({ layoutItemVSizing: 'fix', height: 60 }),
-      makeRowParent(),
-    );
-    expect(result).toContain('h-[60px]');
+  it('returns explicit height for fix VSizing', () => {
+    const result = layoutItemSizingStyle(makeShape({ layoutItemVSizing: 'fix', height: 60 }), makeRowParent());
+    expect(result).toContain('height: 60px;');
   });
 
   it('returns empty string for auto sizing', () => {
-    const result = layoutItemSizingClasses(
+    const result = layoutItemSizingStyle(
       makeShape({ layoutItemHSizing: 'auto', layoutItemVSizing: 'auto' }),
       makeRowParent(),
     );
@@ -115,128 +94,92 @@ describe('layoutItemSizingClasses', () => {
   });
 });
 
-describe('layoutItemMarginClasses', () => {
-  it('returns empty when layoutItemMargin is undefined', () => {
-    const result = layoutItemMarginClasses(makeShape());
-    expect(result.classes).toBe('');
-    expect(result.style).toBe('');
+describe('layoutItemMarginStyle', () => {
+  it('returns empty string when layoutItemMargin is undefined', () => {
+    expect(layoutItemMarginStyle(makeShape())).toBe('');
   });
 
-  it('emits m-[Npx] when all sides are equal', () => {
-    const result = layoutItemMarginClasses(
-      makeShape({ layoutItemMargin: { m1: 8, m2: 8, m3: 8, m4: 8 } }),
-    );
-    expect(result.classes).toContain('m-[8px]');
-    expect(result.style).toBe('');
+  it('emits margin: Npx when all sides are equal', () => {
+    expect(
+      layoutItemMarginStyle(makeShape({ layoutItemMargin: { m1: 8, m2: 8, m3: 8, m4: 8 } })),
+    ).toBe('margin: 8px;');
   });
 
-  it('emits mx and my when top=bottom and left=right', () => {
-    const result = layoutItemMarginClasses(
-      makeShape({ layoutItemMargin: { m1: 4, m2: 12, m3: 4, m4: 12 } }),
-    );
-    expect(result.classes).toContain('my-[4px]');
-    expect(result.classes).toContain('mx-[12px]');
-    expect(result.style).toBe('');
+  it('emits 4-value margin when sides differ', () => {
+    expect(
+      layoutItemMarginStyle(makeShape({ layoutItemMargin: { m1: 4, m2: 8, m3: 12, m4: 16 } })),
+    ).toBe('margin: 4px 8px 12px 16px;');
   });
 
-  it('emits inline margin style when sides differ', () => {
-    const result = layoutItemMarginClasses(
-      makeShape({ layoutItemMargin: { m1: 4, m2: 8, m3: 12, m4: 16 } }),
-    );
-    expect(result.style).toContain('margin: 4px 8px 12px 16px;');
-    expect(result.classes).toBe('');
-  });
-
-  it('handles zero margins as m-[0px]', () => {
-    const result = layoutItemMarginClasses(
-      makeShape({ layoutItemMargin: { m1: 0, m2: 0, m3: 0, m4: 0 } }),
-    );
-    expect(result.classes).toContain('m-[0px]');
+  it('handles zero margins', () => {
+    expect(
+      layoutItemMarginStyle(makeShape({ layoutItemMargin: { m1: 0, m2: 0, m3: 0, m4: 0 } })),
+    ).toBe('margin: 0px;');
   });
 });
 
-describe('layoutItemAlignSelfClass', () => {
+describe('layoutItemAlignSelfStyle', () => {
   it('returns empty string when undefined', () => {
-    expect(layoutItemAlignSelfClass(makeShape())).toBe('');
+    expect(layoutItemAlignSelfStyle(makeShape())).toBe('');
   });
-  it('maps start to self-start', () => {
-    expect(layoutItemAlignSelfClass(makeShape({ layoutItemAlignSelf: 'start' }))).toBe(
-      'self-start',
-    );
+  it('maps start to align-self: flex-start', () => {
+    expect(layoutItemAlignSelfStyle(makeShape({ layoutItemAlignSelf: 'start' }))).toBe('align-self: flex-start;');
   });
-  it('maps center to self-center', () => {
-    expect(layoutItemAlignSelfClass(makeShape({ layoutItemAlignSelf: 'center' }))).toBe(
-      'self-center',
-    );
+  it('maps center to align-self: center', () => {
+    expect(layoutItemAlignSelfStyle(makeShape({ layoutItemAlignSelf: 'center' }))).toBe('align-self: center;');
   });
-  it('maps end to self-end', () => {
-    expect(layoutItemAlignSelfClass(makeShape({ layoutItemAlignSelf: 'end' }))).toBe('self-end');
+  it('maps end to align-self: flex-end', () => {
+    expect(layoutItemAlignSelfStyle(makeShape({ layoutItemAlignSelf: 'end' }))).toBe('align-self: flex-end;');
   });
-  it('maps stretch to self-stretch', () => {
-    expect(layoutItemAlignSelfClass(makeShape({ layoutItemAlignSelf: 'stretch' }))).toBe(
-      'self-stretch',
-    );
+  it('maps stretch to align-self: stretch', () => {
+    expect(layoutItemAlignSelfStyle(makeShape({ layoutItemAlignSelf: 'stretch' }))).toBe('align-self: stretch;');
   });
 });
 
-describe('layoutItemMinMaxClasses', () => {
+describe('layoutItemMinMaxStyle', () => {
   it('returns empty string when no min/max set', () => {
-    expect(layoutItemMinMaxClasses(makeShape())).toBe('');
+    expect(layoutItemMinMaxStyle(makeShape())).toBe('');
   });
-  it('emits min-w-[Npx]', () => {
-    expect(layoutItemMinMaxClasses(makeShape({ layoutItemMinW: 50 }))).toContain('min-w-[50px]');
+  it('emits min-width', () => {
+    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMinW: 50 }))).toContain('min-width: 50px;');
   });
-  it('emits max-w-[Npx]', () => {
-    expect(layoutItemMinMaxClasses(makeShape({ layoutItemMaxW: 200 }))).toContain('max-w-[200px]');
+  it('emits max-width', () => {
+    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMaxW: 200 }))).toContain('max-width: 200px;');
   });
-  it('emits min-h-[Npx]', () => {
-    expect(layoutItemMinMaxClasses(makeShape({ layoutItemMinH: 30 }))).toContain('min-h-[30px]');
+  it('emits min-height', () => {
+    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMinH: 30 }))).toContain('min-height: 30px;');
   });
-  it('emits max-h-[Npx]', () => {
-    expect(layoutItemMinMaxClasses(makeShape({ layoutItemMaxH: 100 }))).toContain('max-h-[100px]');
-  });
-  it('combines multiple constraints', () => {
-    const result = layoutItemMinMaxClasses(
-      makeShape({
-        layoutItemMinW: 50,
-        layoutItemMaxW: 200,
-        layoutItemMinH: 30,
-        layoutItemMaxH: 100,
-      }),
-    );
-    expect(result).toContain('min-w-[50px]');
-    expect(result).toContain('max-w-[200px]');
-    expect(result).toContain('min-h-[30px]');
-    expect(result).toContain('max-h-[100px]');
+  it('emits max-height', () => {
+    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMaxH: 100 }))).toContain('max-height: 100px;');
   });
 });
 
-describe('layoutItemZIndexClass', () => {
+describe('layoutItemZIndexStyle', () => {
   it('returns empty string when undefined', () => {
-    expect(layoutItemZIndexClass(makeShape())).toBe('');
+    expect(layoutItemZIndexStyle(makeShape())).toBe('');
   });
   it('returns empty string when zero', () => {
-    expect(layoutItemZIndexClass(makeShape({ layoutItemZIndex: 0 }))).toBe('');
+    expect(layoutItemZIndexStyle(makeShape({ layoutItemZIndex: 0 }))).toBe('');
   });
-  it('returns z-[N] for non-zero z-index', () => {
-    expect(layoutItemZIndexClass(makeShape({ layoutItemZIndex: 10 }))).toBe('z-[10]');
+  it('returns z-index for non-zero', () => {
+    expect(layoutItemZIndexStyle(makeShape({ layoutItemZIndex: 10 }))).toBe('z-index: 10;');
   });
   it('handles negative z-index', () => {
-    expect(layoutItemZIndexClass(makeShape({ layoutItemZIndex: -1 }))).toBe('z-[-1]');
+    expect(layoutItemZIndexStyle(makeShape({ layoutItemZIndex: -1 }))).toBe('z-index: -1;');
   });
 });
 
-describe('layoutItemAbsoluteClasses', () => {
+describe('layoutItemAbsoluteStyle', () => {
   it('returns empty string when layoutItemAbsolute is false', () => {
-    expect(layoutItemAbsoluteClasses(makeShape({ layoutItemAbsolute: false }))).toBe('');
+    expect(layoutItemAbsoluteStyle(makeShape({ layoutItemAbsolute: false }))).toBe('');
   });
   it('returns empty string when layoutItemAbsolute is undefined', () => {
-    expect(layoutItemAbsoluteClasses(makeShape())).toBe('');
+    expect(layoutItemAbsoluteStyle(makeShape())).toBe('');
   });
   it('returns absolute with left/top when layoutItemAbsolute is true', () => {
-    const result = layoutItemAbsoluteClasses(makeShape({ layoutItemAbsolute: true, x: 20, y: 30 }));
-    expect(result).toContain('absolute');
-    expect(result).toContain('left-[20px]');
-    expect(result).toContain('top-[30px]');
+    const result = layoutItemAbsoluteStyle(makeShape({ layoutItemAbsolute: true, x: 20, y: 30 }));
+    expect(result).toContain('position: absolute;');
+    expect(result).toContain('left: 20px;');
+    expect(result).toContain('top: 30px;');
   });
 });

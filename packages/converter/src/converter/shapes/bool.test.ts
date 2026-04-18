@@ -35,8 +35,7 @@ describe('renderBool', () => {
   });
 
   it('includes data-id attribute', () => {
-    const html = renderBool(makeBool({ id: 'my-bool' as Uuid }), ctx);
-    expect(html).toContain('data-id="my-bool"');
+    expect(renderBool(makeBool({ id: 'my-bool' as Uuid }), ctx)).toContain('data-id="my-bool"');
   });
 
   it('sets svg width and height from bounding box', () => {
@@ -45,11 +44,11 @@ describe('renderBool', () => {
     expect(html).toContain('height="50"');
   });
 
-  it('positions absolutely', () => {
+  it('positions absolutely using style', () => {
     const html = renderBool(makeBool({ x: 10, y: 20 }), ctx);
-    expect(html).toContain('absolute');
-    expect(html).toContain('left-[10px]');
-    expect(html).toContain('top-[20px]');
+    expect(html).toContain('position: absolute;');
+    expect(html).toContain('left: 10px;');
+    expect(html).toContain('top: 20px;');
   });
 
   it('contains a path element with the content', () => {
@@ -59,8 +58,7 @@ describe('renderBool', () => {
   });
 
   it('translates path by -x, -y', () => {
-    const html = renderBool(makeBool({ x: 10, y: 20 }), ctx);
-    expect(html).toContain('translate(-10, -20)');
+    expect(renderBool(makeBool({ x: 10, y: 20 }), ctx)).toContain('translate(-10, -20)');
   });
 
   it('applies fill color from fills', () => {
@@ -70,26 +68,25 @@ describe('renderBool', () => {
 
   it('applies stroke color from strokes', () => {
     const html = renderBool(
-      makeBool({
-        strokes: [{ strokeColor: '#0000ff' as HexColor, strokeWidth: 2 }],
-      }),
+      makeBool({ strokes: [{ strokeColor: '#0000ff' as HexColor, strokeWidth: 2 }] }),
       ctx,
     );
     expect(html).toContain('stroke="#0000ff"');
   });
 
   it('uses fill=none when no fills', () => {
-    const html = renderBool(makeBool({ fills: [] }), ctx);
-    expect(html).toContain('fill="none"');
+    expect(renderBool(makeBool({ fills: [] }), ctx)).toContain('fill="none"');
   });
 
-  it('includes opacity class when opacity is set', () => {
-    const html = renderBool(makeBool({ opacity: 0.5 }), ctx);
-    expect(html).toContain('opacity-[50%]');
+  it('includes opacity style when opacity is set', () => {
+    expect(renderBool(makeBool({ opacity: 0.5 }), ctx)).toContain('opacity: 0.5;');
   });
 
-  it('includes hidden class when hidden', () => {
-    const html = renderBool(makeBool({ hidden: true }), ctx);
-    expect(html).toContain('hidden');
+  it('includes display: none when hidden', () => {
+    expect(renderBool(makeBool({ hidden: true }), ctx)).toContain('display: none;');
+  });
+
+  it('has no class attribute', () => {
+    expect(renderBool(makeBool(), ctx)).not.toContain('class=');
   });
 });

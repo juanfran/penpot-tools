@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { baseClasses } from './base';
+import { baseStyles } from './base';
 import type { ShapeCommon, Uuid, HexColor } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 
@@ -18,43 +18,35 @@ const makeShape = (overrides: Partial<ShapeCommon> = {}): ShapeCommon => ({
   ...overrides,
 });
 
-describe('baseClasses', () => {
-  it('returns empty classes and style for a plain shape', () => {
-    const result = baseClasses(makeShape(), ctx);
-    expect(result.classes).toBe('');
-    expect(result.style).toBe('');
+describe('baseStyles', () => {
+  it('returns empty string for a plain shape', () => {
+    expect(baseStyles(makeShape(), ctx)).toBe('');
   });
 
-  it('includes hidden class when shape is hidden', () => {
-    const result = baseClasses(makeShape({ hidden: true }), ctx);
-    expect(result.classes).toContain('hidden');
+  it('includes display: none when shape is hidden', () => {
+    expect(baseStyles(makeShape({ hidden: true }), ctx)).toContain('display: none;');
   });
 
-  it('includes opacity class', () => {
-    const result = baseClasses(makeShape({ opacity: 0.5 }), ctx);
-    expect(result.classes).toContain('opacity-[50%]');
+  it('includes opacity style', () => {
+    expect(baseStyles(makeShape({ opacity: 0.5 }), ctx)).toContain('opacity: 0.5;');
   });
 
-  it('includes blend mode class', () => {
-    const result = baseClasses(makeShape({ blendMode: 'multiply' }), ctx);
-    expect(result.classes).toContain('mix-blend-multiply');
+  it('includes blend mode style', () => {
+    expect(baseStyles(makeShape({ blendMode: 'multiply' }), ctx)).toContain('mix-blend-mode: multiply;');
   });
 
   it('includes rotation in transform style', () => {
-    const result = baseClasses(makeShape({ rotation: 45 }), ctx);
-    expect(result.style).toContain('rotate(-45deg)');
+    expect(baseStyles(makeShape({ rotation: 45 }), ctx)).toContain('rotate(-45deg)');
   });
 
-  it('includes blur class', () => {
-    const result = baseClasses(
-      makeShape({ blur: { type: 'layer-blur', value: 8, hidden: false } }),
-      ctx,
-    );
-    expect(result.classes).toContain('blur-[8px]');
+  it('includes blur style', () => {
+    expect(
+      baseStyles(makeShape({ blur: { type: 'layer-blur', value: 8, hidden: false } }), ctx),
+    ).toContain('filter: blur(8px);');
   });
 
-  it('includes shadow as Tailwind class', () => {
-    const result = baseClasses(
+  it('includes shadow as box-shadow style', () => {
+    const result = baseStyles(
       makeShape({
         shadow: [
           {
@@ -71,24 +63,22 @@ describe('baseClasses', () => {
       }),
       ctx,
     );
-    expect(result.classes).toContain('shadow-[');
-    expect(result.style).not.toContain('box-shadow:');
+    expect(result).toContain('box-shadow:');
   });
 
-  it('includes corner radius class', () => {
-    const result = baseClasses(makeShape({ r1: 8, r2: 8, r3: 8, r4: 8 }), ctx);
-    expect(result.classes).toContain('rounded-[8px]');
+  it('includes corner radius style', () => {
+    expect(baseStyles(makeShape({ r1: 8, r2: 8, r3: 8, r4: 8 }), ctx)).toContain('border-radius: 8px;');
   });
 
-  it('merges multiple classes correctly', () => {
-    const result = baseClasses(makeShape({ hidden: true, opacity: 0.5, blendMode: 'screen' }), ctx);
-    expect(result.classes).toContain('hidden');
-    expect(result.classes).toContain('opacity-[50%]');
-    expect(result.classes).toContain('mix-blend-screen');
+  it('merges multiple styles correctly', () => {
+    const result = baseStyles(makeShape({ hidden: true, opacity: 0.5, blendMode: 'screen' }), ctx);
+    expect(result).toContain('display: none;');
+    expect(result).toContain('opacity: 0.5;');
+    expect(result).toContain('mix-blend-mode: screen;');
   });
 
-  it('puts radius in style and shadow in classes', () => {
-    const result = baseClasses(
+  it('includes border-radius and box-shadow in same style string', () => {
+    const result = baseStyles(
       makeShape({
         r1: 4,
         r2: 8,
@@ -109,8 +99,7 @@ describe('baseClasses', () => {
       }),
       ctx,
     );
-    expect(result.style).toContain('border-radius:');
-    expect(result.classes).toContain('shadow-[');
-    expect(result.style).not.toContain('box-shadow:');
+    expect(result).toContain('border-radius:');
+    expect(result).toContain('box-shadow:');
   });
 });

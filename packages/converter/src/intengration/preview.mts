@@ -57,10 +57,10 @@ const googleFontsUrl =
 const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Preview: ${name}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Preview: ${name}</title>
+<script src="https://cdn.tailwindcss.com"></script>
 ${googleFontsUrl ? `  <link rel="stylesheet" href="${googleFontsUrl}" />` : ''}
   <style>
 ${cssVars}

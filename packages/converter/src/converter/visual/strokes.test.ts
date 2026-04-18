@@ -1,66 +1,45 @@
 import { describe, it, expect } from 'vitest';
-import { solidStrokeToClasses } from './strokes';
+import { solidStrokeToStyle } from './strokes';
 import type { Stroke, HexColor } from '../../penpot.types';
 
-describe('solidStrokeToClasses', () => {
-  it('returns empty classes and style when stroke has no color or width', () => {
-    const stroke: Stroke = {};
-    const result = solidStrokeToClasses(stroke);
-    expect(result.classes).toBe('');
-    expect(result.style).toBe('');
+describe('solidStrokeToStyle', () => {
+  it('returns empty string when stroke has no color or width', () => {
+    expect(solidStrokeToStyle({})).toBe('');
   });
 
-  it('returns border width class for center-aligned stroke', () => {
+  it('returns border style for center-aligned stroke', () => {
     const stroke: Stroke = {
       strokeColor: '#ff0000' as HexColor,
       strokeWidth: 2,
       strokeAlignment: 'center',
     };
-    const result = solidStrokeToClasses(stroke);
-    expect(result.classes).toContain('border-[2px]');
-    expect(result.classes).toContain('border-[#ff0000]');
-    expect(result.style).toBe('');
+    const result = solidStrokeToStyle(stroke);
+    expect(result).toContain('border:');
+    expect(result).toContain('2px');
+    expect(result).toContain('#ff0000');
   });
 
   it('defaults to center alignment when strokeAlignment is undefined', () => {
-    const stroke: Stroke = {
-      strokeColor: '#000000' as HexColor,
-      strokeWidth: 1,
-    };
-    const result = solidStrokeToClasses(stroke);
-    expect(result.classes).toContain('border-[1px]');
-    expect(result.classes).toContain('border-[#000000]');
-    expect(result.style).toBe('');
+    const stroke: Stroke = { strokeColor: '#000000' as HexColor, strokeWidth: 1 };
+    const result = solidStrokeToStyle(stroke);
+    expect(result).toContain('border:');
+    expect(result).toContain('1px');
+    expect(result).toContain('#000000');
   });
 
-  it('maps strokeStyle solid to border-solid class', () => {
-    const stroke: Stroke = {
-      strokeColor: '#000000' as HexColor,
-      strokeWidth: 1,
-      strokeStyle: 'solid',
-    };
-    const result = solidStrokeToClasses(stroke);
-    expect(result.classes).toContain('border-solid');
+  it('maps strokeStyle solid to solid border-style', () => {
+    const stroke: Stroke = { strokeColor: '#000000' as HexColor, strokeWidth: 1, strokeStyle: 'solid' };
+    expect(solidStrokeToStyle(stroke)).toContain('solid');
   });
 
-  it('maps strokeStyle dashed to border-dashed class', () => {
-    const stroke: Stroke = {
-      strokeColor: '#000000' as HexColor,
-      strokeWidth: 1,
-      strokeStyle: 'dashed',
-    };
-    const result = solidStrokeToClasses(stroke);
-    expect(result.classes).toContain('border-dashed');
+  it('maps strokeStyle dashed to dashed border-style', () => {
+    const stroke: Stroke = { strokeColor: '#000000' as HexColor, strokeWidth: 1, strokeStyle: 'dashed' };
+    expect(solidStrokeToStyle(stroke)).toContain('dashed');
   });
 
-  it('maps strokeStyle dotted to border-dotted class', () => {
-    const stroke: Stroke = {
-      strokeColor: '#000000' as HexColor,
-      strokeWidth: 1,
-      strokeStyle: 'dotted',
-    };
-    const result = solidStrokeToClasses(stroke);
-    expect(result.classes).toContain('border-dotted');
+  it('maps strokeStyle dotted to dotted border-style', () => {
+    const stroke: Stroke = { strokeColor: '#000000' as HexColor, strokeWidth: 1, strokeStyle: 'dotted' };
+    expect(solidStrokeToStyle(stroke)).toContain('dotted');
   });
 
   it('uses rgba color when strokeOpacity is present', () => {
@@ -70,44 +49,38 @@ describe('solidStrokeToClasses', () => {
       strokeWidth: 2,
       strokeAlignment: 'center',
     };
-    const result = solidStrokeToClasses(stroke);
-    expect(result.classes).toContain('border-[rgba(255,_0,_0,_0.5)]');
-    expect(result.style).toBe('');
+    expect(solidStrokeToStyle(stroke)).toContain('rgba(255, 0, 0, 0.5)');
   });
 
-  it('uses inset box-shadow for inner alignment', () => {
+  it('uses border for inner alignment', () => {
     const stroke: Stroke = {
       strokeColor: '#ff0000' as HexColor,
       strokeWidth: 3,
       strokeAlignment: 'inner',
     };
-    const result = solidStrokeToClasses(stroke);
-    expect(result.classes).toContain('border-[3px]');
-    expect(result.classes).toContain('border-[#ff0000]');
-    expect(result.style).toBe('');
+    const result = solidStrokeToStyle(stroke);
+    expect(result).toContain('border:');
+    expect(result).toContain('3px');
+    expect(result).toContain('#ff0000');
   });
 
-  it('uses Tailwind shadow-[...] class for outer alignment', () => {
+  it('uses box-shadow for outer alignment', () => {
     const stroke: Stroke = {
       strokeColor: '#ff0000' as HexColor,
       strokeWidth: 3,
       strokeAlignment: 'outer',
     };
-    const result = solidStrokeToClasses(stroke);
-    expect(result.classes).toBe('shadow-[0_0_0_3px_#ff0000]');
-    expect(result.style).toBe('');
+    const result = solidStrokeToStyle(stroke);
+    expect(result).toBe('box-shadow: 0 0 0 3px #ff0000;');
   });
 
-  it('uses rgba border color when opacity is set for inner alignment', () => {
+  it('uses rgba for outer alignment with opacity', () => {
     const stroke: Stroke = {
       strokeColor: '#ff0000' as HexColor,
       strokeOpacity: 0.5,
       strokeWidth: 2,
-      strokeAlignment: 'inner',
+      strokeAlignment: 'outer',
     };
-    const result = solidStrokeToClasses(stroke);
-    expect(result.classes).toContain('border-[2px]');
-    expect(result.classes).toContain('rgba(255,_0,_0,_0.5)');
-    expect(result.style).toBe('');
+    expect(solidStrokeToStyle(stroke)).toContain('rgba(255, 0, 0, 0.5)');
   });
 });

@@ -1,35 +1,24 @@
 import type { FrameShape, Shape } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 import { tag } from '../utils/html';
-import { cls } from '../utils/tailwind';
+import { px } from '../utils/css';
 import { mergeStyles } from '../utils/style';
-import { pxClass } from '../utils/tailwind';
-import { baseClasses } from '../visual/base';
+import { baseStyles } from '../visual/base';
 import { fillsToOutput } from '../visual/fills';
-import { solidStrokeToClasses } from '../visual/strokes';
+import { solidStrokeToStyle } from '../visual/strokes';
 import { resolvePositionOutput } from '../visual/position';
-import { flexContainerClasses, flexSpacingClasses } from '../layout/flex';
+import { flexContainerStyle, flexSpacingStyle } from '../layout/flex';
 import {
-  layoutItemSizingClasses,
-  layoutItemMarginClasses,
-  layoutItemAlignSelfClass,
-  layoutItemMinMaxClasses,
-  layoutItemZIndexClass,
-  layoutItemAbsoluteClasses,
+  layoutItemSizingStyle,
+  layoutItemMarginStyle,
+  layoutItemAlignSelfStyle,
+  layoutItemMinMaxStyle,
+  layoutItemZIndexStyle,
+  layoutItemAbsoluteStyle,
 } from '../layout/layout-item';
-import { gridTracksToClass, gridCellClasses, findCellForShape } from '../layout/grid';
+import { gridTracksToStyle, gridCellStyle, findCellForShape } from '../layout/grid';
 import { renderShape } from './dispatch';
 
-/**
- * Renders a Penpot `FrameShape` as a `<div>`.
- *
- * - Root frame (parentId === id): uses `relative` positioning.
- * - Nested frame: uses `absolute` positioning via `absolutePositionClasses`.
- * - Flex layout frame: adds flex container classes; children receive layout-item classes.
- * - `overflow-hidden` is added when `shape.clipContent === true`.
- * - Children are recursively rendered via `renderShape`.
- * - The `data-id` attribute carries the Penpot shape ID.
- */
 export function renderFrame(
   shape: FrameShape,
   children: Shape[],
@@ -40,88 +29,73 @@ export function renderFrame(
   const rawLayout = (shape as unknown as { layout?: string }).layout;
   const isFlex = shape.layoutType === 'flex' || rawLayout === 'flex';
   const isGrid = shape.layoutType === 'grid' || rawLayout === 'grid';
-  const base = baseClasses(shape, ctx);
+  const base = baseStyles(shape, ctx);
   const fills = fillsToOutput(shape.fills, ctx, shape.appliedTokens?.fill);
-  const clipClass =
-    shape.clipContent !== false && !shape.showContent ? 'overflow-hidden' : undefined;
+  const clipStyle =
+    shape.clipContent !== false && !shape.showContent ? 'overflow: hidden;' : '';
   const firstStroke = (shape.strokes ?? [])[0];
   const stroke = firstStroke
-    ? solidStrokeToClasses(firstStroke, shape.appliedTokens?.strokeColor)
-    : { classes: '', style: '' };
+    ? solidStrokeToStyle(firstStroke, shape.appliedTokens?.strokeColor)
+    : '';
 
-  let positionClasses: string;
   let positionStyle = '';
   if (isRoot) {
-    positionClasses = cls('relative', pxClass('w', shape.width), pxClass('h', shape.height));
+    positionStyle = `position: relative; width: ${px(shape.width)}; height: ${px(shape.height)};`;
   } else {
-    const posOut = resolvePositionOutput(shape, ctx);
-    positionClasses = posOut.classes;
-    positionStyle = posOut.style;
+    positionStyle = resolvePositionOutput(shape, ctx);
   }
 
-  let layoutClasses = '';
   let layoutStyle = '';
   if (isFlex) {
-    layoutClasses = flexContainerClasses(shape);
-    const spacing = flexSpacingClasses(shape);
-    layoutClasses = cls(layoutClasses, spacing.classes);
-    layoutStyle = spacing.style;
+    layoutStyle = mergeStyles(flexContainerStyle(shape), flexSpacingStyle(shape));
   } else if (isGrid) {
-    const spacing = flexSpacingClasses(shape);
-    const colClass = gridTracksToClass(shape.layoutGridColumns ?? [], 'columns');
-    const rowClass = gridTracksToClass(shape.layoutGridRows ?? [], 'rows');
-    layoutClasses = cls('grid', colClass, rowClass, spacing.classes);
-    layoutStyle = spacing.style;
+    const spacing = flexSpacingStyle(shape);
+    const colStyle = gridTracksToStyle(shape.layoutGridColumns ?? [], 'columns');
+    const rowStyle = gridTracksToStyle(shape.layoutGridRows ?? [], 'rows');
+    layoutStyle = mergeStyles('display: grid;', colStyle, rowStyle, spacing);
   }
 
-  const bgClass = isRoot && ctx._pageBackground ? `bg-[${ctx._pageBackground}]` : undefined;
+  const bgStyle =
+    isRoot && ctx._pageBackground ? `background-color: ${ctx._pageBackground};` : '';
 
   const hasAbsoluteChild =
     (isFlex || isGrid) &&
     children.some((c) => (c as unknown as { layoutItemAbsolute?: boolean }).layoutItemAbsolute);
 
   // A plain frame with children acts as a containing block for its absolutely-positioned
-  // children. When it's inside a flex/grid parent, positionClasses is `w-full h-full`
-  // (no CSS position), leaving it as `position: static` which does not create a
-  // containing block. Add `relative` in that case to anchor child absolute positioning.
+  // children. When it's inside a flex/grid parent, positionStyle has no CSS position
+  // (only width/height), leaving it as position: static which does not create a
+  // containing block. Add position: relative in that case.
   const plainFrameNeedsRelative =
     !isFlex && !isGrid && !isRoot && children.length > 0 && ctx._parentIsLayout;
 
-  const classes = cls(
-    positionClasses,
-    plainFrameNeedsRelative ? 'relative' : undefined,
-    hasAbsoluteChild ? 'relative' : undefined,
-    layoutClasses,
-    base.classes,
-    fills.classes,
-    stroke.classes,
-    clipClass,
-    bgClass,
+  const extraPositionStyle =
+    plainFrameNeedsRelative || hasAbsoluteChild ? 'position: relative;' : '';
+
+  const style = mergeStyles(
+    positionStyle,
+    extraPositionStyle,
+    layoutStyle,
+    base,
+    fills,
+    stroke,
+    clipStyle,
+    bgStyle,
   );
-  const style = mergeStyles(positionStyle, layoutStyle, base.style, fills.style, stroke.style);
 
   let inner: string;
   if (isFlex) {
-    // Penpot stores flex children in Z-order (back-to-front), which is the reverse of
-    // visual flex order for `row` and `column`. For `row-reverse` and `column-reverse`,
-    // Penpot stores children in visual order (leftmost/topmost first), so no reversal needed.
     const flexDir = shape.layoutFlexDir;
     const isReverseDir = flexDir === 'row-reverse' || flexDir === 'column-reverse';
-    const isRowDir = flexDir === 'row' || flexDir === 'row-reverse' || flexDir === undefined;
-    const orderedChildren = isReverseDir ? [...children] : [...children].reverse();
     const frameOffsetX = shape.x ?? 0;
     const frameOffsetY = shape.y ?? 0;
+    const orderedChildren = isReverseDir ? [...children] : [...children].reverse();
     inner = orderedChildren
       .map((child) => {
-        // For auto-sized axes the child must emit its own explicit dimension
-        // instead of w-full/h-full, otherwise the child's percentage size
-        // resolves against the flex container's definite dimension (e.g. 947px)
-        // rather than the child's natural size.
-        // For fill sizing on the cross-axis of a column container (horizontal),
-        // also use explicit px to prevent descendant overflow from inflating the
-        // flex container's cross-axis measurement in the browser.
         const autoW =
-          child.layoutItemHSizing === 'auto' || (!isRowDir && child.layoutItemHSizing === 'fill');
+          child.layoutItemHSizing === 'auto' ||
+          (!(flexDir === 'row' || flexDir === 'row-reverse' || flexDir === undefined) &&
+            child.layoutItemHSizing === 'fill');
         const autoH = child.layoutItemVSizing === 'auto';
         const flexCtx: ConverterContext = {
           ...ctx,
@@ -129,22 +103,17 @@ export function renderFrame(
           _parentIsLayoutAutoW: autoW || undefined,
           _parentIsLayoutAutoH: autoH || undefined,
         };
-        const itemClasses = cls(
-          layoutItemSizingClasses(child, shape),
-          layoutItemMarginClasses(child).classes,
-          layoutItemAlignSelfClass(child),
-          layoutItemMinMaxClasses(child),
-          layoutItemZIndexClass(child),
-          layoutItemAbsoluteClasses(child, frameOffsetX, frameOffsetY),
+        const itemStyle = mergeStyles(
+          layoutItemSizingStyle(child, shape),
+          layoutItemMarginStyle(child),
+          layoutItemAlignSelfStyle(child),
+          layoutItemMinMaxStyle(child),
+          layoutItemZIndexStyle(child),
+          layoutItemAbsoluteStyle(child, frameOffsetX, frameOffsetY),
         );
-        const itemStyle = layoutItemMarginClasses(child).style;
         const childHtml = renderShape(child, objects, flexCtx);
-        if (!itemClasses && !itemStyle) return childHtml;
-        return tag(
-          'div',
-          { class: itemClasses || undefined, style: itemStyle || undefined },
-          childHtml,
-        );
+        if (!itemStyle) return childHtml;
+        return tag('div', { style: itemStyle || undefined }, childHtml);
       })
       .join('');
   } else if (isGrid) {
@@ -152,10 +121,10 @@ export function renderFrame(
     inner = children
       .map((child) => {
         const cell = findCellForShape(shape, child.id);
-        const cellClasses = cell ? gridCellClasses(cell) : '';
+        const cellStyle = cell ? gridCellStyle(cell) : '';
         const childHtml = renderShape(child, objects, gridCtx);
-        if (!cellClasses) return childHtml;
-        return tag('div', { class: cellClasses }, childHtml);
+        if (!cellStyle) return childHtml;
+        return tag('div', { style: cellStyle }, childHtml);
       })
       .join('');
   } else {
@@ -173,13 +142,5 @@ export function renderFrame(
     inner = children.map((child) => renderShape(child, objects, childCtx)).join('');
   }
 
-  return tag(
-    'div',
-    {
-      'data-id': shape.id,
-      class: classes || undefined,
-      style: style || undefined,
-    },
-    inner,
-  );
+  return tag('div', { 'data-id': shape.id, style: style || undefined }, inner);
 }
