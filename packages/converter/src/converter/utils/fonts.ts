@@ -1,6 +1,6 @@
-import { FontInfo } from '../types';
+import type { FontInfo } from '../types';
 
-export function buildGoogleFontsUrls(fonts: FontInfo[]): string[] {
+export function buildGoogleFontsUrls(fonts: readonly FontInfo[]): string[] {
   const grouped = new Map<string, Set<string>>();
 
   for (const font of fonts) {

@@ -20,7 +20,7 @@ function LoginPage() {
     },
     onSubmit: async ({ value }) => {
       await saveApiKeyFn({ data: { token: value.apiKey.trim() } });
-      navigate({ to: '/' });
+      navigate({ to: '/', search: { teamId: undefined } });
     },
   });
 

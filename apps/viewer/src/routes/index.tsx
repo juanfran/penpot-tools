@@ -38,7 +38,7 @@ function App() {
     enabled: !!selectedTeamId,
   });
 
-  function handleTeamChange(value: string) {
+  function handleTeamChange(value: string | null) {
     navigate({
       search: { teamId: value || undefined },
       replace: true,

@@ -10,7 +10,8 @@
     "test": "vitest",
     "penpot-to-html": "tsx src/penpot-to-html.ts",
     "preview": "tsx src/intengration/preview.mts",
-    "knip": "knip"
+    "knip": "knip",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "knip": "^6.4.1",

@@ -10,6 +10,12 @@ const makeShape = (overrides: Partial<ShapeCommon> = {}): ShapeCommon => ({
   y: 0,
   width: 100,
   height: 100,
+  selrect: { x: 0, y: 0, width: 100, height: 100 },
+  points: [],
+  transform: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+  transformInverse: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+  parentId: 'frame-1' as Uuid,
+  frameId: 'frame-1' as Uuid,
   ...overrides,
 });
 

@@ -445,6 +445,8 @@ export interface DimensionsTokenAttrs {
   r3?: TokenName;
   /** Border radius bottom-left */
   r4?: TokenName;
+  fill?: TokenName;
+  strokeColor?: TokenName;
   shadow?: TokenName;
   width?: TokenName;
   height?: TokenName;

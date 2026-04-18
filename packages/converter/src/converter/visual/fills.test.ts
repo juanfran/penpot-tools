@@ -6,7 +6,7 @@ import {
   imageFillToStyle,
   fillsToOutput,
 } from './fills';
-import type { Fill, Gradient, HexColor } from '../../penpot.types';
+import type { Fill, Gradient, HexColor, Uuid } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 
 const makeCtx = (
@@ -123,7 +123,7 @@ describe('radialGradientToStyle', () => {
 describe('imageFillToStyle', () => {
   it('returns background-image style with resolved URL', () => {
     const fill: Fill = {
-      fillImage: { id: 'abc-123', width: 100, height: 100, mtype: 'image/png' },
+      fillImage: { id: 'abc-123' as Uuid, width: 100, height: 100, mtype: 'image/png' },
     };
     const result = imageFillToStyle(fill, makeCtx());
     expect(result).toContain("url('https://assets.example.com/abc-123')");
@@ -132,14 +132,14 @@ describe('imageFillToStyle', () => {
 
   it('includes background-position: center', () => {
     const fill: Fill = {
-      fillImage: { id: 'abc-123', width: 100, height: 100, mtype: 'image/png' },
+      fillImage: { id: 'abc-123' as Uuid, width: 100, height: 100, mtype: 'image/png' },
     };
     expect(imageFillToStyle(fill, makeCtx())).toContain('background-position: center');
   });
 
   it('includes background-repeat: no-repeat', () => {
     const fill: Fill = {
-      fillImage: { id: 'abc-123', width: 100, height: 100, mtype: 'image/png' },
+      fillImage: { id: 'abc-123' as Uuid, width: 100, height: 100, mtype: 'image/png' },
     };
     expect(imageFillToStyle(fill, makeCtx())).toContain('background-repeat: no-repeat');
   });
@@ -147,7 +147,7 @@ describe('imageFillToStyle', () => {
   it('uses cover regardless of keepAspectRatio', () => {
     const fill: Fill = {
       fillImage: {
-        id: 'abc-123',
+        id: 'abc-123' as Uuid,
         width: 100,
         height: 100,
         mtype: 'image/png',
@@ -170,7 +170,7 @@ describe('imageFillToStyle', () => {
       return `url-for-${id}`;
     });
     imageFillToStyle(
-      { fillImage: { id: 'img-456', width: 200, height: 150, mtype: 'image/jpeg' } },
+      { fillImage: { id: 'img-456' as Uuid, width: 200, height: 150, mtype: 'image/jpeg' } },
       ctx,
     );
     expect(capturedId).toBe('img-456');
@@ -178,7 +178,7 @@ describe('imageFillToStyle', () => {
 
   it('escapes single quotes in the URL', () => {
     const fill: Fill = {
-      fillImage: { id: "id-with'-quote", width: 10, height: 10, mtype: 'image/png' },
+      fillImage: { id: "id-with'-quote" as Uuid, width: 10, height: 10, mtype: 'image/png' },
     };
     const ctx = makeCtx((id) => `https://example.com/${id}`);
     const result = imageFillToStyle(fill, ctx);
@@ -203,7 +203,7 @@ describe('fillsToOutput', () => {
     },
   };
   const imageFill: Fill = {
-    fillImage: { id: 'img-1', width: 100, height: 100, mtype: 'image/png' },
+    fillImage: { id: 'img-1' as Uuid, width: 100, height: 100, mtype: 'image/png' },
   };
 
   it('returns empty string for null', () => {
@@ -262,7 +262,7 @@ describe('fillsToOutput', () => {
 
   it('multiple image fills: reversed so top fill is first CSS layer', () => {
     const imageFill2: Fill = {
-      fillImage: { id: 'img-2', width: 50, height: 50, mtype: 'image/jpeg' },
+      fillImage: { id: 'img-2' as Uuid, width: 50, height: 50, mtype: 'image/jpeg' },
     };
     const result = fillsToOutput([imageFill, imageFill2], makeCtx());
     const imgValue = result.match(/background-image:\s*([^;]+)/)?.[1] ?? '';
@@ -271,7 +271,7 @@ describe('fillsToOutput', () => {
 
   it('multiple fills: background-size has same count as background-image layers', () => {
     const imageFill2: Fill = {
-      fillImage: { id: 'img-2', width: 50, height: 50, mtype: 'image/jpeg', keepAspectRatio: true },
+      fillImage: { id: 'img-2' as Uuid, width: 50, height: 50, mtype: 'image/jpeg', keepAspectRatio: true },
     };
     const result = fillsToOutput([imageFill, imageFill2], makeCtx());
     const bgImage = result.match(/background-image:\s*([^;]+)/)?.[1] ?? '';

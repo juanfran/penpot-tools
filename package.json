@@ -13,7 +13,8 @@
     "lint": "oxlint .",
     "format": "oxfmt --check",
     "check": "oxlint --fix-dangerously && oxfmt",
-    "knip": "pnpm --filter @penpot-random/converter knip"
+    "knip": "pnpm --filter @penpot-random/converter knip",
+    "typecheck": "pnpm -r --parallel typecheck"
   },
   "devDependencies": {
     "@types/node": "^25.5.2",

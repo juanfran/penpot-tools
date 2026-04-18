@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { renderShape } from './render';
 import { convertShape } from './index';
-import type { Shape, Uuid, HexColor } from '../penpot.types';
+import type { Shape, RectShape, Uuid, HexColor } from '../penpot.types';
 import type { ConverterContext } from './types';
 
 const ctx: ConverterContext = {
   resolveImageUrl: (id) => `https://assets.example.com/${id}`,
 };
 
-const makeRect = (overrides: Partial<Shape> = {}): Shape => ({
+const makeRect = (overrides: Partial<RectShape> = {}): Shape => ({
   id: 'rect-1' as Uuid,
   name: 'Rect',
   type: 'rect',
@@ -51,7 +51,7 @@ describe('renderShape', () => {
   });
 
   it('does not add data-penpot-name attribute', () => {
-    expect(renderShape(makeRect({ name: 'My Rect' } as Partial<Shape>), {}, ctx)).not.toContain(
+    expect(renderShape(makeRect({ name: 'My Rect' } as Partial<RectShape>), {}, ctx)).not.toContain(
       'data-penpot-name',
     );
   });
@@ -81,7 +81,7 @@ describe('convertShape', () => {
   });
 
   it('does not emit left/top for the root shape', async () => {
-    const { html } = await convertShape(makeRect({ x: 50, y: 100 } as Partial<Shape>), {}, ctx);
+    const { html } = await convertShape(makeRect({ x: 50, y: 100 } as Partial<RectShape>), {}, ctx);
     expect(html).not.toContain('left: 50px;');
     expect(html).not.toContain('top: 100px;');
   });
