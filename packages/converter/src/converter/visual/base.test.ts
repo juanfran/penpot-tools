@@ -32,7 +32,9 @@ describe('baseStyles', () => {
   });
 
   it('includes blend mode style', () => {
-    expect(baseStyles(makeShape({ blendMode: 'multiply' }), ctx)).toContain('mix-blend-mode: multiply;');
+    expect(baseStyles(makeShape({ blendMode: 'multiply' }), ctx)).toContain(
+      'mix-blend-mode: multiply;',
+    );
   });
 
   it('includes rotation in transform style', () => {
@@ -67,7 +69,9 @@ describe('baseStyles', () => {
   });
 
   it('includes corner radius style', () => {
-    expect(baseStyles(makeShape({ r1: 8, r2: 8, r3: 8, r4: 8 }), ctx)).toContain('border-radius: 8px;');
+    expect(baseStyles(makeShape({ r1: 8, r2: 8, r3: 8, r4: 8 }), ctx)).toContain(
+      'border-radius: 8px;',
+    );
   });
 
   it('merges multiple styles correctly', () => {

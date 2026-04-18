@@ -18,10 +18,7 @@ export function renderSvgRaw(shape: SvgRawShape, ctx: ConverterContext): string 
 
   const style = mergeStyles(posStyle, base);
 
-  const attrs = [
-    `data-id="${shape.id}"`,
-    style ? `style="${style}"` : '',
-  ]
+  const attrs = [`data-id="${shape.id}"`, style ? `style="${style}"` : '']
     .filter(Boolean)
     .join(' ');
 

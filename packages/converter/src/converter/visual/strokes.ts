@@ -8,10 +8,7 @@ const STROKE_STYLE_VALUE: Record<string, string> = {
   dotted: 'dotted',
 };
 
-export function solidStrokeToStyle(
-  stroke: Stroke,
-  strokeTokenName?: string,
-): string {
+export function solidStrokeToStyle(stroke: Stroke, strokeTokenName?: string): string {
   if (!stroke.strokeColor && !stroke.strokeWidth) {
     return '';
   }
@@ -29,6 +26,8 @@ export function solidStrokeToStyle(
 
   // inner and center alignment — border is drawn inside the element's dimensions
   // (box-sizing: border-box keeps it within bounds).
-  const borderStyle = stroke.strokeStyle ? (STROKE_STYLE_VALUE[stroke.strokeStyle] ?? 'solid') : 'solid';
+  const borderStyle = stroke.strokeStyle
+    ? (STROKE_STYLE_VALUE[stroke.strokeStyle] ?? 'solid')
+    : 'solid';
   return `border: ${width}px ${borderStyle} ${color};`;
 }

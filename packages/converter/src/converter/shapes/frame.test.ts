@@ -127,12 +127,22 @@ describe('renderFrame', () => {
 
   describe('flex layout mode', () => {
     it('emits display: flex when layoutType is flex', () => {
-      const html = renderFrame(makeFrame({ layoutType: 'flex', layoutFlexDir: 'row' }), [], {}, ctx);
+      const html = renderFrame(
+        makeFrame({ layoutType: 'flex', layoutFlexDir: 'row' }),
+        [],
+        {},
+        ctx,
+      );
       expect(html).toContain('display: flex;');
     });
 
     it('emits flex-direction: column for column direction', () => {
-      const html = renderFrame(makeFrame({ layoutType: 'flex', layoutFlexDir: 'column' }), [], {}, ctx);
+      const html = renderFrame(
+        makeFrame({ layoutType: 'flex', layoutFlexDir: 'column' }),
+        [],
+        {},
+        ctx,
+      );
       expect(html).toContain('flex-direction: column;');
     });
 
@@ -207,7 +217,10 @@ describe('renderFrame', () => {
       const html = renderFrame(
         makeFrame({
           layoutType: 'grid',
-          layoutGridColumns: [{ type: 'fixed', value: 100 }, { type: 'flex', value: 1 }],
+          layoutGridColumns: [
+            { type: 'fixed', value: 100 },
+            { type: 'flex', value: 1 },
+          ],
         }),
         [],
         {},
@@ -272,7 +285,12 @@ describe('renderFrame', () => {
     });
 
     it('children of a plain frame inside flex parent use absolute positioning', () => {
-      const frame = makeFrame({ parentId: 'parent-frame' as Uuid, id: 'frame-1' as Uuid, x: 0, y: 0 });
+      const frame = makeFrame({
+        parentId: 'parent-frame' as Uuid,
+        id: 'frame-1' as Uuid,
+        x: 0,
+        y: 0,
+      });
       const child = makeChild('child-1'); // x:10, y:10
       const objects: Record<string, Shape> = { 'child-1': child };
       const html = renderFrame(frame, [child], objects, layoutCtx);

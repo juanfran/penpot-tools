@@ -87,7 +87,9 @@ describe('renderGroup', () => {
   });
 
   it('includes blend mode style', () => {
-    expect(renderGroup(makeGroup({ blendMode: 'multiply' }), [], {}, ctx)).toContain('mix-blend-mode: multiply;');
+    expect(renderGroup(makeGroup({ blendMode: 'multiply' }), [], {}, ctx)).toContain(
+      'mix-blend-mode: multiply;',
+    );
   });
 
   it('includes display: none when hidden', () => {
@@ -95,7 +97,9 @@ describe('renderGroup', () => {
   });
 
   it('adds overflow: hidden for masked groups', () => {
-    expect(renderGroup(makeGroup({ maskedGroup: true }), [], {}, ctx)).toContain('overflow: hidden;');
+    expect(renderGroup(makeGroup({ maskedGroup: true }), [], {}, ctx)).toContain(
+      'overflow: hidden;',
+    );
   });
 
   it('has no class attribute', () => {

@@ -51,7 +51,9 @@ describe('renderShape', () => {
   });
 
   it('does not add data-penpot-name attribute', () => {
-    expect(renderShape(makeRect({ name: 'My Rect' } as Partial<Shape>), {}, ctx)).not.toContain('data-penpot-name');
+    expect(renderShape(makeRect({ name: 'My Rect' } as Partial<Shape>), {}, ctx)).not.toContain(
+      'data-penpot-name',
+    );
   });
 
   it('adds data-penpot-locked when shape is locked', () => {

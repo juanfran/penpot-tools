@@ -1,4 +1,4 @@
-import { getPageHtmlOptions, Render } from '#/components/render';
+import { getPageShapesOptions, Render } from '#/components/render';
 import { getFileSummaryFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
@@ -40,7 +40,7 @@ export const Route = createFileRoute('/workspace/$fileId/$pageId')({
     });
   },
   loader: async ({ params, context }) => {
-    context.queryClient.prefetchQuery(getPageHtmlOptions(params.fileId, params.pageId));
+    context.queryClient.prefetchQuery(getPageShapesOptions(params.fileId, params.pageId));
 
     return await context.queryClient.ensureQueryData(getFileSummaryQueryOptions(params.fileId));
   },

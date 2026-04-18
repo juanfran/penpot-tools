@@ -69,7 +69,9 @@ describe('renderSvgRaw', () => {
   });
 
   it('includes blend mode style when set', () => {
-    expect(renderSvgRaw(makeSvgRaw({ blendMode: 'multiply' }), ctx)).toContain('mix-blend-mode: multiply;');
+    expect(renderSvgRaw(makeSvgRaw({ blendMode: 'multiply' }), ctx)).toContain(
+      'mix-blend-mode: multiply;',
+    );
   });
 
   it('includes display: none when hidden', () => {

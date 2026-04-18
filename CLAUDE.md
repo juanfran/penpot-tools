@@ -66,20 +66,21 @@ packages/converter/src/
 
 ## ConverterContext flags
 
-| Flag | Meaning |
-| --- | --- |
-| `_parentIsLayout` | Parent is flex/grid; child emits `width/height: 100%` |
-| `_forceRelative` | Emit `position: relative` (grid children, export root) |
-| `_isCanvasTopLevel` | Direct child of root frame; use `translate()` for position |
-| `_isChildOfRoot` | Enables `position: fixed` for `fixedScroll` shapes |
-| `_offsetX/_offsetY` | Parent's page-absolute position for computing relative top/left |
-| `_pageBackground` | Background color for root frame |
-| `_fontCollector` | Map populated by text renderers |
-| `tokens` | `Map<tokenName, cssColor>` for design token → CSS var substitution |
+| Flag                | Meaning                                                            |
+| ------------------- | ------------------------------------------------------------------ |
+| `_parentIsLayout`   | Parent is flex/grid; child emits `width/height: 100%`              |
+| `_forceRelative`    | Emit `position: relative` (grid children, export root)             |
+| `_isCanvasTopLevel` | Direct child of root frame; use `translate()` for position         |
+| `_isChildOfRoot`    | Enables `position: fixed` for `fixedScroll` shapes                 |
+| `_offsetX/_offsetY` | Parent's page-absolute position for computing relative top/left    |
+| `_pageBackground`   | Background color for root frame                                    |
+| `_fontCollector`    | Map populated by text renderers                                    |
+| `tokens`            | `Map<tokenName, cssColor>` for design token → CSS var substitution |
 
 ## Shape positioning (`resolvePositionOutput` in `visual/position.ts`)
 
 Priority (highest first):
+
 1. `_parentIsLayout` → `width: 100%; height: 100%;`
 2. `_forceRelative` → `position: relative; width: Npx; height: Npx;`
 3. `_isCanvasTopLevel` → `position: absolute; top: 0; left: 0; … transform: translate(x,y);`
@@ -100,8 +101,10 @@ Penpot stores flex children in Z-order (back-to-front). For `row` and `column` d
 ## Flex child sizing pattern
 
 ```html
-<div style="width: 240px; height: 50px">   <!-- wrapper: layout-item sizing -->
-  <div style="width: 100%; height: 100%; display: flex; …">…</div>  <!-- child -->
+<div style="width: 240px; height: 50px">
+  <!-- wrapper: layout-item sizing -->
+  <div style="width: 100%; height: 100%; display: flex; …">…</div>
+  <!-- child -->
 </div>
 ```
 
@@ -109,10 +112,10 @@ Wrapper is omitted when its style is empty.
 
 ## Stroke alignment
 
-| Alignment | CSS output |
-| --- | --- |
-| `inner` / `center` | `border: Npx solid color;` |
-| `outer` | `box-shadow: 0 0 0 Npx color;` |
+| Alignment          | CSS output                     |
+| ------------------ | ------------------------------ |
+| `inner` / `center` | `border: Npx solid color;`     |
+| `outer`            | `box-shadow: 0 0 0 Npx color;` |
 
 ## Circle / ellipse
 
@@ -130,11 +133,13 @@ Always `border-radius: 50%;` regardless of whether width equals height.
 ## Adding a new integration test
 
 **Step 1** — fetch and cache:
+
 ```bash
 pnpm penpot-to-html --file-id <uuid> --page-id <uuid> --cache
 ```
 
 **Step 2** — create fixture (from `packages/converter/`):
+
 ```bash
 pnpm exec tsx scripts/add-test-case.mts --name <name> --file-id <uuid> --board-id <uuid>
 ```

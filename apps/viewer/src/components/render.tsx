@@ -1,8 +1,15 @@
-import { useRef, useState, useEffect } from 'react';
-import { getPageHtmlFn } from '#/lib/server/penpot-api';
+import { useRef, useState, useEffect, memo } from 'react';
+import { getPageShapesFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
-import { TransformWrapper, TransformComponent, useControls } from 'react-zoom-pan-pinch';
+import {
+  TransformWrapper,
+  TransformComponent,
+  useControls,
+  Virtualize,
+} from 'react-zoom-pan-pinch';
+
+const VISIBILITY_MARGIN = 500;
 
 const ZoomControls = () => {
   const { zoomIn, zoomOut, resetTransform } = useControls();
@@ -36,17 +43,18 @@ const ZoomControls = () => {
   );
 };
 
-export const getPageHtmlOptions = (fileId: string, pageId: string) => {
-  return queryOptions({
-    queryKey: ['get-page-html', fileId, pageId],
-    queryFn: async () => {
-      return getPageHtmlFn({ data: { fileId, pageId } });
-    },
+const ShapeNode = memo(({ html }: { html: string }) => (
+  <div dangerouslySetInnerHTML={{ __html: html }} />
+));
+
+export const getPageShapesOptions = (fileId: string, pageId: string) =>
+  queryOptions({
+    queryKey: ['get-page-shapes', fileId, pageId],
+    queryFn: () => getPageShapesFn({ data: { fileId, pageId } }),
   });
-};
 
 export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) => {
-  const { data } = useSuspenseQuery(getPageHtmlOptions(fileId, pageId));
+  const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -89,8 +97,20 @@ export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) =
             <div
               className="pointer-events-none relative"
               style={{ width: containerSize.width, height: containerSize.height }}
-              dangerouslySetInnerHTML={{ __html: data.html }}
-            />
+            >
+              {data.shapes.map((shape) => (
+                <Virtualize
+                  key={shape.id}
+                  x={shape.x}
+                  y={shape.y}
+                  width={shape.width}
+                  height={shape.height}
+                  margin={VISIBILITY_MARGIN}
+                >
+                  <ShapeNode html={shape.html} />
+                </Virtualize>
+              ))}
+            </div>
           </TransformComponent>
         </TransformWrapper>
       </div>

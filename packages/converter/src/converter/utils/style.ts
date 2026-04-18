@@ -24,7 +24,10 @@ export function mergeStyles(...parts: string[]): string {
   const rest: string[] = [];
 
   for (const part of parts) {
-    const decls = part.split(';').map((d) => d.trim()).filter(Boolean);
+    const decls = part
+      .split(';')
+      .map((d) => d.trim())
+      .filter(Boolean);
     for (const decl of decls) {
       const bsMatch = /^box-shadow:\s*(.+)$/.exec(decl);
       const tfMatch = /^transform:\s*(.+)$/.exec(decl);

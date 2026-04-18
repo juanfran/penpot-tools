@@ -39,10 +39,7 @@ function relativePositionStyle(shape: ShapeCommon): string {
   return `position: relative; width: ${px(shape.width ?? 0)}; height: ${px(shape.height ?? 0)};`;
 }
 
-export function topLevelPositionStyle(
-  shape: ShapeCommon,
-  isChildOfRoot = false,
-): string {
+export function topLevelPositionStyle(shape: ShapeCommon, isChildOfRoot = false): string {
   const position = isChildOfRoot && shape.fixedScroll ? 'fixed' : 'absolute';
   const x = shape.x ?? 0;
   const y = shape.y ?? 0;
@@ -56,10 +53,7 @@ export function topLevelPositionStyle(
   );
 }
 
-export function resolvePositionOutput(
-  shape: ShapeCommon,
-  ctx: ConverterContext,
-): string {
+export function resolvePositionOutput(shape: ShapeCommon, ctx: ConverterContext): string {
   if (ctx._parentIsLayout) {
     const w = ctx._parentIsLayoutAutoW ? `width: ${px(shape.width ?? 0)};` : 'width: 100%;';
     const h = ctx._parentIsLayoutAutoH ? `height: ${px(shape.height ?? 0)};` : 'height: 100%;';

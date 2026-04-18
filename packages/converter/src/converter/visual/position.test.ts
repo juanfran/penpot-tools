@@ -48,7 +48,9 @@ describe('absolutePositionStyle', () => {
   });
 
   it('defaults missing dimensions to 0', () => {
-    const result = absolutePositionStyle(makeShape({ x: undefined, y: undefined, width: undefined, height: undefined }));
+    const result = absolutePositionStyle(
+      makeShape({ x: undefined, y: undefined, width: undefined, height: undefined }),
+    );
     expect(result).toContain('left: 0px;');
     expect(result).toContain('top: 0px;');
     expect(result).toContain('width: 0px;');
@@ -105,7 +107,10 @@ const makeCtx = (overrides: Partial<ConverterContext> = {}): ConverterContext =>
 
 describe('resolvePositionOutput', () => {
   it('returns width/height 100% when _parentIsLayout (fills wrapper div)', () => {
-    const result = resolvePositionOutput(makeShape({ x: 50, y: 50 }), makeCtx({ _parentIsLayout: true }));
+    const result = resolvePositionOutput(
+      makeShape({ x: 50, y: 50 }),
+      makeCtx({ _parentIsLayout: true }),
+    );
     expect(result).toContain('width: 100%;');
     expect(result).toContain('height: 100%;');
     expect(result).not.toContain('position:');

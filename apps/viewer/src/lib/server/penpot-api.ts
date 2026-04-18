@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import z from 'zod';
-import { convertPage, buildGoogleFontsUrls } from '@penpot-random/converter';
+import { convertPage, convertPageShapes, buildGoogleFontsUrls } from '@penpot-random/converter';
 import { extractTokens, tokensToCss } from '@penpot-random/converter/tokens';
 import type { Page, Uuid } from '@penpot-random/penpot-types';
 import type { ConverterContext } from '@penpot-random/converter';
@@ -120,6 +120,27 @@ export const getPageHtmlFn = createServerFn({ method: 'GET' })
     const { html, fonts } = await convertPage(page, ctx);
     return {
       html,
+      googleFontsUrls: buildGoogleFontsUrls(fonts),
+      tokensCss: tokensToCss(tokens),
+    };
+  });
+
+export const getPageShapesFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ fileId: z.uuid(), pageId: z.uuid() }))
+  .middleware([authMiddleware])
+  .handler(async ({ data, context }) => {
+    const page = await rpc<Page>(context.token, 'get-page', {
+      params: { 'file-id': data.fileId, 'page-id': data.pageId },
+    });
+    const tokens = extractTokens(page.objects);
+    const ctx: ConverterContext = {
+      resolveImageUrl: (id: Uuid) => `${BASE_URL}/assets/by-file-media-id/${id}`,
+      tokens,
+      format: false,
+    };
+    const { shapes, fonts } = await convertPageShapes(page, ctx);
+    return {
+      shapes,
       googleFontsUrls: buildGoogleFontsUrls(fonts),
       tokensCss: tokensToCss(tokens),
     };

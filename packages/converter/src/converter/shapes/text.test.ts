@@ -236,11 +236,15 @@ describe('renderText', () => {
   });
 
   it('adds white-space: nowrap for growType auto-width', () => {
-    expect(renderText(makeTextShape({ growType: 'auto-width' }), ctx)).toContain('white-space: nowrap;');
+    expect(renderText(makeTextShape({ growType: 'auto-width' }), ctx)).toContain(
+      'white-space: nowrap;',
+    );
   });
 
   it('does not add white-space: nowrap for growType auto-height', () => {
-    expect(renderText(makeTextShape({ growType: 'auto-height' }), ctx)).not.toContain('white-space: nowrap;');
+    expect(renderText(makeTextShape({ growType: 'auto-height' }), ctx)).not.toContain(
+      'white-space: nowrap;',
+    );
   });
 
   it('does not add white-space: nowrap when growType is absent', () => {

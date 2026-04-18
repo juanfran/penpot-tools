@@ -31,8 +31,7 @@ export function renderFrame(
   const isGrid = shape.layoutType === 'grid' || rawLayout === 'grid';
   const base = baseStyles(shape, ctx);
   const fills = fillsToOutput(shape.fills, ctx, shape.appliedTokens?.fill);
-  const clipStyle =
-    shape.clipContent !== false && !shape.showContent ? 'overflow: hidden;' : '';
+  const clipStyle = shape.clipContent !== false && !shape.showContent ? 'overflow: hidden;' : '';
   const firstStroke = (shape.strokes ?? [])[0];
   const stroke = firstStroke
     ? solidStrokeToStyle(firstStroke, shape.appliedTokens?.strokeColor)
@@ -55,8 +54,7 @@ export function renderFrame(
     layoutStyle = mergeStyles('display: grid;', colStyle, rowStyle, spacing);
   }
 
-  const bgStyle =
-    isRoot && ctx._pageBackground ? `background-color: ${ctx._pageBackground};` : '';
+  const bgStyle = isRoot && ctx._pageBackground ? `background-color: ${ctx._pageBackground};` : '';
 
   const hasAbsoluteChild =
     (isFlex || isGrid) &&

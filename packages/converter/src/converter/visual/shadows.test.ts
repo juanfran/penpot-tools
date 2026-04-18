@@ -89,7 +89,9 @@ describe('shadowsToStyle', () => {
         color: { color: '#0000ff' as HexColor, opacity: 1 },
       }),
     ];
-    expect(shadowsToStyle(shadows)).toBe('box-shadow: 1px 2px 3px 0px #ff0000, 4px 5px 6px 0px #0000ff;');
+    expect(shadowsToStyle(shadows)).toBe(
+      'box-shadow: 1px 2px 3px 0px #ff0000, 4px 5px 6px 0px #0000ff;',
+    );
   });
 
   it('skips hidden shadows', () => {

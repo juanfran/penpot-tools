@@ -44,7 +44,9 @@ describe('renderImage', () => {
   });
 
   it('resolves and sets src from metadata.id', () => {
-    expect(renderImage(makeImage(), ctx)).toContain('src="https://assets.example.com/asset-uuid-1"');
+    expect(renderImage(makeImage(), ctx)).toContain(
+      'src="https://assets.example.com/asset-uuid-1"',
+    );
   });
 
   it('sets width and height attributes', () => {
@@ -69,7 +71,9 @@ describe('renderImage', () => {
   });
 
   it('includes blend mode style', () => {
-    expect(renderImage(makeImage({ blendMode: 'multiply' }), ctx)).toContain('mix-blend-mode: multiply;');
+    expect(renderImage(makeImage({ blendMode: 'multiply' }), ctx)).toContain(
+      'mix-blend-mode: multiply;',
+    );
   });
 
   it('includes rotation in transform style when rotation is set', () => {
@@ -87,7 +91,10 @@ describe('renderImage', () => {
   it('calls resolveImageUrl with the metadata id', () => {
     const resolved: string[] = [];
     const testCtx: ConverterContext = {
-      resolveImageUrl: (id) => { resolved.push(id); return `url-${id}`; },
+      resolveImageUrl: (id) => {
+        resolved.push(id);
+        return `url-${id}`;
+      },
     };
     renderImage(makeImage(), testCtx);
     expect(resolved).toContain('asset-uuid-1');

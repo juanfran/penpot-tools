@@ -146,7 +146,13 @@ describe('imageFillToStyle', () => {
 
   it('uses cover regardless of keepAspectRatio', () => {
     const fill: Fill = {
-      fillImage: { id: 'abc-123', width: 100, height: 100, mtype: 'image/png', keepAspectRatio: true },
+      fillImage: {
+        id: 'abc-123',
+        width: 100,
+        height: 100,
+        mtype: 'image/png',
+        keepAspectRatio: true,
+      },
     };
     const result = imageFillToStyle(fill, makeCtx());
     expect(result).toContain('cover');
@@ -159,8 +165,14 @@ describe('imageFillToStyle', () => {
 
   it('calls resolveImageUrl with the fillImage id', () => {
     let capturedId = '';
-    const ctx = makeCtx((id) => { capturedId = id; return `url-for-${id}`; });
-    imageFillToStyle({ fillImage: { id: 'img-456', width: 200, height: 150, mtype: 'image/jpeg' } }, ctx);
+    const ctx = makeCtx((id) => {
+      capturedId = id;
+      return `url-for-${id}`;
+    });
+    imageFillToStyle(
+      { fillImage: { id: 'img-456', width: 200, height: 150, mtype: 'image/jpeg' } },
+      ctx,
+    );
     expect(capturedId).toBe('img-456');
   });
 

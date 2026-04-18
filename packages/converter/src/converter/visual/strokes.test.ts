@@ -28,17 +28,29 @@ describe('solidStrokeToStyle', () => {
   });
 
   it('maps strokeStyle solid to solid border-style', () => {
-    const stroke: Stroke = { strokeColor: '#000000' as HexColor, strokeWidth: 1, strokeStyle: 'solid' };
+    const stroke: Stroke = {
+      strokeColor: '#000000' as HexColor,
+      strokeWidth: 1,
+      strokeStyle: 'solid',
+    };
     expect(solidStrokeToStyle(stroke)).toContain('solid');
   });
 
   it('maps strokeStyle dashed to dashed border-style', () => {
-    const stroke: Stroke = { strokeColor: '#000000' as HexColor, strokeWidth: 1, strokeStyle: 'dashed' };
+    const stroke: Stroke = {
+      strokeColor: '#000000' as HexColor,
+      strokeWidth: 1,
+      strokeStyle: 'dashed',
+    };
     expect(solidStrokeToStyle(stroke)).toContain('dashed');
   });
 
   it('maps strokeStyle dotted to dotted border-style', () => {
-    const stroke: Stroke = { strokeColor: '#000000' as HexColor, strokeWidth: 1, strokeStyle: 'dotted' };
+    const stroke: Stroke = {
+      strokeColor: '#000000' as HexColor,
+      strokeWidth: 1,
+      strokeStyle: 'dotted',
+    };
     expect(solidStrokeToStyle(stroke)).toContain('dotted');
   });
 

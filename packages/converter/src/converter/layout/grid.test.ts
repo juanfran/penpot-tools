@@ -16,9 +16,7 @@ describe('gridTracksToStyle', () => {
   });
 
   it('converts percent tracks to %', () => {
-    expect(gridTracksToStyle([makeTrack('percent', 50)], 'rows')).toBe(
-      'grid-template-rows: 50%;',
-    );
+    expect(gridTracksToStyle([makeTrack('percent', 50)], 'rows')).toBe('grid-template-rows: 50%;');
   });
 
   it('converts flex tracks to fr', () => {
@@ -28,15 +26,11 @@ describe('gridTracksToStyle', () => {
   });
 
   it('defaults flex track value to 1 when missing', () => {
-    expect(gridTracksToStyle([makeTrack('flex')], 'columns')).toBe(
-      'grid-template-columns: 1fr;',
-    );
+    expect(gridTracksToStyle([makeTrack('flex')], 'columns')).toBe('grid-template-columns: 1fr;');
   });
 
   it('converts auto tracks', () => {
-    expect(gridTracksToStyle([makeTrack('auto')], 'columns')).toBe(
-      'grid-template-columns: auto;',
-    );
+    expect(gridTracksToStyle([makeTrack('auto')], 'columns')).toBe('grid-template-columns: auto;');
   });
 
   it('joins multiple tracks with spaces', () => {

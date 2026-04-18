@@ -7,10 +7,7 @@ import { shadowsToStyle } from './shadows';
 import { radiusToStyle } from './radius';
 import { combinedTransformStyle } from './position';
 
-export function baseStyles(
-  shape: ShapeCommon,
-  _ctx: ConverterContext,
-): string {
+export function baseStyles(shape: ShapeCommon, _ctx: ConverterContext): string {
   return mergeStyles(
     opacityToStyle(shape.opacity),
     blendModeToStyle(shape.blendMode),

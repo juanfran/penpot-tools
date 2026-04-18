@@ -2,8 +2,23 @@ import type { Page, Shape } from '../penpot.types';
 import type { ConverterContext, ConvertResult, FontInfo } from './types';
 import { renderShape } from './render';
 import { renderPage } from './page';
+import { buildTree, getChildren } from './tree';
 export { buildGoogleFontsUrls } from './utils/fonts';
 import * as oxfmt from 'oxfmt';
+
+export interface ShapeResult {
+  id: string;
+  html: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface PageShapesResult {
+  shapes: ShapeResult[];
+  fonts: FontInfo[];
+}
 
 function extractFonts(collector: Map<string, FontInfo>): FontInfo[] {
   return Array.from(collector.values());
@@ -65,6 +80,43 @@ export async function convertShape(
     html: shouldFormat ? (await oxfmt.format('index.html', html)).code : html,
     fonts: extractFonts(fontCollector),
   };
+}
+
+/**
+ * Converts a Penpot page into per-shape results, one entry per top-level canvas shape.
+ * Useful for rendering only the shapes currently visible in the viewport.
+ */
+export async function convertPageShapes(
+  page: Page,
+  ctx: ConverterContext,
+): Promise<PageShapesResult> {
+  const fontCollector = new Map<string, FontInfo>();
+  const shapeCtx: ConverterContext = {
+    ...ctx,
+    ...(page.options?.background ? { _pageBackground: page.options.background } : {}),
+    _isCanvasTopLevel: true,
+    _fontCollector: fontCollector,
+  };
+
+  const root = buildTree(page.objects);
+  const shouldFormat = ctx.format !== false;
+
+  const shapes = await Promise.all(
+    getChildren(root, page.objects).map(async (child) => {
+      const raw = renderShape(child, page.objects, shapeCtx);
+      const html = shouldFormat ? (await oxfmt.format('index.html', raw)).code : raw;
+      return {
+        id: child.id,
+        html,
+        x: child.selrect.x,
+        y: child.selrect.y,
+        width: child.selrect.width,
+        height: child.selrect.height,
+      };
+    }),
+  );
+
+  return { shapes, fonts: extractFonts(fontCollector) };
 }
 
 export type { ConverterContext, ConvertResult, FontInfo };

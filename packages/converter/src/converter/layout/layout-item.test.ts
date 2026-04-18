@@ -76,12 +76,18 @@ describe('layoutItemSizingStyle', () => {
   });
 
   it('returns explicit width for fix HSizing', () => {
-    const result = layoutItemSizingStyle(makeShape({ layoutItemHSizing: 'fix', width: 120 }), makeRowParent());
+    const result = layoutItemSizingStyle(
+      makeShape({ layoutItemHSizing: 'fix', width: 120 }),
+      makeRowParent(),
+    );
     expect(result).toContain('width: 120px;');
   });
 
   it('returns explicit height for fix VSizing', () => {
-    const result = layoutItemSizingStyle(makeShape({ layoutItemVSizing: 'fix', height: 60 }), makeRowParent());
+    const result = layoutItemSizingStyle(
+      makeShape({ layoutItemVSizing: 'fix', height: 60 }),
+      makeRowParent(),
+    );
     expect(result).toContain('height: 60px;');
   });
 
@@ -123,16 +129,24 @@ describe('layoutItemAlignSelfStyle', () => {
     expect(layoutItemAlignSelfStyle(makeShape())).toBe('');
   });
   it('maps start to align-self: flex-start', () => {
-    expect(layoutItemAlignSelfStyle(makeShape({ layoutItemAlignSelf: 'start' }))).toBe('align-self: flex-start;');
+    expect(layoutItemAlignSelfStyle(makeShape({ layoutItemAlignSelf: 'start' }))).toBe(
+      'align-self: flex-start;',
+    );
   });
   it('maps center to align-self: center', () => {
-    expect(layoutItemAlignSelfStyle(makeShape({ layoutItemAlignSelf: 'center' }))).toBe('align-self: center;');
+    expect(layoutItemAlignSelfStyle(makeShape({ layoutItemAlignSelf: 'center' }))).toBe(
+      'align-self: center;',
+    );
   });
   it('maps end to align-self: flex-end', () => {
-    expect(layoutItemAlignSelfStyle(makeShape({ layoutItemAlignSelf: 'end' }))).toBe('align-self: flex-end;');
+    expect(layoutItemAlignSelfStyle(makeShape({ layoutItemAlignSelf: 'end' }))).toBe(
+      'align-self: flex-end;',
+    );
   });
   it('maps stretch to align-self: stretch', () => {
-    expect(layoutItemAlignSelfStyle(makeShape({ layoutItemAlignSelf: 'stretch' }))).toBe('align-self: stretch;');
+    expect(layoutItemAlignSelfStyle(makeShape({ layoutItemAlignSelf: 'stretch' }))).toBe(
+      'align-self: stretch;',
+    );
   });
 });
 
@@ -144,13 +158,17 @@ describe('layoutItemMinMaxStyle', () => {
     expect(layoutItemMinMaxStyle(makeShape({ layoutItemMinW: 50 }))).toContain('min-width: 50px;');
   });
   it('emits max-width', () => {
-    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMaxW: 200 }))).toContain('max-width: 200px;');
+    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMaxW: 200 }))).toContain(
+      'max-width: 200px;',
+    );
   });
   it('emits min-height', () => {
     expect(layoutItemMinMaxStyle(makeShape({ layoutItemMinH: 30 }))).toContain('min-height: 30px;');
   });
   it('emits max-height', () => {
-    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMaxH: 100 }))).toContain('max-height: 100px;');
+    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMaxH: 100 }))).toContain(
+      'max-height: 100px;',
+    );
   });
 });
 
