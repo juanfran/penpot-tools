@@ -93,20 +93,22 @@ function RouteComponent() {
   const { fileId, pageId } = Route.useParams();
 
   return (
-    <div className="flex h-screen flex-col">
-      <Suspense fallback={<header className="h-12 border-b border-gray-200" />}>
-        <Header fileId={fileId} />
-      </Suspense>
-      <div className="flex flex-1 overflow-hidden">
-        <Suspense fallback={<aside className="w-48 border-r border-gray-200" />}>
-          <PagesSidebar fileId={fileId} />
+    <>
+      <div className="flex h-screen flex-col">
+        <Suspense fallback={<header className="h-12 border-b border-gray-200" />}>
+          <Header fileId={fileId} />
         </Suspense>
-        <main className="relative flex-1 overflow-auto">
-          <Suspense fallback={<div>Loading...</div>}>
-            <Render fileId={fileId} pageId={pageId} />
+        <div className="flex flex-1 overflow-hidden">
+          <Suspense fallback={<aside className="w-48 border-r border-gray-200" />}>
+            <PagesSidebar fileId={fileId} />
           </Suspense>
-        </main>
+          <main className="relative flex-1 overflow-auto">
+            <Suspense fallback={<div>Loading...</div>}>
+              <Render fileId={fileId} pageId={pageId} />
+            </Suspense>
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

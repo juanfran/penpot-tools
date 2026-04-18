@@ -140,6 +140,7 @@ export const getPageShapesFn = createServerFn({ method: 'GET' })
     };
     const { shapes, fonts } = await convertPageShapes(page, ctx);
     return {
+      name: page.name,
       shapes,
       googleFontsUrls: buildGoogleFontsUrls(fonts),
       tokensCss: tokensToCss(tokens),

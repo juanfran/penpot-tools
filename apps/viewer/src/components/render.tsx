@@ -72,6 +72,7 @@ export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) =
 
   return (
     <>
+      <title>{data.name}</title>
       {data.googleFontsUrls && data.googleFontsUrls.length > 0 && (
         <>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
