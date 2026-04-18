@@ -69,7 +69,7 @@ function PagesSidebar({ fileId }: { fileId: string }) {
   const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
 
   return (
-    <aside className="flex w-48 flex-col gap-1 border-r border-gray-200 p-3">
+    <aside className="flex w-84 flex-col gap-1 border-r border-gray-200 p-3">
       {file.data.pages.map((pageId) => {
         const page = file.data.pagesIndex[pageId];
         return (
@@ -99,7 +99,7 @@ function RouteComponent() {
           <Header fileId={fileId} />
         </Suspense>
         <div className="flex flex-1 overflow-hidden">
-          <Suspense fallback={<aside className="w-48 border-r border-gray-200" />}>
+          <Suspense fallback={<aside className="w-84 border-r border-gray-200" />}>
             <PagesSidebar fileId={fileId} />
           </Suspense>
           <main className="relative flex-1 overflow-auto">
