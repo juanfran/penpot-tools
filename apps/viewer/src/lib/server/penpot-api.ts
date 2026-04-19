@@ -129,6 +129,10 @@ export interface ShapeTreeNode {
   id: string;
   name: string;
   type: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   children: ShapeTreeNode[];
 }
 
@@ -143,6 +147,10 @@ function buildShapeTree(objects: Page['objects'], id: string): ShapeTreeNode | n
     id: shape.id,
     name: shape.name,
     type: shape.type,
+    x: shape.selrect.x,
+    y: shape.selrect.y,
+    width: shape.selrect.width,
+    height: shape.selrect.height,
     children: childIds.flatMap((cid) => buildShapeTree(objects, cid) ?? []),
   };
 }

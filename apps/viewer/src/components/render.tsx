@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, memo } from 'react';
-import { getPageShapesFn } from '#/lib/server/penpot-api';
+import { type ShapeTreeNode, getPageShapesFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import {
@@ -10,6 +10,50 @@ import {
 } from 'react-zoom-pan-pinch';
 
 const VISIBILITY_MARGIN = 500;
+
+function findNodeById(nodes: ShapeTreeNode[], id: string): ShapeTreeNode | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    const found = findNodeById(node.children, id);
+    if (found) return found;
+  }
+  return null;
+}
+
+function hitTest(node: ShapeTreeNode, x: number, y: number): boolean {
+  return x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height;
+}
+
+// Returns the topmost (last in array = visually on top) child that contains (x, y)
+function topChildAt(children: ShapeTreeNode[], x: number, y: number): ShapeTreeNode | null {
+  let result: ShapeTreeNode | null = null;
+  for (const child of children) {
+    if (hitTest(child, x, y)) result = child;
+  }
+  return result;
+}
+
+function findParent(nodes: ShapeTreeNode[], targetId: string): ShapeTreeNode | null {
+  for (const node of nodes) {
+    if (node.children.some((c) => c.id === targetId)) return node;
+    const found = findParent(node.children, targetId);
+    if (found) return found;
+  }
+  return null;
+}
+
+// Returns the deepest node that contains (x, y), preferring topmost siblings
+function deepestAt(nodes: ShapeTreeNode[], x: number, y: number): ShapeTreeNode | null {
+  let result: ShapeTreeNode | null = null;
+  for (const node of nodes) {
+    if (hitTest(node, x, y)) {
+      result = node;
+      const deeper = deepestAt(node.children, x, y);
+      if (deeper) result = deeper;
+    }
+  }
+  return result;
+}
 
 const ZoomControls = () => {
   const { zoomIn, zoomOut, resetTransform } = useControls();
@@ -103,6 +147,7 @@ export const Render = ({
           centerOnInit={true}
           smooth={false}
           wheel={{ step: 0.1 }}
+          doubleClick={{ disabled: true }}
         >
           <ZoomControls />
           <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
@@ -138,15 +183,72 @@ export const Render = ({
                         width: shape.width,
                         height: shape.height,
                         zIndex: 1,
-                        outline: selectedShapeId === shape.id ? '2px solid #2196f3' : 'none',
-                        outlineOffset: '1px',
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onShapeSelect(shape.id);
+                        if (e.ctrlKey) {
+                          const cx = shape.x + e.nativeEvent.offsetX;
+                          const cy = shape.y + e.nativeEvent.offsetY;
+                          const hit = deepestAt(data.tree, cx, cy);
+                          onShapeSelect(hit?.id ?? shape.id);
+                        } else {
+                          const cx = shape.x + e.nativeEvent.offsetX;
+                          const cy = shape.y + e.nativeEvent.offsetY;
+                          const topNode = findNodeById(data.tree, shape.id);
+                          const alreadyInside =
+                            topNode && selectedShapeId
+                              ? findNodeById([topNode], selectedShapeId) !== null
+                              : false;
+                          if (!alreadyInside) {
+                            onShapeSelect(shape.id);
+                          } else if (selectedShapeId) {
+                            // Walk up from current selection to find something at click pos
+                            let currentId: string | null = selectedShapeId;
+                            while (currentId) {
+                              const parent = findParent(data.tree, currentId);
+                              const pool = parent ? parent.children : data.tree;
+                              const hit = topChildAt(pool, cx, cy);
+                              if (hit) {
+                                onShapeSelect(hit.id);
+                                return;
+                              }
+                              currentId = parent?.id ?? null;
+                            }
+                          }
+                        }
+                      }}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        const cx = shape.x + e.nativeEvent.offsetX;
+                        const cy = shape.y + e.nativeEvent.offsetY;
+                        const topNode = findNodeById(data.tree, shape.id);
+                        if (!topNode) return;
+                        const parentNode = selectedShapeId
+                          ? (findNodeById([topNode], selectedShapeId) ?? topNode)
+                          : topNode;
+                        const child = topChildAt(parentNode.children, cx, cy);
+                        if (child) onShapeSelect(child.id);
                       }}
                     />
                   ))}
+                  {(() => {
+                    const node = selectedShapeId ? findNodeById(data.tree, selectedShapeId) : null;
+                    if (!node) return null;
+                    return (
+                      <div
+                        className="pointer-events-none absolute"
+                        style={{
+                          left: node.x,
+                          top: node.y,
+                          width: node.width,
+                          height: node.height,
+                          zIndex: 2,
+                          outline: '2px solid #2196f3',
+                          outlineOffset: '1px',
+                        }}
+                      />
+                    );
+                  })()}
                 </>
               )}
             </div>
