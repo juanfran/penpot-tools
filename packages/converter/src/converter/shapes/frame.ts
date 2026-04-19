@@ -68,7 +68,9 @@ export function renderFrame(
     !isFlex && !isGrid && !isRoot && children.length > 0 && ctx._parentIsLayout;
 
   const extraPositionStyle =
-    plainFrameNeedsRelative || (hasAbsoluteChild && ctx._parentIsLayout) ? 'position: relative;' : '';
+    plainFrameNeedsRelative || (hasAbsoluteChild && ctx._parentIsLayout)
+      ? 'position: relative;'
+      : '';
 
   const style = mergeStyles(
     positionStyle,

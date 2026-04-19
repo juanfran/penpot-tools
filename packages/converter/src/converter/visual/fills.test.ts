@@ -271,7 +271,13 @@ describe('fillsToOutput', () => {
 
   it('multiple fills: background-size has same count as background-image layers', () => {
     const imageFill2: Fill = {
-      fillImage: { id: 'img-2' as Uuid, width: 50, height: 50, mtype: 'image/jpeg', keepAspectRatio: true },
+      fillImage: {
+        id: 'img-2' as Uuid,
+        width: 50,
+        height: 50,
+        mtype: 'image/jpeg',
+        keepAspectRatio: true,
+      },
     };
     const result = fillsToOutput([imageFill, imageFill2], makeCtx());
     const bgImage = result.match(/background-image:\s*([^;]+)/)?.[1] ?? '';

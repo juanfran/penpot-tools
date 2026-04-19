@@ -1,4 +1,5 @@
 import { getPageShapesOptions, Render } from '#/components/render';
+import { PagesSidebar } from '#/components/pages-sidebar';
 import { getFileSummaryFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
@@ -65,28 +66,11 @@ function Header({ fileId }: { fileId: string }) {
   );
 }
 
-function PagesSidebar({ fileId }: { fileId: string }) {
+function SidebarWrapper({ fileId, pageId }: { fileId: string; pageId: string }) {
   const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
+  const { teamId } = Route.useSearch();
 
-  return (
-    <aside className="flex w-84 flex-col gap-1 border-r border-gray-200 p-3">
-      {file.data.pages.map((pageId) => {
-        const page = file.data.pagesIndex[pageId];
-        return (
-          <Link
-            key={pageId}
-            to="/workspace/$fileId/$pageId"
-            params={{ fileId, pageId }}
-            search={{ teamId: Route.useSearch().teamId ?? undefined }}
-            className="rounded px-2 py-1 text-sm hover:bg-gray-100"
-            activeProps={{ className: 'rounded px-2 py-1 text-sm bg-gray-200 font-medium' }}
-          >
-            {page?.name ?? pageId}
-          </Link>
-        );
-      })}
-    </aside>
-  );
+  return <PagesSidebar fileId={fileId} pageId={pageId} fileSummary={file} teamId={teamId} />;
 }
 
 function RouteComponent() {
@@ -100,7 +84,7 @@ function RouteComponent() {
         </Suspense>
         <div className="flex flex-1 overflow-hidden">
           <Suspense fallback={<aside className="w-84 border-r border-gray-200" />}>
-            <PagesSidebar fileId={fileId} />
+            <SidebarWrapper fileId={fileId} pageId={pageId} />
           </Suspense>
           <main className="relative flex-1 overflow-auto">
             <Suspense fallback={<div>Loading...</div>}>

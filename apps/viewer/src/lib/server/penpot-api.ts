@@ -125,6 +125,28 @@ export const getPageHtmlFn = createServerFn({ method: 'GET' })
     };
   });
 
+export interface ShapeTreeNode {
+  id: string;
+  name: string;
+  type: string;
+  children: ShapeTreeNode[];
+}
+
+function buildShapeTree(objects: Page['objects'], id: string): ShapeTreeNode | null {
+  const shape = objects[id];
+  if (!shape) return null;
+  const childIds: string[] =
+    'shapes' in shape && Array.isArray((shape as { shapes?: unknown }).shapes)
+      ? (shape as { shapes: string[] }).shapes
+      : [];
+  return {
+    id: shape.id,
+    name: shape.name,
+    type: shape.type,
+    children: childIds.flatMap((cid) => buildShapeTree(objects, cid) ?? []),
+  };
+}
+
 export const getPageShapesFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ fileId: z.uuid(), pageId: z.uuid() }))
   .middleware([authMiddleware])
@@ -132,6 +154,7 @@ export const getPageShapesFn = createServerFn({ method: 'GET' })
     const page = await rpc<Page>(context.token, 'get-page', {
       params: { 'file-id': data.fileId, 'page-id': data.pageId },
     });
+    console.time(`convertPageShapes ${data.pageId}`);
     const tokens = extractTokens(page.objects);
     const ctx: ConverterContext = {
       resolveImageUrl: (id: Uuid) => `${BASE_URL}/assets/by-file-media-id/${id}`,
@@ -139,10 +162,22 @@ export const getPageShapesFn = createServerFn({ method: 'GET' })
       format: false,
     };
     const { shapes, fonts } = await convertPageShapes(page, ctx);
-    return {
+
+    const root = Object.values(page.objects).find((s) => s.parentId === s.id);
+    const rootChildIds: string[] =
+      root && 'shapes' in root && Array.isArray((root as { shapes?: unknown }).shapes)
+        ? (root as { shapes: string[] }).shapes
+        : [];
+    const tree = rootChildIds.flatMap((id) => buildShapeTree(page.objects, id) ?? []);
+
+    const result = {
       name: page.name,
       shapes,
+      tree,
       googleFontsUrls: buildGoogleFontsUrls(fonts),
       tokensCss: tokensToCss(tokens),
     };
+
+    console.timeEnd(`convertPageShapes ${data.pageId}`);
+    return result;
   });
