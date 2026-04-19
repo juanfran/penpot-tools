@@ -3,7 +3,7 @@ import { PagesSidebar } from '#/components/pages-sidebar';
 import { getFileSummaryFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { z } from 'zod';
 
 const getFileSummaryQueryOptions = (fileId: string) => {
@@ -66,15 +66,32 @@ function Header({ fileId }: { fileId: string }) {
   );
 }
 
-function SidebarWrapper({ fileId, pageId }: { fileId: string; pageId: string }) {
+function SidebarWrapper({
+  fileId,
+  pageId,
+  selectedShapeId,
+}: {
+  fileId: string;
+  pageId: string;
+  selectedShapeId: string | undefined;
+}) {
   const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
   const { teamId } = Route.useSearch();
 
-  return <PagesSidebar fileId={fileId} pageId={pageId} fileSummary={file} teamId={teamId} />;
+  return (
+    <PagesSidebar
+      fileId={fileId}
+      pageId={pageId}
+      fileSummary={file}
+      teamId={teamId}
+      selectedShapeId={selectedShapeId}
+    />
+  );
 }
 
 function RouteComponent() {
   const { fileId, pageId } = Route.useParams();
+  const [selectedShapeId, setSelectedShapeId] = useState<string | undefined>(undefined);
 
   return (
     <>
@@ -84,11 +101,16 @@ function RouteComponent() {
         </Suspense>
         <div className="flex flex-1 overflow-hidden">
           <Suspense fallback={<aside className="w-84 border-r border-gray-200" />}>
-            <SidebarWrapper fileId={fileId} pageId={pageId} />
+            <SidebarWrapper fileId={fileId} pageId={pageId} selectedShapeId={selectedShapeId} />
           </Suspense>
           <main className="relative flex-1 overflow-auto">
             <Suspense fallback={<div>Loading...</div>}>
-              <Render fileId={fileId} pageId={pageId} />
+              <Render
+                fileId={fileId}
+                pageId={pageId}
+                selectedShapeId={selectedShapeId}
+                onShapeSelect={setSelectedShapeId}
+              />
             </Suspense>
           </main>
         </div>

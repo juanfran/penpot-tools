@@ -53,7 +53,17 @@ export const getPageShapesOptions = (fileId: string, pageId: string) =>
     queryFn: () => getPageShapesFn({ data: { fileId, pageId } }),
   });
 
-export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) => {
+export const Render = ({
+  pageId,
+  fileId,
+  selectedShapeId,
+  onShapeSelect,
+}: {
+  pageId: string;
+  fileId: string;
+  selectedShapeId?: string;
+  onShapeSelect?: (id: string | undefined) => void;
+}) => {
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -86,6 +96,7 @@ export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) =
 
       <div ref={containerRef} className="relative h-full w-full bg-[#e8e9ea] contain-strict">
         <TransformWrapper
+          key={pageId}
           minScale={0.05}
           maxScale={10}
           limitToBounds={false}
@@ -111,6 +122,33 @@ export const Render = ({ pageId, fileId }: { pageId: string; fileId: string }) =
                   <ShapeNode html={shape.html} />
                 </Virtualize>
               ))}
+              {onShapeSelect && (
+                <>
+                  <div
+                    className="pointer-events-auto absolute inset-0"
+                    onClick={() => onShapeSelect(undefined)}
+                  />
+                  {data.shapes.map((shape) => (
+                    <div
+                      key={`sel-${shape.id}`}
+                      className="pointer-events-auto absolute cursor-pointer"
+                      style={{
+                        left: shape.x,
+                        top: shape.y,
+                        width: shape.width,
+                        height: shape.height,
+                        zIndex: 1,
+                        outline: selectedShapeId === shape.id ? '2px solid #2196f3' : 'none',
+                        outlineOffset: '1px',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onShapeSelect(shape.id);
+                      }}
+                    />
+                  ))}
+                </>
+              )}
             </div>
           </TransformComponent>
         </TransformWrapper>

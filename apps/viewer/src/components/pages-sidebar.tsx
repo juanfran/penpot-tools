@@ -2,7 +2,7 @@ import { type ShapeTreeNode } from '#/lib/server/penpot-api';
 import { getPageShapesOptions } from '#/components/render';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ChevronRight,
   Square,
@@ -42,14 +42,49 @@ function shapeIcon(type: string) {
   }
 }
 
-function ShapeTreeItem({ node, depth }: { node: ShapeTreeNode; depth: number }) {
+function findAncestorIds(
+  nodes: ShapeTreeNode[],
+  targetId: string,
+  path: string[] = [],
+): string[] | null {
+  for (const node of nodes) {
+    if (node.id === targetId) return path;
+    const found = findAncestorIds(node.children, targetId, [...path, node.id]);
+    if (found) return found;
+  }
+  return null;
+}
+
+function ShapeTreeItem({
+  node,
+  depth,
+  selectedShapeId,
+  ancestorIds,
+}: {
+  node: ShapeTreeNode;
+  depth: number;
+  selectedShapeId?: string;
+  ancestorIds: Set<string>;
+}) {
+  const isSelected = node.id === selectedShapeId;
+  const isAncestor = ancestorIds.has(node.id);
   const [open, setOpen] = useState(false);
   const hasChildren = node.children.length > 0;
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const isOpen = open || isAncestor;
+
+  useEffect(() => {
+    if (isSelected && btnRef.current) {
+      btnRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [isSelected]);
 
   return (
     <li>
       <button
-        className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-gray-100"
+        ref={btnRef}
+        className={`flex w-full items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-gray-100 ${isSelected ? 'bg-blue-100 text-blue-900' : ''}`}
         style={{ paddingLeft: `${4 + depth * 12}px` }}
         onClick={() => hasChildren && setOpen((o) => !o)}
       >
@@ -57,17 +92,23 @@ function ShapeTreeItem({ node, depth }: { node: ShapeTreeNode; depth: number }) 
           {hasChildren && (
             <ChevronRight
               size={10}
-              className={`text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`}
+              className={`text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}
             />
           )}
         </span>
         {shapeIcon(node.type)}
         <span className="truncate text-sm text-gray-700">{node.name}</span>
       </button>
-      {open && hasChildren && (
+      {isOpen && hasChildren && (
         <ul>
           {node.children.map((child) => (
-            <ShapeTreeItem key={child.id} node={child} depth={depth + 1} />
+            <ShapeTreeItem
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              selectedShapeId={selectedShapeId}
+              ancestorIds={ancestorIds}
+            />
           ))}
         </ul>
       )}
@@ -75,13 +116,32 @@ function ShapeTreeItem({ node, depth }: { node: ShapeTreeNode; depth: number }) 
   );
 }
 
-function ShapeTree({ fileId, pageId }: { fileId: string; pageId: string }) {
+function ShapeTree({
+  fileId,
+  pageId,
+  selectedShapeId,
+}: {
+  fileId: string;
+  pageId: string;
+  selectedShapeId?: string;
+}) {
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
+
+  const ancestorIds = useMemo(() => {
+    if (!selectedShapeId) return new Set<string>();
+    return new Set(findAncestorIds(data.tree, selectedShapeId) ?? []);
+  }, [selectedShapeId, data.tree]);
 
   return (
     <ul className="overflow-auto px-1">
       {data.tree.map((node) => (
-        <ShapeTreeItem key={node.id} node={node} depth={0} />
+        <ShapeTreeItem
+          key={node.id}
+          node={node}
+          depth={0}
+          selectedShapeId={selectedShapeId}
+          ancestorIds={ancestorIds}
+        />
       ))}
     </ul>
   );
@@ -97,9 +157,16 @@ interface PagesSidebarProps {
     };
   };
   teamId?: string;
+  selectedShapeId?: string;
 }
 
-export function PagesSidebar({ fileId, pageId, fileSummary, teamId }: PagesSidebarProps) {
+export function PagesSidebar({
+  fileId,
+  pageId,
+  fileSummary,
+  teamId,
+  selectedShapeId,
+}: PagesSidebarProps) {
   return (
     <aside className="flex w-84 flex-col border-r border-gray-200">
       <div className="flex h-1/2 flex-col gap-1 overflow-auto border-b border-gray-200 p-3">
@@ -124,7 +191,7 @@ export function PagesSidebar({ fileId, pageId, fileSummary, teamId }: PagesSideb
           Layers
         </p>
         <div className="min-h-0 flex-1 overflow-auto">
-          <ShapeTree fileId={fileId} pageId={pageId} />
+          <ShapeTree fileId={fileId} pageId={pageId} selectedShapeId={selectedShapeId} />
         </div>
       </div>
     </aside>
