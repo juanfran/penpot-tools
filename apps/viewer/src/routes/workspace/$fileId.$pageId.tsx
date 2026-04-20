@@ -118,7 +118,7 @@ function RouteComponent() {
             </Suspense>
           </main>
           {selectedShapeId && (
-            <Suspense fallback={<aside className="w-72 border-l border-gray-200" />}>
+            <Suspense fallback={<aside className="w-80 border-l border-gray-200" />}>
               <InspectorSidebar
                 fileId={fileId}
                 pageId={pageId}

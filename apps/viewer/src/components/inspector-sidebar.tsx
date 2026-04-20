@@ -100,6 +100,165 @@ function extractStyles(html: string, shapeId: string): Array<{ prop: string; val
   return [...rootDecls, ...paraDecls];
 }
 
+// --- Box model parsing ---
+
+function parsePx(value: string | null | undefined): number {
+  if (!value) return 0;
+  const n = parseFloat(value);
+  return isNaN(n) ? 0 : n;
+}
+
+// Expand a CSS shorthand into [top, right, bottom, left]
+function expandSides(shorthand: string | null | undefined): [number, number, number, number] {
+  if (!shorthand || shorthand === 'none' || shorthand === '0') return [0, 0, 0, 0];
+  const parts = shorthand.trim().split(/\s+/);
+  const vals = parts.map(parsePx);
+  if (vals.length === 1) return [vals[0], vals[0], vals[0], vals[0]];
+  if (vals.length === 2) return [vals[0], vals[1], vals[0], vals[1]];
+  if (vals.length === 3) return [vals[0], vals[1], vals[2], vals[1]];
+  return [vals[0], vals[1], vals[2], vals[3]];
+}
+
+// Extract border width from shorthand like "1px solid #000" or "2px"
+function parseBorderShorthand(value: string | null | undefined): number {
+  if (!value || value === 'none' || value === '0') return 0;
+  const first = value.trim().split(/\s+/)[0];
+  return parsePx(first ?? null);
+}
+
+interface BoxModel {
+  width: number;
+  height: number;
+  padding: [number, number, number, number];
+  border: [number, number, number, number];
+  // gap from nearest flex/grid ancestor, shown as spacing between siblings
+  gap: [number, number, number, number];
+}
+
+function extractBoxModel(html: string, shapeId: string, nodeWidth: number, nodeHeight: number): BoxModel {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const el = doc.querySelector(`[data-id="${shapeId}"]`) as HTMLElement | null;
+
+  const zero4: [number, number, number, number] = [0, 0, 0, 0];
+
+  if (!el) return { width: nodeWidth, height: nodeHeight, padding: zero4, border: zero4, gap: zero4 };
+
+  // The rendered element might be the flex-child inner div (width: 100%; height: 100%).
+  // Real layout styles live on it directly. If it has no meaningful styles, try first child.
+  let styleEl: HTMLElement = el;
+  let decls = parseStyleDecls(el.getAttribute('style') ?? '');
+  const meaningful = decls.filter(({ prop }) => prop !== 'width' && prop !== 'height');
+  if (meaningful.length === 0 && el.children.length === 1) {
+    styleEl = el.firstElementChild as HTMLElement;
+    decls = parseStyleDecls(styleEl?.getAttribute('style') ?? '');
+  }
+
+  const get = (prop: string) => decls.find((d) => d.prop === prop)?.value ?? null;
+  const getPx = (prop: string, fallback: number) => {
+    const v = get(prop);
+    return v !== null ? parsePx(v) : fallback;
+  };
+
+  // --- Padding ---
+  const [pt0, pr0, pb0, pl0] = expandSides(get('padding'));
+  const padding: [number, number, number, number] = [
+    getPx('padding-top', pt0),
+    getPx('padding-right', pr0),
+    getPx('padding-bottom', pb0),
+    getPx('padding-left', pl0),
+  ];
+
+  // --- Border ---
+  const borderAll = parseBorderShorthand(get('border'));
+  const bwShorthand = get('border-width') ?? (borderAll > 0 ? `${borderAll}px` : null);
+  const [bwt0, bwr0, bwb0, bwl0] = expandSides(bwShorthand);
+  const border: [number, number, number, number] = [
+    getPx('border-top-width', bwt0),
+    getPx('border-right-width', bwr0),
+    getPx('border-bottom-width', bwb0),
+    getPx('border-left-width', bwl0),
+  ];
+
+  // --- Gap from nearest flex/grid ancestor (represents spacing between siblings) ---
+  let gap: [number, number, number, number] = zero4;
+  let ancestor = el.parentElement;
+  while (ancestor && ancestor !== doc.body) {
+    const aDecls = parseStyleDecls(ancestor.getAttribute('style') ?? '');
+    const display = aDecls.find((d) => d.prop === 'display')?.value;
+    if (display === 'flex' || display === 'grid') {
+      const gapVal = aDecls.find((d) => d.prop === 'gap')?.value ?? null;
+      const rowGapVal = aDecls.find((d) => d.prop === 'row-gap')?.value ?? null;
+      const colGapVal = aDecls.find((d) => d.prop === 'column-gap')?.value ?? null;
+      // gap shorthand: "rowGap colGap" (1 or 2 values)
+      const [gRow, gCol] = expandSides(gapVal).slice(0, 2) as [number, number];
+      const rowGap = rowGapVal ? parsePx(rowGapVal) : gRow;
+      const colGap = colGapVal ? parsePx(colGapVal) : gCol;
+      // Show gap on the axis where it applies
+      const flexDir = aDecls.find((d) => d.prop === 'flex-direction')?.value ?? 'row';
+      if (flexDir === 'column' || flexDir === 'column-reverse') {
+        gap = [rowGap, 0, rowGap, 0];
+      } else {
+        gap = [0, colGap, 0, colGap];
+      }
+      break;
+    }
+    ancestor = ancestor.parentElement;
+  }
+
+  return { width: nodeWidth, height: nodeHeight, padding, border, gap };
+}
+
+function fmt(n: number): string {
+  return n === 0 ? '-' : String(Math.round(n * 10) / 10);
+}
+
+function BoxModelViz({ model }: { model: BoxModel }) {
+  const [gt, gr, gb, gl] = model.gap;
+  const [bt, br, bb, bl] = model.border;
+  const [pt, pr, pb, pl] = model.padding;
+
+  const lbl = 'absolute text-[10px] font-mono leading-none select-none';
+
+  return (
+    <div className="px-4 pt-3 pb-4">
+      <p className="mb-2 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+        Box model
+      </p>
+      {/* gap / spacing from flex parent — orange */}
+      <div className="relative rounded" style={{ background: '#fcd29f', padding: '18px' }}>
+        <span className="absolute top-0.5 left-1 text-[9px] font-medium text-orange-700 opacity-70 select-none">gap</span>
+        <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-orange-800`}>{fmt(gt)}</span>
+        <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-orange-800`}>{fmt(gb)}</span>
+        <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-orange-800`}>{fmt(gl)}</span>
+        <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-orange-800`}>{fmt(gr)}</span>
+        {/* border — yellow */}
+        <div className="relative rounded" style={{ background: '#fce28a', padding: '18px' }}>
+          <span className="absolute top-0.5 left-1 text-[9px] font-medium text-yellow-700 opacity-70 select-none">border</span>
+          <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-yellow-900`}>{fmt(bt)}</span>
+          <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-yellow-900`}>{fmt(bb)}</span>
+          <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-yellow-900`}>{fmt(bl)}</span>
+          <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-yellow-900`}>{fmt(br)}</span>
+          {/* padding — green */}
+          <div className="relative rounded" style={{ background: '#b5d99c', padding: '18px' }}>
+            <span className="absolute top-0.5 left-1 text-[9px] font-medium text-green-800 opacity-70 select-none">padding</span>
+            <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-green-900`}>{fmt(pt)}</span>
+            <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-green-900`}>{fmt(pb)}</span>
+            <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-green-900`}>{fmt(pl)}</span>
+            <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-green-900`}>{fmt(pr)}</span>
+            {/* content — blue */}
+            <div
+              className="flex items-center justify-center rounded font-mono text-xs font-semibold text-blue-900"
+              style={{ background: '#9dc4e8', padding: '10px 4px' }}
+            >
+              {fmt(model.width)} × {fmt(model.height)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Groups properties into display sections for readability
 const SECTION_ORDER: Array<{ label: string; prefixes: string[] }> = [
   { label: 'Position', prefixes: ['position', 'top', 'left', 'right', 'bottom', 'z-index', 'transform'] },
@@ -162,6 +321,7 @@ export function InspectorSidebar({
   const decls = extractStyles(rootShape.html, selectedShapeId);
   const sections = groupStyles(decls);
   const cssText = decls.map(({ prop, value }) => `${prop}: ${value};`).join('\n');
+  const boxModel = extractBoxModel(rootShape.html, selectedShapeId, node.width, node.height);
 
   const handleCopy = () => {
     void navigator.clipboard.writeText(cssText).then(() => {
@@ -171,7 +331,7 @@ export function InspectorSidebar({
   };
 
   return (
-    <aside className="flex w-72 flex-col border-l border-gray-200 bg-white">
+    <aside className="flex w-80 flex-col border-l border-gray-200 bg-white">
       {/* Shape header */}
       <div className="border-b border-gray-100 px-4 py-3">
         <div className="mb-1 flex items-center gap-1.5">
@@ -185,40 +345,44 @@ export function InspectorSidebar({
 
       {/* Styles */}
       <div className="flex min-h-0 flex-1 flex-col overflow-auto">
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
-          <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-            Styles
-          </span>
-          {decls.length > 0 && (
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
-              title="Copy all styles"
-            >
-              {copied ? <Check size={11} /> : <Copy size={11} />}
-              <span>{copied ? 'Copied!' : 'Copy'}</span>
-            </button>
+        <BoxModelViz model={boxModel} />
+
+        <div className="border-t border-gray-100">
+          <div className="flex items-center justify-between px-4 pt-3 pb-2">
+            <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+              Styles
+            </span>
+            {decls.length > 0 && (
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                title="Copy all styles"
+              >
+                {copied ? <Check size={11} /> : <Copy size={11} />}
+                <span>{copied ? 'Copied!' : 'Copy'}</span>
+              </button>
+            )}
+          </div>
+
+          {decls.length === 0 ? (
+            <p className="px-4 py-2 text-xs text-gray-400">No styles</p>
+          ) : (
+            <div className="space-y-3 px-4 pb-4">
+              {sections.map((section) => (
+                <div key={section.label}>
+                  <p className="mb-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+                    {section.label}
+                  </p>
+                  <div className="rounded-md bg-gray-50 px-3 py-2 font-mono text-xs leading-relaxed">
+                    {section.decls.map((d, i) => (
+                      <StyleDecl key={i} prop={d.prop} value={d.value} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
-
-        {decls.length === 0 ? (
-          <p className="px-4 py-2 text-xs text-gray-400">No styles</p>
-        ) : (
-          <div className="space-y-3 px-4 pb-4">
-            {sections.map((section) => (
-              <div key={section.label}>
-                <p className="mb-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-                  {section.label}
-                </p>
-                <div className="rounded-md bg-gray-50 px-3 py-2 font-mono text-xs leading-relaxed">
-                  {section.decls.map((d, i) => (
-                    <StyleDecl key={i} prop={d.prop} value={d.value} />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </aside>
   );
