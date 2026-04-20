@@ -14,6 +14,7 @@ export function renderImage(shape: ImageShape, ctx: ConverterContext): string {
 
   return tag('img', {
     'data-id': shape.id,
+    'data-type': shape.type,
     src,
     width: String(shape.width),
     height: String(shape.height),

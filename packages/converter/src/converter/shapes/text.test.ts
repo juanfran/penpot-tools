@@ -212,6 +212,10 @@ describe('renderText', () => {
     expect(renderText(makeTextShape(), ctx)).toContain('data-id="text-1"');
   });
 
+  it('includes data-type attribute', () => {
+    expect(renderText(makeTextShape(), ctx)).toContain('data-type="text"');
+  });
+
   it('renders text content', () => {
     expect(renderText(makeTextShape(), ctx)).toContain('Hello world');
   });

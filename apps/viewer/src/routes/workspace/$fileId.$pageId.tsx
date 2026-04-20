@@ -1,5 +1,6 @@
 import { getPageShapesOptions, Render } from '#/components/render';
 import { PagesSidebar } from '#/components/pages-sidebar';
+import { InspectorSidebar } from '#/components/inspector-sidebar';
 import { getFileSummaryFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
@@ -113,6 +114,15 @@ function RouteComponent() {
               />
             </Suspense>
           </main>
+          {selectedShapeId && (
+            <Suspense fallback={<aside className="w-72 border-l border-gray-200" />}>
+              <InspectorSidebar
+                fileId={fileId}
+                pageId={pageId}
+                selectedShapeId={selectedShapeId}
+              />
+            </Suspense>
+          )}
         </div>
       </div>
     </>

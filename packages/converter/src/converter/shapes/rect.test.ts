@@ -36,6 +36,10 @@ describe('renderRect', () => {
     expect(html).toContain('data-id="abc-123"');
   });
 
+  it('includes data-type attribute', () => {
+    expect(renderRect(makeRect(), null, ctx)).toContain('data-type="rect"');
+  });
+
   it('includes absolute positioning in style', () => {
     const html = renderRect(makeRect({ x: 10, y: 20, width: 100, height: 50 }), null, ctx);
     expect(html).toContain('position: absolute;');

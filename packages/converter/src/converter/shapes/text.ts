@@ -136,5 +136,5 @@ export function renderText(shape: TextShape, ctx: ConverterContext): string {
       .join('');
   }
 
-  return tag('div', { 'data-id': shape.id, style: style || undefined }, inner);
+  return tag('div', { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined }, inner);
 }

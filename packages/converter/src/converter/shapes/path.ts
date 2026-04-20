@@ -210,6 +210,7 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
     'svg',
     {
       'data-id': shape.id,
+      'data-type': shape.type,
       width: String(width),
       height: String(height),
       viewBox: `${x} ${y} ${width} ${height}`,

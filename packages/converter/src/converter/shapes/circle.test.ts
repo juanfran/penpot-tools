@@ -36,6 +36,10 @@ describe('renderCircle', () => {
     expect(html).toContain('data-id="my-circle"');
   });
 
+  it('includes data-type attribute', () => {
+    expect(renderCircle(makeCircle(), null, ctx)).toContain('data-type="circle"');
+  });
+
   it('includes absolute positioning in style', () => {
     const html = renderCircle(makeCircle({ x: 10, y: 20, width: 80, height: 80 }), null, ctx);
     expect(html).toContain('position: absolute;');

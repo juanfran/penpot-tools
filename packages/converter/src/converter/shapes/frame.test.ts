@@ -54,6 +54,10 @@ describe('renderFrame', () => {
     expect(html).toContain('data-id="my-frame"');
   });
 
+  it('includes data-type attribute', () => {
+    expect(renderFrame(makeFrame(), [], {}, ctx)).toContain('data-type="frame"');
+  });
+
   it('root frame (parentId === id) uses position: relative', () => {
     const frame = makeFrame();
     const html = renderFrame(frame, [], {}, ctx);

@@ -142,5 +142,5 @@ export function renderFrame(
     inner = children.map((child) => renderShape(child, objects, childCtx)).join('');
   }
 
-  return tag('div', { 'data-id': shape.id, style: style || undefined }, inner);
+  return tag('div', { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined }, inner);
 }

@@ -38,6 +38,10 @@ describe('renderBool', () => {
     expect(renderBool(makeBool({ id: 'my-bool' as Uuid }), ctx)).toContain('data-id="my-bool"');
   });
 
+  it('includes data-type attribute', () => {
+    expect(renderBool(makeBool(), ctx)).toContain('data-type="bool"');
+  });
+
   it('sets svg width and height from bounding box', () => {
     const html = renderBool(makeBool({ width: 100, height: 50 }), ctx);
     expect(html).toContain('width="100"');

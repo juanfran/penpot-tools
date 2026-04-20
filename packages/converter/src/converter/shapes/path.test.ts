@@ -37,6 +37,10 @@ describe('renderPath', () => {
     expect(html).toContain('data-id="my-path"');
   });
 
+  it('includes data-type attribute', () => {
+    expect(renderPath(makePath(), ctx)).toContain('data-type="path"');
+  });
+
   it('sets svg width and height from shape bounding box', () => {
     const html = renderPath(makePath({ width: 100, height: 50 }), ctx);
     expect(html).toContain('width="100"');

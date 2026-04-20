@@ -54,6 +54,10 @@ describe('renderGroup', () => {
     expect(html).toContain('data-id="my-group"');
   });
 
+  it('includes data-type attribute', () => {
+    expect(renderGroup(makeGroup(), [], {}, ctx)).toContain('data-type="group"');
+  });
+
   it('positions absolutely using style', () => {
     const html = renderGroup(makeGroup({ x: 10, y: 20, width: 200, height: 100 }), [], {}, ctx);
     expect(html).toContain('position: absolute;');

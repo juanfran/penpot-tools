@@ -43,6 +43,10 @@ describe('renderImage', () => {
     expect(renderImage(makeImage({ id: 'my-img' as Uuid }), ctx)).toContain('data-id="my-img"');
   });
 
+  it('includes data-type attribute', () => {
+    expect(renderImage(makeImage(), ctx)).toContain('data-type="image"');
+  });
+
   it('resolves and sets src from metadata.id', () => {
     expect(renderImage(makeImage(), ctx)).toContain(
       'src="https://assets.example.com/asset-uuid-1"',

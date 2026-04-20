@@ -22,5 +22,5 @@ export function renderRect(
 
   const style = mergeStyles(posStyle, base, fills, stroke);
 
-  return tag('div', { 'data-id': shape.id, style: style || undefined }, '');
+  return tag('div', { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined }, '');
 }

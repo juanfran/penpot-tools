@@ -36,6 +36,10 @@ describe('renderSvgRaw', () => {
     expect(renderSvgRaw(makeSvgRaw({ id: 'my-svg' as Uuid }), ctx)).toContain('data-id="my-svg"');
   });
 
+  it('includes data-type attribute', () => {
+    expect(renderSvgRaw(makeSvgRaw(), ctx)).toContain('data-type="svg-raw"');
+  });
+
   it('embeds the raw SVG content inside the div', () => {
     const html = renderSvgRaw(makeSvgRaw({ content: '<svg><circle /></svg>' }), ctx);
     expect(html).toContain('<svg><circle /></svg>');

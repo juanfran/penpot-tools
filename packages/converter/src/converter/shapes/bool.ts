@@ -40,6 +40,7 @@ export function renderBool(shape: BoolShape, ctx: ConverterContext): string {
     'svg',
     {
       'data-id': shape.id,
+      'data-type': shape.type,
       width: String(shape.width ?? 0),
       height: String(shape.height ?? 0),
       xmlns: 'http://www.w3.org/2000/svg',
