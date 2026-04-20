@@ -92,11 +92,16 @@ export function renderFrame(
     const orderedChildren = isReverseDir ? [...children] : [...children].reverse();
     inner = orderedChildren
       .map((child) => {
+        // Absolute flex items are removed from flex flow; the wrapper's `flex: 1` /
+        // `height: 100%` sizing no longer applies, so the child must emit explicit px.
+        const isAbsolute = !!(child as unknown as { layoutItemAbsolute?: boolean })
+          .layoutItemAbsolute;
         const autoW =
+          isAbsolute ||
           child.layoutItemHSizing === 'auto' ||
           (!(flexDir === 'row' || flexDir === 'row-reverse' || flexDir === undefined) &&
             child.layoutItemHSizing === 'fill');
-        const autoH = child.layoutItemVSizing === 'auto';
+        const autoH = isAbsolute || child.layoutItemVSizing === 'auto';
         const flexCtx: ConverterContext = {
           ...ctx,
           _parentIsLayout: true,
@@ -142,5 +147,9 @@ export function renderFrame(
     inner = children.map((child) => renderShape(child, objects, childCtx)).join('');
   }
 
-  return tag('div', { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined }, inner);
+  return tag(
+    'div',
+    { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined },
+    inner,
+  );
 }

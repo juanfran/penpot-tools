@@ -237,4 +237,20 @@ describe('integration', () => {
     const { html } = await convertShape(shape, page.objects, ctx);
     expect(html.trim()).toBe(getExpected('path-image-fill'));
   });
+
+  it('fillOpacity:0 overrides appliedTokens.fill and emits no background', async () => {
+    // A Penpot user can point a fill at a color token and then drop the fill's
+    // opacity to 0 to hide it (e.g. a transparent close-button background that
+    // still references a design token). The opacity wins over the token.
+    const page = getPage('transparent-fill-token');
+    const rootShape = page.objects['root-frame'];
+    const tokens = extractTokens(page.objects);
+    const { html } = await convertShape(rootShape, page.objects, { ...ctx, tokens });
+
+    expect(html.trim()).toBe(getExpected('transparent-fill-token'));
+    // Only the visible rect resolves to the token; the transparent one emits no background.
+    expect(html).toContain('background-color: var(--button-bg)');
+    const occurrences = html.match(/background-color/g) ?? [];
+    expect(occurrences.length).toBe(1);
+  });
 });

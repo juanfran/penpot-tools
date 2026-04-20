@@ -768,6 +768,7 @@ export interface ParagraphSetNode {
 export interface TextContent {
   type: 'root';
   key?: string;
+  verticalAlign?: 'top' | 'center' | 'bottom';
   children: [ParagraphSetNode, ...ParagraphSetNode[]];
 }
 

@@ -86,7 +86,7 @@ function ShapeTreeItem({
     <li>
       <div
         ref={rowRef}
-        className={`flex w-full items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-gray-100 cursor-pointer ${isSelected ? 'bg-blue-100 text-blue-900' : ''}`}
+        className={`flex w-full cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-gray-100 ${isSelected ? 'bg-blue-100 text-blue-900' : ''}`}
         style={{ paddingLeft: `${4 + depth * 12}px` }}
         onClick={() => onShapeSelect(node.id)}
       >
@@ -206,7 +206,12 @@ export function PagesSidebar({
           Layers
         </p>
         <div className="min-h-0 flex-1 overflow-auto">
-          <ShapeTree fileId={fileId} pageId={pageId} selectedShapeId={selectedShapeId} onShapeSelect={onShapeSelect} />
+          <ShapeTree
+            fileId={fileId}
+            pageId={pageId}
+            selectedShapeId={selectedShapeId}
+            onShapeSelect={onShapeSelect}
+          />
         </div>
       </div>
     </aside>

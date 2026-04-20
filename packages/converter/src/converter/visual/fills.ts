@@ -118,6 +118,10 @@ export function fillsToOutput(
 ): string {
   if (!fills || fills.length === 0) return '';
 
+  // A single fully-transparent fill wins over any applied token — Penpot lets a user
+  // reference a color token and then override the opacity to 0 to hide the fill.
+  if (fills.length === 1 && fills[0].fillOpacity === 0) return '';
+
   if (fillTokenName && ctx.tokens?.has(fillTokenName)) {
     return `background-color: var(--${tokenToCssVarName(fillTokenName)});`;
   }

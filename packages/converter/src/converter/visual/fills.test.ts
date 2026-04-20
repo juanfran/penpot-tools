@@ -284,4 +284,18 @@ describe('fillsToOutput', () => {
     const bgSize = result.match(/background-size:\s*([^;]+)/)?.[1] ?? '';
     expect(bgImage.split(',').length).toBe(bgSize.split(',').length);
   });
+
+  it('single fully-transparent fill emits nothing', () => {
+    const fill: Fill = { fillColor: '#000000' as HexColor, fillOpacity: 0 };
+    expect(fillsToOutput([fill], makeCtx())).toBe('');
+  });
+
+  it('single fully-transparent fill ignores applied token and emits nothing', () => {
+    const fill: Fill = { fillColor: '#000000' as HexColor, fillOpacity: 0 };
+    const ctx: ConverterContext = {
+      ...makeCtx(),
+      tokens: new Map([['button.close.bg', '#123456']]),
+    };
+    expect(fillsToOutput([fill], ctx, 'button.close.bg')).toBe('');
+  });
 });

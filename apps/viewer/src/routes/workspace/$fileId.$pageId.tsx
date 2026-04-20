@@ -48,9 +48,13 @@ export const Route = createFileRoute('/workspace/$fileId/$pageId')({
   },
 });
 
-function Header({ fileId }: { fileId: string }) {
+function Header({ fileId, pageId }: { fileId: string; pageId: string }) {
   const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
   const { teamId } = Route.useSearch();
+
+  const penpotParams = new URLSearchParams({ 'file-id': fileId, 'page-id': pageId });
+  if (teamId) penpotParams.set('team-id', teamId);
+  const penpotUrl = `https://design.penpot.app/#/workspace?${penpotParams.toString()}`;
 
   return (
     <header className="flex h-12 items-center gap-3 border-b border-gray-200 px-4">
@@ -63,6 +67,14 @@ function Header({ fileId }: { fileId: string }) {
       </Link>
       <span className="text-gray-300">/</span>
       <span className="text-sm text-gray-600">{file.name}</span>
+      <a
+        href={penpotUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="ml-auto text-sm text-gray-500 hover:text-gray-800"
+      >
+        Open in Penpot ↗
+      </a>
     </header>
   );
 }
@@ -101,11 +113,16 @@ function RouteComponent() {
     <>
       <div className="flex h-screen flex-col">
         <Suspense fallback={<header className="h-12 border-b border-gray-200" />}>
-          <Header fileId={fileId} />
+          <Header fileId={fileId} pageId={pageId} />
         </Suspense>
         <div className="flex flex-1 overflow-hidden">
           <Suspense fallback={<aside className="w-84 border-r border-gray-200" />}>
-            <SidebarWrapper fileId={fileId} pageId={pageId} selectedShapeId={selectedShapeId} onShapeSelect={setSelectedShapeId} />
+            <SidebarWrapper
+              fileId={fileId}
+              pageId={pageId}
+              selectedShapeId={selectedShapeId}
+              onShapeSelect={setSelectedShapeId}
+            />
           </Suspense>
           <main className="relative flex-1 overflow-auto">
             <Suspense fallback={<div>Loading...</div>}>
@@ -119,11 +136,7 @@ function RouteComponent() {
           </main>
           {selectedShapeId && (
             <Suspense fallback={<aside className="w-80 border-l border-gray-200" />}>
-              <InspectorSidebar
-                fileId={fileId}
-                pageId={pageId}
-                selectedShapeId={selectedShapeId}
-              />
+              <InspectorSidebar fileId={fileId} pageId={pageId} selectedShapeId={selectedShapeId} />
             </Suspense>
           )}
         </div>

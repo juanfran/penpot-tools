@@ -3,17 +3,7 @@ import { type ShapeTreeNode } from '#/lib/server/penpot-api';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
-import {
-  Circle,
-  Frame,
-  GitMerge,
-  Image,
-  Layers,
-  Minus,
-  Square,
-  Star,
-  Type,
-} from 'lucide-react';
+import { Circle, Frame, GitMerge, Image, Layers, Minus, Square, Star, Type } from 'lucide-react';
 
 function shapeIcon(type: string) {
   const cls = 'shrink-0 text-gray-400';
@@ -69,6 +59,14 @@ function parseStyleDecls(styleAttr: string): Array<{ prop: string; value: string
       return { prop: decl.slice(0, idx).trim(), value: decl.slice(idx + 1).trim() };
     })
     .filter((d): d is { prop: string; value: string } => d !== null);
+}
+
+function extractText(html: string, shapeId: string): string | null {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const el = doc.querySelector(`[data-id="${shapeId}"][data-type="text"]`);
+  if (!el) return null;
+  const paragraphs = Array.from(el.querySelectorAll('p')).map((p) => p.textContent ?? '');
+  return paragraphs.join('\n');
 }
 
 function extractStyles(html: string, shapeId: string): Array<{ prop: string; value: string }> {
@@ -131,17 +129,20 @@ interface BoxModel {
   height: number;
   padding: [number, number, number, number];
   border: [number, number, number, number];
-  // gap from nearest flex/grid ancestor, shown as spacing between siblings
-  gap: [number, number, number, number];
 }
 
-function extractBoxModel(html: string, shapeId: string, nodeWidth: number, nodeHeight: number): BoxModel {
+function extractBoxModel(
+  html: string,
+  shapeId: string,
+  nodeWidth: number,
+  nodeHeight: number,
+): BoxModel {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const el = doc.querySelector(`[data-id="${shapeId}"]`) as HTMLElement | null;
 
   const zero4: [number, number, number, number] = [0, 0, 0, 0];
 
-  if (!el) return { width: nodeWidth, height: nodeHeight, padding: zero4, border: zero4, gap: zero4 };
+  if (!el) return { width: nodeWidth, height: nodeHeight, padding: zero4, border: zero4 };
 
   // The rendered element might be the flex-child inner div (width: 100%; height: 100%).
   // Real layout styles live on it directly. If it has no meaningful styles, try first child.
@@ -179,33 +180,7 @@ function extractBoxModel(html: string, shapeId: string, nodeWidth: number, nodeH
     getPx('border-left-width', bwl0),
   ];
 
-  // --- Gap from nearest flex/grid ancestor (represents spacing between siblings) ---
-  let gap: [number, number, number, number] = zero4;
-  let ancestor = el.parentElement;
-  while (ancestor && ancestor !== doc.body) {
-    const aDecls = parseStyleDecls(ancestor.getAttribute('style') ?? '');
-    const display = aDecls.find((d) => d.prop === 'display')?.value;
-    if (display === 'flex' || display === 'grid') {
-      const gapVal = aDecls.find((d) => d.prop === 'gap')?.value ?? null;
-      const rowGapVal = aDecls.find((d) => d.prop === 'row-gap')?.value ?? null;
-      const colGapVal = aDecls.find((d) => d.prop === 'column-gap')?.value ?? null;
-      // gap shorthand: "rowGap colGap" (1 or 2 values)
-      const [gRow, gCol] = expandSides(gapVal).slice(0, 2) as [number, number];
-      const rowGap = rowGapVal ? parsePx(rowGapVal) : gRow;
-      const colGap = colGapVal ? parsePx(colGapVal) : gCol;
-      // Show gap on the axis where it applies
-      const flexDir = aDecls.find((d) => d.prop === 'flex-direction')?.value ?? 'row';
-      if (flexDir === 'column' || flexDir === 'column-reverse') {
-        gap = [rowGap, 0, rowGap, 0];
-      } else {
-        gap = [0, colGap, 0, colGap];
-      }
-      break;
-    }
-    ancestor = ancestor.parentElement;
-  }
-
-  return { width: nodeWidth, height: nodeHeight, padding, border, gap };
+  return { width: nodeWidth, height: nodeHeight, padding, border };
 }
 
 function fmt(n: number): string {
@@ -213,7 +188,6 @@ function fmt(n: number): string {
 }
 
 function BoxModelViz({ model }: { model: BoxModel }) {
-  const [gt, gr, gb, gl] = model.gap;
   const [bt, br, bb, bl] = model.border;
   const [pt, pr, pb, pl] = model.padding;
 
@@ -224,34 +198,36 @@ function BoxModelViz({ model }: { model: BoxModel }) {
       <p className="mb-2 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
         Box model
       </p>
-      {/* gap / spacing from flex parent — orange */}
-      <div className="relative rounded" style={{ background: '#fcd29f', padding: '18px' }}>
-        <span className="absolute top-0.5 left-1 text-[9px] font-medium text-orange-700 opacity-70 select-none">gap</span>
-        <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-orange-800`}>{fmt(gt)}</span>
-        <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-orange-800`}>{fmt(gb)}</span>
-        <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-orange-800`}>{fmt(gl)}</span>
-        <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-orange-800`}>{fmt(gr)}</span>
-        {/* border — yellow */}
-        <div className="relative rounded" style={{ background: '#fce28a', padding: '18px' }}>
-          <span className="absolute top-0.5 left-1 text-[9px] font-medium text-yellow-700 opacity-70 select-none">border</span>
-          <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-yellow-900`}>{fmt(bt)}</span>
-          <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-yellow-900`}>{fmt(bb)}</span>
-          <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-yellow-900`}>{fmt(bl)}</span>
-          <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-yellow-900`}>{fmt(br)}</span>
-          {/* padding — green */}
-          <div className="relative rounded" style={{ background: '#b5d99c', padding: '18px' }}>
-            <span className="absolute top-0.5 left-1 text-[9px] font-medium text-green-800 opacity-70 select-none">padding</span>
-            <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-green-900`}>{fmt(pt)}</span>
-            <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-green-900`}>{fmt(pb)}</span>
-            <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-green-900`}>{fmt(pl)}</span>
-            <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-green-900`}>{fmt(pr)}</span>
-            {/* content — blue */}
-            <div
-              className="flex items-center justify-center rounded font-mono text-xs font-semibold text-blue-900"
-              style={{ background: '#9dc4e8', padding: '10px 4px' }}
-            >
-              {fmt(model.width)} × {fmt(model.height)}
-            </div>
+      {/* border — yellow */}
+      <div className="relative rounded" style={{ background: '#fce28a', padding: '18px' }}>
+        <span className="absolute top-0.5 left-1 text-[9px] font-medium text-yellow-700 opacity-70 select-none">
+          border
+        </span>
+        <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-yellow-900`}>{fmt(bt)}</span>
+        <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-yellow-900`}>
+          {fmt(bb)}
+        </span>
+        <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-yellow-900`}>{fmt(bl)}</span>
+        <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-yellow-900`}>{fmt(br)}</span>
+        {/* padding — green */}
+        <div className="relative rounded" style={{ background: '#b5d99c', padding: '18px' }}>
+          <span className="absolute top-0.5 left-1 text-[9px] font-medium text-green-800 opacity-70 select-none">
+            padding
+          </span>
+          <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-green-900`}>{fmt(pt)}</span>
+          <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-green-900`}>
+            {fmt(pb)}
+          </span>
+          <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-green-900`}>{fmt(pl)}</span>
+          <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-green-900`}>
+            {fmt(pr)}
+          </span>
+          {/* content — blue */}
+          <div
+            className="flex items-center justify-center rounded font-mono text-xs font-semibold text-blue-900"
+            style={{ background: '#9dc4e8', padding: '10px 4px' }}
+          >
+            {fmt(model.width)} × {fmt(model.height)}
           </div>
         </div>
       </div>
@@ -261,10 +237,47 @@ function BoxModelViz({ model }: { model: BoxModel }) {
 
 // Groups properties into display sections for readability
 const SECTION_ORDER: Array<{ label: string; prefixes: string[] }> = [
-  { label: 'Position', prefixes: ['position', 'top', 'left', 'right', 'bottom', 'z-index', 'transform'] },
-  { label: 'Layout', prefixes: ['display', 'flex', 'align', 'justify', 'gap', 'grid', 'padding', 'margin', 'flex-direction', 'flex-wrap', 'align-items', 'align-content', 'justify-content'] },
-  { label: 'Visual', prefixes: ['background', 'border', 'box-shadow', 'opacity', 'filter', 'backdrop-filter', 'mix-blend-mode', 'overflow', 'visibility', 'color'] },
-  { label: 'Typography', prefixes: ['font', 'line-height', 'letter-spacing', 'text', 'white-space', 'word'] },
+  {
+    label: 'Position',
+    prefixes: ['position', 'top', 'left', 'right', 'bottom', 'z-index', 'transform'],
+  },
+  {
+    label: 'Layout',
+    prefixes: [
+      'display',
+      'flex',
+      'align',
+      'justify',
+      'gap',
+      'grid',
+      'padding',
+      'margin',
+      'flex-direction',
+      'flex-wrap',
+      'align-items',
+      'align-content',
+      'justify-content',
+    ],
+  },
+  {
+    label: 'Visual',
+    prefixes: [
+      'background',
+      'border',
+      'box-shadow',
+      'opacity',
+      'filter',
+      'backdrop-filter',
+      'mix-blend-mode',
+      'overflow',
+      'visibility',
+      'color',
+    ],
+  },
+  {
+    label: 'Typography',
+    prefixes: ['font', 'line-height', 'letter-spacing', 'text', 'white-space', 'word'],
+  },
 ];
 
 function groupStyles(decls: Array<{ prop: string; value: string }>) {
@@ -310,7 +323,7 @@ export function InspectorSidebar({
   selectedShapeId: string;
 }) {
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<'css' | 'text' | null>(null);
 
   const node = findNodeById(data.tree, selectedShapeId);
   const rootNode = findRootContaining(data.tree, selectedShapeId);
@@ -322,11 +335,12 @@ export function InspectorSidebar({
   const sections = groupStyles(decls);
   const cssText = decls.map(({ prop, value }) => `${prop}: ${value};`).join('\n');
   const boxModel = extractBoxModel(rootShape.html, selectedShapeId, node.width, node.height);
+  const textContent = node.type === 'text' ? extractText(rootShape.html, selectedShapeId) : null;
 
-  const handleCopy = () => {
-    void navigator.clipboard.writeText(cssText).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleCopy = (kind: 'css' | 'text', value: string) => {
+    void navigator.clipboard.writeText(value).then(() => {
+      setCopied(kind);
+      setTimeout(() => setCopied(null), 2000);
     });
   };
 
@@ -347,6 +361,27 @@ export function InspectorSidebar({
       <div className="flex min-h-0 flex-1 flex-col overflow-auto">
         <BoxModelViz model={boxModel} />
 
+        {textContent !== null && (
+          <div className="border-t border-gray-100 px-4 pt-3 pb-4">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                Text
+              </span>
+              <button
+                onClick={() => handleCopy('text', textContent)}
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                title="Copy text"
+              >
+                {copied === 'text' ? <Check size={11} /> : <Copy size={11} />}
+                <span>{copied === 'text' ? 'Copied!' : 'Copy'}</span>
+              </button>
+            </div>
+            <p className="max-h-40 overflow-auto rounded-md bg-gray-50 px-3 py-2 font-mono text-xs break-words whitespace-pre-wrap text-gray-800">
+              {textContent || <span className="text-gray-400">Empty</span>}
+            </p>
+          </div>
+        )}
+
         <div className="border-t border-gray-100">
           <div className="flex items-center justify-between px-4 pt-3 pb-2">
             <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
@@ -354,12 +389,12 @@ export function InspectorSidebar({
             </span>
             {decls.length > 0 && (
               <button
-                onClick={handleCopy}
+                onClick={() => handleCopy('css', cssText)}
                 className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
                 title="Copy all styles"
               >
-                {copied ? <Check size={11} /> : <Copy size={11} />}
-                <span>{copied ? 'Copied!' : 'Copy'}</span>
+                {copied === 'css' ? <Check size={11} /> : <Copy size={11} />}
+                <span>{copied === 'css' ? 'Copied!' : 'Copy'}</span>
               </button>
             )}
           </div>

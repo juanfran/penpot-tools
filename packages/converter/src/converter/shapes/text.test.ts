@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { textLeafToStyles, textLeafColorStyle, renderParagraph, renderText } from './text';
+import { renderFrame } from './frame';
 import type {
   TextLeaf,
   ParagraphNode,
   TextShape,
+  FrameShape,
+  Shape,
   Typography,
   Uuid,
   HexColor,
@@ -261,7 +264,208 @@ describe('renderText', () => {
     ).toContain('white-space: nowrap;');
   });
 
+  it('uses width: 100% inside flex layout (fill-width text does not overflow)', () => {
+    const html = renderText(makeTextShape(), { ...ctx, _parentIsLayout: true });
+    expect(html).toContain('width: 100%');
+    expect(html).not.toContain('width: 200px');
+  });
+
+  it('uses height: 100% inside flex layout', () => {
+    const html = renderText(makeTextShape(), { ...ctx, _parentIsLayout: true });
+    expect(html).toContain('height: 100%');
+    expect(html).not.toContain('height: 50px');
+  });
+
+  it('uses explicit px width inside flex layout when auto-width sizing', () => {
+    const html = renderText(makeTextShape(), {
+      ...ctx,
+      _parentIsLayout: true,
+      _parentIsLayoutAutoW: true,
+    });
+    expect(html).toContain('width: 200px');
+    expect(html).not.toContain('width: 100%');
+  });
+
   it('has no class attribute', () => {
     expect(renderText(makeTextShape(), ctx)).not.toContain('class=');
+  });
+
+  it('applies flex column + justify-content center for content.verticalAlign center', () => {
+    const html = renderText(
+      makeTextShape({
+        content: {
+          type: 'root',
+          verticalAlign: 'center',
+          children: [
+            {
+              type: 'paragraph-set',
+              children: [{ type: 'paragraph', children: [{ text: 'Hello world' }] }],
+            },
+          ],
+        },
+      }),
+      ctx,
+    );
+    expect(html).toContain('display: flex;');
+    expect(html).toContain('flex-direction: column;');
+    expect(html).toContain('justify-content: center;');
+  });
+
+  it('applies flex column + justify-content flex-end for content.verticalAlign bottom', () => {
+    const html = renderText(
+      makeTextShape({
+        content: {
+          type: 'root',
+          verticalAlign: 'bottom',
+          children: [
+            {
+              type: 'paragraph-set',
+              children: [{ type: 'paragraph', children: [{ text: 'Hello world' }] }],
+            },
+          ],
+        },
+      }),
+      ctx,
+    );
+    expect(html).toContain('display: flex;');
+    expect(html).toContain('flex-direction: column;');
+    expect(html).toContain('justify-content: flex-end;');
+  });
+
+  it('does not apply flex styles for content.verticalAlign top', () => {
+    const html = renderText(
+      makeTextShape({
+        content: {
+          type: 'root',
+          verticalAlign: 'top',
+          children: [
+            {
+              type: 'paragraph-set',
+              children: [{ type: 'paragraph', children: [{ text: 'Hello world' }] }],
+            },
+          ],
+        },
+      }),
+      ctx,
+    );
+    expect(html).not.toContain('justify-content:');
+  });
+
+  it('does not apply flex styles when verticalAlign is absent', () => {
+    const html = renderText(makeTextShape(), ctx);
+    expect(html).not.toContain('justify-content:');
+  });
+});
+
+describe('renderFrame with flex row and fill-width text child', () => {
+  const makeId = (n: number) => `00000000-0000-0000-0000-00000000000${n}` as Uuid;
+
+  const iconFrame: FrameShape = {
+    id: makeId(2),
+    name: 'Icon',
+    type: 'frame',
+    x: 10,
+    y: 10,
+    width: 20,
+    height: 20,
+    selrect: { x: 10, y: 10, width: 20, height: 20 },
+    points: [],
+    transform: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+    transformInverse: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+    parentId: makeId(1),
+    frameId: makeId(1),
+    shapes: [],
+    fills: [],
+    strokes: [],
+  };
+
+  const fillTextShape: TextShape = {
+    id: makeId(3),
+    name: 'Label',
+    type: 'text',
+    x: 38,
+    y: 13,
+    width: 200,
+    height: 14,
+    selrect: { x: 38, y: 13, width: 200, height: 14 },
+    points: [],
+    transform: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+    transformInverse: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+    parentId: makeId(1),
+    frameId: makeId(1),
+    layoutItemHSizing: 'fill',
+    layoutItemVSizing: 'fix',
+    content: {
+      type: 'root',
+      children: [
+        {
+          type: 'paragraph-set',
+          children: [{ type: 'paragraph', children: [{ text: 'Sample label' }] }],
+        },
+      ],
+    },
+  };
+
+  const flexParent: FrameShape = {
+    id: makeId(1),
+    name: 'Row',
+    type: 'frame',
+    x: 0,
+    y: 0,
+    width: 300,
+    height: 40,
+    selrect: { x: 0, y: 0, width: 300, height: 40 },
+    points: [],
+    transform: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+    transformInverse: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+    parentId: makeId(1),
+    frameId: makeId(1),
+    layout: 'flex' as unknown as undefined,
+    layoutFlexDir: 'row',
+    layoutAlignItems: 'center',
+    layoutGap: { rowGap: 8, columnGap: 8 } as unknown as undefined,
+    shapes: [makeId(2), makeId(3)],
+    fills: [],
+    strokes: [],
+  };
+
+  const objects: Record<string, Shape> = {
+    [makeId(1)]: flexParent,
+    [makeId(2)]: iconFrame,
+    [makeId(3)]: fillTextShape,
+  };
+
+  it('fill-width text child renders width: 100% not hardcoded px', () => {
+    const html = renderFrame(flexParent, [iconFrame, fillTextShape], objects, ctx);
+    const textIdx = html.indexOf(`data-id="${makeId(3)}"`);
+    const styleStart = html.indexOf('style=', textIdx);
+    const styleSnippet = html.slice(styleStart, styleStart + 60);
+    expect(styleSnippet).toContain('width: 100%');
+    expect(html).not.toContain('width: 200px');
+  });
+
+  it('fill-width text wrapper gets flex: 1', () => {
+    const html = renderFrame(flexParent, [iconFrame, fillTextShape], objects, ctx);
+    expect(html).toContain('flex: 1');
+  });
+
+  it('absolute-positioned fill-sized text child keeps explicit px (wrapper has no flex sizing)', () => {
+    const absText: TextShape = {
+      ...fillTextShape,
+      id: makeId(4),
+      width: 58,
+      height: 58,
+      layoutItemHSizing: 'fill',
+      layoutItemVSizing: 'fill',
+      layoutItemAbsolute: true,
+    } as TextShape;
+    const parent = { ...flexParent, shapes: [makeId(4)] };
+    const objs: Record<string, Shape> = { [makeId(1)]: parent, [makeId(4)]: absText };
+    const html = renderFrame(parent, [absText], objs, ctx);
+    const textIdx = html.indexOf(`data-id="${makeId(4)}"`);
+    const styleStart = html.indexOf('style=', textIdx);
+    const styleSnippet = html.slice(styleStart, styleStart + 80);
+    expect(styleSnippet).toContain('width: 58px');
+    expect(styleSnippet).toContain('height: 58px');
   });
 });

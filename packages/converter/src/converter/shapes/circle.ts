@@ -22,5 +22,9 @@ export function renderCircle(
 
   const style = mergeStyles(posStyle, base, fills, stroke, 'border-radius: 50%;');
 
-  return tag('div', { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined }, '');
+  return tag(
+    'div',
+    { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined },
+    '',
+  );
 }

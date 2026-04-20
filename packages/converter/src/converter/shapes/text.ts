@@ -123,11 +123,17 @@ export function renderText(shape: TextShape, ctx: ConverterContext): string {
 
   const noWrapStyle = shape.growType === 'auto-width' ? 'white-space: nowrap;' : '';
 
-  // When inside a flex/grid layout, posStyle already has width/height (100% or px).
-  // In that case use the explicit sizeStyle instead of posStyle to preserve the text shape's own dimensions.
+  const verticalAlign = shape.content?.verticalAlign;
+  const verticalAlignStyle =
+    verticalAlign === 'center'
+      ? 'display: flex; flex-direction: column; justify-content: center;'
+      : verticalAlign === 'bottom'
+        ? 'display: flex; flex-direction: column; justify-content: flex-end;'
+        : '';
+
   const style = ctx._parentIsLayout
-    ? mergeStyles(sizeStyle, noWrapStyle, base)
-    : mergeStyles(posStyle, sizeStyle, noWrapStyle, base);
+    ? mergeStyles(posStyle, noWrapStyle, verticalAlignStyle, base)
+    : mergeStyles(posStyle, sizeStyle, noWrapStyle, verticalAlignStyle, base);
 
   const fillTokenName = shape.appliedTokens?.fill;
 
@@ -139,5 +145,9 @@ export function renderText(shape: TextShape, ctx: ConverterContext): string {
       .join('');
   }
 
-  return tag('div', { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined }, inner);
+  return tag(
+    'div',
+    { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined },
+    inner,
+  );
 }
