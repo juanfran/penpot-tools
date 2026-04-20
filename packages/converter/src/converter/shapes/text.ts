@@ -23,7 +23,10 @@ export function textLeafToStyles(
 
   if (resolved.fontSize) parts.push(`font-size: ${px(Number(resolved.fontSize))};`);
   if (resolved.fontWeight) parts.push(`font-weight: ${resolved.fontWeight};`);
-  if (resolved.fontFamily) parts.push(`font-family: '${resolved.fontFamily}';`);
+  if (resolved.fontFamily) {
+    const fontFamily = resolved.fontFamily.replace(/^["']|["']$/g, '');
+    parts.push(`font-family: '${fontFamily}';`);
+  }
   if (resolved.lineHeight) parts.push(`line-height: ${resolved.lineHeight};`);
   if (resolved.textAlign) parts.push(`text-align: ${resolved.textAlign};`);
   if (resolved.fontStyle === 'italic') parts.push('font-style: italic;');
