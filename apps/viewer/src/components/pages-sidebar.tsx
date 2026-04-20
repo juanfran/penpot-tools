@@ -60,35 +60,44 @@ function ShapeTreeItem({
   depth,
   selectedShapeId,
   ancestorIds,
+  onShapeSelect,
 }: {
   node: ShapeTreeNode;
   depth: number;
   selectedShapeId?: string;
   ancestorIds: Set<string>;
+  onShapeSelect: (id: string) => void;
 }) {
   const isSelected = node.id === selectedShapeId;
   const isAncestor = ancestorIds.has(node.id);
   const [open, setOpen] = useState(false);
   const hasChildren = node.children.length > 0;
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
 
   const isOpen = open || isAncestor;
 
   useEffect(() => {
-    if (isSelected && btnRef.current) {
-      btnRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (isSelected && rowRef.current) {
+      rowRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }, [isSelected]);
 
   return (
     <li>
-      <button
-        ref={btnRef}
-        className={`flex w-full items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-gray-100 ${isSelected ? 'bg-blue-100 text-blue-900' : ''}`}
+      <div
+        ref={rowRef}
+        className={`flex w-full items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-gray-100 cursor-pointer ${isSelected ? 'bg-blue-100 text-blue-900' : ''}`}
         style={{ paddingLeft: `${4 + depth * 12}px` }}
-        onClick={() => hasChildren && setOpen((o) => !o)}
+        onClick={() => onShapeSelect(node.id)}
       >
-        <span className="flex w-3 shrink-0 items-center justify-center">
+        <span
+          className="flex w-3 shrink-0 items-center justify-center"
+          onClick={(e) => {
+            if (!hasChildren) return;
+            e.stopPropagation();
+            setOpen((o) => !o);
+          }}
+        >
           {hasChildren && (
             <ChevronRight
               size={10}
@@ -98,7 +107,7 @@ function ShapeTreeItem({
         </span>
         {shapeIcon(node.type)}
         <span className="truncate text-sm text-gray-700">{node.name}</span>
-      </button>
+      </div>
       {isOpen && hasChildren && (
         <ul>
           {node.children.map((child) => (
@@ -108,6 +117,7 @@ function ShapeTreeItem({
               depth={depth + 1}
               selectedShapeId={selectedShapeId}
               ancestorIds={ancestorIds}
+              onShapeSelect={onShapeSelect}
             />
           ))}
         </ul>
@@ -120,10 +130,12 @@ function ShapeTree({
   fileId,
   pageId,
   selectedShapeId,
+  onShapeSelect,
 }: {
   fileId: string;
   pageId: string;
   selectedShapeId?: string;
+  onShapeSelect: (id: string) => void;
 }) {
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
 
@@ -141,6 +153,7 @@ function ShapeTree({
           depth={0}
           selectedShapeId={selectedShapeId}
           ancestorIds={ancestorIds}
+          onShapeSelect={onShapeSelect}
         />
       ))}
     </ul>
@@ -158,6 +171,7 @@ interface PagesSidebarProps {
   };
   teamId?: string;
   selectedShapeId?: string;
+  onShapeSelect: (id: string) => void;
 }
 
 export function PagesSidebar({
@@ -166,6 +180,7 @@ export function PagesSidebar({
   fileSummary,
   teamId,
   selectedShapeId,
+  onShapeSelect,
 }: PagesSidebarProps) {
   return (
     <aside className="flex w-84 flex-col border-r border-gray-200">
@@ -191,7 +206,7 @@ export function PagesSidebar({
           Layers
         </p>
         <div className="min-h-0 flex-1 overflow-auto">
-          <ShapeTree fileId={fileId} pageId={pageId} selectedShapeId={selectedShapeId} />
+          <ShapeTree fileId={fileId} pageId={pageId} selectedShapeId={selectedShapeId} onShapeSelect={onShapeSelect} />
         </div>
       </div>
     </aside>

@@ -71,10 +71,12 @@ function SidebarWrapper({
   fileId,
   pageId,
   selectedShapeId,
+  onShapeSelect,
 }: {
   fileId: string;
   pageId: string;
   selectedShapeId: string | undefined;
+  onShapeSelect: (id: string) => void;
 }) {
   const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
   const { teamId } = Route.useSearch();
@@ -86,6 +88,7 @@ function SidebarWrapper({
       fileSummary={file}
       teamId={teamId}
       selectedShapeId={selectedShapeId}
+      onShapeSelect={onShapeSelect}
     />
   );
 }
@@ -102,7 +105,7 @@ function RouteComponent() {
         </Suspense>
         <div className="flex flex-1 overflow-hidden">
           <Suspense fallback={<aside className="w-84 border-r border-gray-200" />}>
-            <SidebarWrapper fileId={fileId} pageId={pageId} selectedShapeId={selectedShapeId} />
+            <SidebarWrapper fileId={fileId} pageId={pageId} selectedShapeId={selectedShapeId} onShapeSelect={setSelectedShapeId} />
           </Suspense>
           <main className="relative flex-1 overflow-auto">
             <Suspense fallback={<div>Loading...</div>}>
