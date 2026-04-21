@@ -2,7 +2,7 @@ import { getPageShapesOptions } from '#/components/render';
 import { type ShapeTreeNode } from '#/lib/server/penpot-api';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Check, Copy } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Circle, Frame, GitMerge, Image, Layers, Minus, Square, Star, Type } from 'lucide-react';
 
 function shapeIcon(type: string) {
@@ -131,6 +131,82 @@ interface BoxModel {
   border: [number, number, number, number];
 }
 
+interface Margins {
+  top: number | null;
+  right: number | null;
+  bottom: number | null;
+  left: number | null;
+}
+
+const EMPTY_MARGINS: Margins = { top: null, right: null, bottom: null, left: null };
+
+function nearestDataIdAncestor(el: Element): Element | null {
+  let p: Element | null = el.parentElement;
+  while (p) {
+    if (p.hasAttribute('data-id')) return p;
+    p = p.parentElement;
+  }
+  return null;
+}
+
+// Canvas applies a CSS transform for zoom; read its scale to convert screen
+// pixels back to design pixels.
+function readCanvasScale(): number {
+  const el = document.querySelector<HTMLElement>('.react-transform-component');
+  if (!el) return 1;
+  const t = getComputedStyle(el).transform;
+  if (!t || t === 'none') return 1;
+  const m = new DOMMatrix(t);
+  return m.a || 1;
+}
+
+// For the selected shape, find the closest shape-sibling gap on each side.
+// "Shape siblings" share the same nearest-data-id ancestor, treating wrapper
+// divs without data-id as transparent.
+function computeMargins(selectedShapeId: string): Margins {
+  if (typeof document === 'undefined') return EMPTY_MARGINS;
+
+  const selected = document.querySelector<HTMLElement>(
+    `[data-id="${CSS.escape(selectedShapeId)}"]`,
+  );
+  if (!selected) return EMPTY_MARGINS;
+
+  const scale = readCanvasScale();
+  if (!isFinite(scale) || scale === 0) return EMPTY_MARGINS;
+
+  const parent = nearestDataIdAncestor(selected);
+  const candidates = Array.from(document.querySelectorAll<HTMLElement>('[data-id]'));
+  const siblings = candidates.filter((c) => c !== selected && nearestDataIdAncestor(c) === parent);
+
+  if (siblings.length === 0) return EMPTY_MARGINS;
+
+  const selRect = selected.getBoundingClientRect();
+  const out: Margins = { top: null, right: null, bottom: null, left: null };
+  const EPS = 0.5;
+
+  for (const sib of siblings) {
+    const r = sib.getBoundingClientRect();
+    if (r.right <= selRect.left + EPS) {
+      const gap = (selRect.left - r.right) / scale;
+      if (out.left === null || gap < out.left) out.left = gap;
+    }
+    if (r.left >= selRect.right - EPS) {
+      const gap = (r.left - selRect.right) / scale;
+      if (out.right === null || gap < out.right) out.right = gap;
+    }
+    if (r.bottom <= selRect.top + EPS) {
+      const gap = (selRect.top - r.bottom) / scale;
+      if (out.top === null || gap < out.top) out.top = gap;
+    }
+    if (r.top >= selRect.bottom - EPS) {
+      const gap = (r.top - selRect.bottom) / scale;
+      if (out.bottom === null || gap < out.bottom) out.bottom = gap;
+    }
+  }
+
+  return out;
+}
+
 function extractBoxModel(
   html: string,
   shapeId: string,
@@ -187,7 +263,12 @@ function fmt(n: number): string {
   return n === 0 ? '-' : String(Math.round(n * 10) / 10);
 }
 
-function BoxModelViz({ model }: { model: BoxModel }) {
+function fmtMargin(n: number | null): string {
+  if (n === null) return '-';
+  return String(Math.round(n * 10) / 10);
+}
+
+function BoxModelViz({ model, margins }: { model: BoxModel; margins: Margins }) {
   const [bt, br, bb, bl] = model.border;
   const [pt, pr, pb, pl] = model.padding;
 
@@ -198,36 +279,64 @@ function BoxModelViz({ model }: { model: BoxModel }) {
       <p className="mb-2 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
         Box model
       </p>
-      {/* border — yellow */}
-      <div className="relative rounded" style={{ background: '#fce28a', padding: '18px' }}>
-        <span className="absolute top-0.5 left-1 text-[9px] font-medium text-yellow-700 opacity-70 select-none">
-          border
+      {/* margin — peach */}
+      <div className="relative rounded" style={{ background: '#f7cb99', padding: '18px' }}>
+        <span className="absolute top-0.5 left-1 text-[9px] font-medium text-orange-800 opacity-70 select-none">
+          margin
         </span>
-        <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-yellow-900`}>{fmt(bt)}</span>
-        <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-yellow-900`}>
-          {fmt(bb)}
+        <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-orange-900`}>
+          {fmtMargin(margins.top)}
         </span>
-        <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-yellow-900`}>{fmt(bl)}</span>
-        <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-yellow-900`}>{fmt(br)}</span>
-        {/* padding — green */}
-        <div className="relative rounded" style={{ background: '#b5d99c', padding: '18px' }}>
-          <span className="absolute top-0.5 left-1 text-[9px] font-medium text-green-800 opacity-70 select-none">
-            padding
+        <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-orange-900`}>
+          {fmtMargin(margins.bottom)}
+        </span>
+        <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-orange-900`}>
+          {fmtMargin(margins.left)}
+        </span>
+        <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-orange-900`}>
+          {fmtMargin(margins.right)}
+        </span>
+        {/* border — yellow */}
+        <div className="relative rounded" style={{ background: '#fce28a', padding: '18px' }}>
+          <span className="absolute top-0.5 left-1 text-[9px] font-medium text-yellow-700 opacity-70 select-none">
+            border
           </span>
-          <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-green-900`}>{fmt(pt)}</span>
-          <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-green-900`}>
-            {fmt(pb)}
+          <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-yellow-900`}>
+            {fmt(bt)}
           </span>
-          <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-green-900`}>{fmt(pl)}</span>
-          <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-green-900`}>
-            {fmt(pr)}
+          <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-yellow-900`}>
+            {fmt(bb)}
           </span>
-          {/* content — blue */}
-          <div
-            className="flex items-center justify-center rounded font-mono text-xs font-semibold text-blue-900"
-            style={{ background: '#9dc4e8', padding: '10px 4px' }}
-          >
-            {fmt(model.width)} × {fmt(model.height)}
+          <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-yellow-900`}>
+            {fmt(bl)}
+          </span>
+          <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-yellow-900`}>
+            {fmt(br)}
+          </span>
+          {/* padding — green */}
+          <div className="relative rounded" style={{ background: '#b5d99c', padding: '18px' }}>
+            <span className="absolute top-0.5 left-1 text-[9px] font-medium text-green-800 opacity-70 select-none">
+              padding
+            </span>
+            <span className={`${lbl} top-1 left-1/2 -translate-x-1/2 text-green-900`}>
+              {fmt(pt)}
+            </span>
+            <span className={`${lbl} bottom-1 left-1/2 -translate-x-1/2 text-green-900`}>
+              {fmt(pb)}
+            </span>
+            <span className={`${lbl} top-1/2 left-1 -translate-y-1/2 text-green-900`}>
+              {fmt(pl)}
+            </span>
+            <span className={`${lbl} top-1/2 right-1 -translate-y-1/2 text-green-900`}>
+              {fmt(pr)}
+            </span>
+            {/* content — blue */}
+            <div
+              className="flex items-center justify-center rounded font-mono text-xs font-semibold text-blue-900"
+              style={{ background: '#9dc4e8', padding: '10px 4px' }}
+            >
+              {fmt(model.width)} × {fmt(model.height)}
+            </div>
           </div>
         </div>
       </div>
@@ -324,10 +433,17 @@ export function InspectorSidebar({
 }) {
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
   const [copied, setCopied] = useState<'css' | 'text' | null>(null);
+  const [margins, setMargins] = useState<Margins>(EMPTY_MARGINS);
 
   const node = findNodeById(data.tree, selectedShapeId);
   const rootNode = findRootContaining(data.tree, selectedShapeId);
   const rootShape = data.shapes.find((s) => s.id === rootNode?.id);
+
+  useEffect(() => {
+    // Wait one frame so the selected shape and its siblings are laid out.
+    const raf = requestAnimationFrame(() => setMargins(computeMargins(selectedShapeId)));
+    return () => cancelAnimationFrame(raf);
+  }, [selectedShapeId, data]);
 
   if (!node || !rootShape) return null;
 
@@ -359,7 +475,7 @@ export function InspectorSidebar({
 
       {/* Styles */}
       <div className="flex min-h-0 flex-1 flex-col overflow-auto">
-        <BoxModelViz model={boxModel} />
+        <BoxModelViz model={boxModel} margins={margins} />
 
         {textContent !== null && (
           <div className="border-t border-gray-100 px-4 pt-3 pb-4">
