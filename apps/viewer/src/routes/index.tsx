@@ -38,20 +38,15 @@ function App() {
     enabled: !!selectedTeamId,
   });
 
-  function handleTeamChange(value: string | null) {
-    navigate({
-      search: { teamId: value || undefined },
-      replace: true,
-    });
-  }
-
   return (
     <main className="mx-auto max-w-4xl px-4 pt-14 pb-8">
       <h1 className="text-foreground mb-6 text-2xl font-semibold">Penpot Files</h1>
 
       <div className="mb-6 w-2xs space-y-4">
         <div>
-          <label className="text-foreground mb-1.5 block text-sm font-medium">Team</label>
+          <label htmlFor="team-select" className="text-foreground mb-1.5 block text-sm font-medium">
+            Team
+          </label>
           {teamsQuery.isLoading && (
             <p className="text-muted-foreground text-sm">Loading teams...</p>
           )}
@@ -61,8 +56,13 @@ function App() {
             </p>
           )}
           {teamsQuery.data && (
-            <Select value={selectedTeamId ?? ''} onValueChange={handleTeamChange}>
-              <SelectTrigger className="w-full">
+            <Select
+              value={selectedTeamId ?? ''}
+              onValueChange={(value) =>
+                navigate({ search: { teamId: value || undefined }, replace: true })
+              }
+            >
+              <SelectTrigger id="team-select" className="w-full">
                 <SelectValue placeholder="Select a team">
                   {selectedTeamId
                     ? teamsQuery.data?.find((t: Team) => t.id === selectedTeamId)?.name

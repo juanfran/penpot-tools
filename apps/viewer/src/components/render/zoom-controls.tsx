@@ -6,8 +6,11 @@ export const ZoomControls = () => {
 
   return (
     <div
+      role="toolbar"
+      aria-label="Zoom controls"
       className="absolute right-4 bottom-4 z-50 flex items-center gap-1 rounded-xl border border-white/10 bg-black/60 p-1 shadow-xl backdrop-blur-sm"
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
     >
       <button
         onClick={() => zoomIn()}

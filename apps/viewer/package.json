@@ -10,7 +10,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "react-doctor": "npx -y react-doctor@latest . --verbose"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.0",

@@ -1,4 +1,12 @@
-import { useRef, useState, useEffect, useImperativeHandle, useCallback, useMemo } from 'react';
+import {
+  useRef,
+  useState,
+  useEffect,
+  useImperativeHandle,
+  useCallback,
+  useMemo,
+  useReducer,
+} from 'react';
 import { Debouncer } from '@tanstack/pacer';
 import { getPageShapesFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
@@ -9,11 +17,11 @@ import {
   type ReactZoomPanPinchRef,
 } from 'react-zoom-pan-pinch';
 
-import { deepestAt, findNodeById, findParent, topChildAt } from './tree-utils';
+import { findNodeById } from './tree-utils';
 import { loadTransform, saveTransform, type SavedTransform } from './transform-storage';
 import { ZoomControls } from './zoom-controls';
 import { ShapeNode } from './shape-node';
-import { DistanceLines } from './distance-lines';
+import { SelectionHighlights, ShapeHitZones } from './shape-overlays';
 import { useInspectorPrefs } from '#/components/inspector-sidebar/prefs-store';
 
 export type RenderHandle = {
@@ -47,7 +55,10 @@ export const Render = ({
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const justPannedRef = useRef(false);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [isSpacePressed, dispatchSpace] = useReducer(
+    (_state: boolean, next: boolean) => next,
+    false,
+  );
   const [isPanning, setIsPanning] = useState(false);
   const [hoveredShapeId, setHoveredShapeId] = useState<string | undefined>(undefined);
   const unitFormat = useInspectorPrefs((s) => s.unitFormat);
@@ -73,13 +84,13 @@ export const Render = ({
       if (e.code !== 'Space' || e.repeat) return;
       if (isTextInput(e.target)) return;
       e.preventDefault();
-      setIsSpacePressed(true);
+      dispatchSpace(true);
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code !== 'Space') return;
-      setIsSpacePressed(false);
+      dispatchSpace(false);
     };
-    const onBlur = () => setIsSpacePressed(false);
+    const onBlur = () => dispatchSpace(false);
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', onBlur);
@@ -151,6 +162,8 @@ export const Render = ({
 
       <div
         ref={containerRef}
+        role="application"
+        aria-label="Design canvas"
         className={`relative h-full w-full bg-[#e8e9ea] contain-strict ${
           isSpacePressed ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
         }`}
@@ -161,6 +174,9 @@ export const Render = ({
           }
           if (isSpacePressed) return;
           onShapeSelect?.(undefined);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') onShapeSelect?.(undefined);
         }}
       >
         <TransformWrapper
@@ -203,136 +219,24 @@ export const Render = ({
                 </Virtualize>
               ))}
               {onShapeSelect && !isSpacePressed && (
-                <>
-                  <div
-                    className="pointer-events-auto absolute inset-0"
-                    onClick={() => onShapeSelect(undefined)}
-                    onMouseMove={() => {
-                      if (hoveredShapeId !== undefined) setHoveredShapeId(undefined);
-                    }}
-                  />
-                  {data.shapes.map((shape) => (
-                    <div
-                      key={`sel-${shape.id}`}
-                      className="pointer-events-auto absolute cursor-pointer"
-                      style={{
-                        left: shape.x,
-                        top: shape.y,
-                        width: shape.width,
-                        height: shape.height,
-                        zIndex: 1,
-                      }}
-                      onMouseMove={(e) => {
-                        if (!selectedShapeId) {
-                          if (hoveredShapeId !== undefined) setHoveredShapeId(undefined);
-                          return;
-                        }
-                        const cx = shape.x + e.nativeEvent.offsetX;
-                        const cy = shape.y + e.nativeEvent.offsetY;
-                        const hit = deepestAt(data.tree, cx, cy);
-                        const id = hit?.id ?? shape.id;
-                        const next = id === selectedShapeId ? undefined : id;
-                        if (next !== hoveredShapeId) setHoveredShapeId(next);
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (e.ctrlKey) {
-                          const cx = shape.x + e.nativeEvent.offsetX;
-                          const cy = shape.y + e.nativeEvent.offsetY;
-                          const hit = deepestAt(data.tree, cx, cy);
-                          onShapeSelect(hit?.id ?? shape.id);
-                        } else {
-                          const cx = shape.x + e.nativeEvent.offsetX;
-                          const cy = shape.y + e.nativeEvent.offsetY;
-                          const topNode = findNodeById(data.tree, shape.id);
-                          const alreadyInside =
-                            topNode && selectedShapeId
-                              ? findNodeById([topNode], selectedShapeId) !== null
-                              : false;
-                          if (!alreadyInside) {
-                            onShapeSelect(shape.id);
-                          } else if (selectedShapeId) {
-                            // Walk up from current selection to find something at click pos
-                            let currentId: string | null = selectedShapeId;
-                            while (currentId) {
-                              const parent = findParent(data.tree, currentId);
-                              const pool = parent ? parent.children : data.tree;
-                              const hit = topChildAt(pool, cx, cy);
-                              if (hit) {
-                                onShapeSelect(hit.id);
-                                return;
-                              }
-                              currentId = parent?.id ?? null;
-                            }
-                          }
-                        }
-                      }}
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        const cx = shape.x + e.nativeEvent.offsetX;
-                        const cy = shape.y + e.nativeEvent.offsetY;
-                        const topNode = findNodeById(data.tree, shape.id);
-                        if (!topNode) return;
-                        const parentNode = selectedShapeId
-                          ? (findNodeById([topNode], selectedShapeId) ?? topNode)
-                          : topNode;
-                        const child = topChildAt(parentNode.children, cx, cy);
-                        if (child) onShapeSelect(child.id);
-                      }}
-                    />
-                  ))}
-                </>
+                <ShapeHitZones
+                  shapes={data.shapes}
+                  tree={data.tree}
+                  selectedShapeId={selectedShapeId}
+                  hoveredShapeId={hoveredShapeId}
+                  onShapeSelect={onShapeSelect}
+                  setHoveredShapeId={setHoveredShapeId}
+                />
               )}
-              {onShapeSelect &&
-                (() => {
-                  const node = selectedShapeId ? findNodeById(data.tree, selectedShapeId) : null;
-                  if (!node) return null;
-                  return (
-                    <div
-                      className="pointer-events-none absolute"
-                      style={{
-                        left: node.x,
-                        top: node.y,
-                        width: node.width,
-                        height: node.height,
-                        zIndex: 2,
-                        outline: '2px solid #2196f3',
-                        outlineOffset: '1px',
-                      }}
-                    />
-                  );
-                })()}
-              {onShapeSelect &&
-                !isSpacePressed &&
-                selectedShapeId &&
-                hoveredShapeId &&
-                hoveredShapeId !== selectedShapeId &&
-                (() => {
-                  const selectedNode = findNodeById(data.tree, selectedShapeId);
-                  const hoveredNode = findNodeById(data.tree, hoveredShapeId);
-                  if (!selectedNode || !hoveredNode) return null;
-                  return (
-                    <>
-                      <div
-                        className="pointer-events-none absolute"
-                        style={{
-                          left: hoveredNode.x,
-                          top: hoveredNode.y,
-                          width: hoveredNode.width,
-                          height: hoveredNode.height,
-                          zIndex: 3,
-                          outline: '2px solid #f59e0b',
-                          outlineOffset: '1px',
-                        }}
-                      />
-                      <DistanceLines
-                        selected={selectedNode}
-                        hovered={hoveredNode}
-                        unit={unitFormat}
-                      />
-                    </>
-                  );
-                })()}
+              {onShapeSelect && (
+                <SelectionHighlights
+                  tree={data.tree}
+                  selectedShapeId={selectedShapeId}
+                  hoveredShapeId={hoveredShapeId}
+                  unitFormat={unitFormat}
+                  showHover={!isSpacePressed}
+                />
+              )}
             </div>
           </TransformComponent>
         </TransformWrapper>

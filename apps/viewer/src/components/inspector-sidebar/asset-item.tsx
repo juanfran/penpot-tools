@@ -14,9 +14,10 @@ export function AssetItem({ asset }: { asset: Asset }) {
       } else if (asset.kind === 'svg' && asset.svg) {
         downloadSvgAsset(asset.svg, asset.name);
       }
-    } finally {
-      setBusy(false);
+    } catch (error) {
+      console.error('Failed to download asset', error);
     }
+    setBusy(false);
   };
 
   return (
@@ -27,6 +28,7 @@ export function AssetItem({ asset }: { asset: Asset }) {
         ) : (
           <div
             className="flex h-full w-full items-center justify-center [&>svg]:max-h-full [&>svg]:max-w-full"
+            // react-doctor-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{ __html: asset.svg ?? '' }}
           />
         )}

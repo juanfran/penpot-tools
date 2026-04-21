@@ -147,7 +147,12 @@ function RouteComponent() {
           </main>
           {selectedShapeId && (
             <Suspense fallback={<aside className="w-80 border-l border-gray-200" />}>
-              <InspectorSidebar fileId={fileId} pageId={pageId} selectedShapeId={selectedShapeId} />
+              <InspectorSidebar
+                key={selectedShapeId}
+                fileId={fileId}
+                pageId={pageId}
+                selectedShapeId={selectedShapeId}
+              />
             </Suspense>
           )}
         </div>

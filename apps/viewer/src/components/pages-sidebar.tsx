@@ -100,21 +100,24 @@ function ShapeTreeItem({
           style={{ paddingLeft: `${4 + depth * 12}px` }}
           onClick={() => onShapeSelect(node.id)}
         >
-          <span
-            className="flex w-3 shrink-0 items-center justify-center"
-            onClick={(e) => {
-              if (!hasChildren) return;
-              e.stopPropagation();
-              setOpen((o) => !o);
-            }}
-          >
-            {hasChildren && (
+          {hasChildren ? (
+            <button
+              type="button"
+              aria-label={isOpen ? 'Collapse' : 'Expand'}
+              className="flex w-3 shrink-0 items-center justify-center"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen((o) => !o);
+              }}
+            >
               <ChevronRight
                 size={10}
                 className={`text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}
               />
-            )}
-          </span>
+            </button>
+          ) : (
+            <span className="flex w-3 shrink-0 items-center justify-center" />
+          )}
           {shapeIcon(node.type)}
           <span className="truncate text-sm text-gray-700">{node.name}</span>
         </ContextMenuTrigger>

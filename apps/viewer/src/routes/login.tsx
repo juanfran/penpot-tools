@@ -20,7 +20,6 @@ function LoginPage() {
     },
     onSubmit: async ({ value }) => {
       await saveApiKeyFn({ data: { token: value.apiKey.trim() } });
-      navigate({ to: '/', search: { teamId: undefined } });
     },
   });
 
@@ -33,9 +32,12 @@ function LoginPage() {
         </div>
 
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            form.handleSubmit();
+            await form.handleSubmit();
+            if (form.state.isSubmitSuccessful) {
+              navigate({ to: '/', search: { teamId: undefined } });
+            }
           }}
           className="space-y-4"
         >

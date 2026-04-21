@@ -55,12 +55,6 @@ export function InspectorSidebar({
     return () => cancelAnimationFrame(raf);
   }, [selectedShapeId, data]);
 
-  // Collapse assets and drop cached list whenever the selected shape changes.
-  useEffect(() => {
-    setAssetsOpen(false);
-    setAssets([]);
-  }, [selectedShapeId]);
-
   const handleToggleAssets = () => {
     if (!assetsOpen) setAssets(collectAssetsFromDom(selectedShapeId, nodeIndex));
     setAssetsOpen((o) => !o);
@@ -165,8 +159,8 @@ export function InspectorSidebar({
                     {section.label}
                   </p>
                   <div className="rounded-md bg-gray-50 px-3 py-2 font-mono text-xs leading-relaxed">
-                    {section.decls.map((d, i) => (
-                      <StyleDecl key={i} prop={d.prop} value={d.value} />
+                    {section.decls.map((d) => (
+                      <StyleDecl key={d.prop} prop={d.prop} value={d.value} />
                     ))}
                   </div>
                 </div>
