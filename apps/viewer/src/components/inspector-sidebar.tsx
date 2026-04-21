@@ -1,8 +1,8 @@
 import { getPageShapesOptions } from '#/components/render';
 import { type ShapeTreeNode } from '#/lib/server/penpot-api';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Check, Copy } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Check, ChevronRight, Copy, Download } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Circle, Frame, GitMerge, Image, Layers, Minus, Square, Star, Type } from 'lucide-react';
 
 function shapeIcon(type: string) {
@@ -663,6 +663,204 @@ function StyleDecl({ prop, value }: { prop: string; value: string }) {
   );
 }
 
+// --- Assets (images + svg-raw) inside the selected shape ---
+
+interface Asset {
+  id: string;
+  name: string;
+  kind: 'image' | 'svg';
+  src?: string;
+  svg?: string;
+}
+
+function buildNodeIndex(
+  nodes: ShapeTreeNode[],
+  map: Map<string, ShapeTreeNode> = new Map(),
+): Map<string, ShapeTreeNode> {
+  for (const n of nodes) {
+    map.set(n.id, n);
+    buildNodeIndex(n.children, map);
+  }
+  return map;
+}
+
+const BG_URL_REGEX = /url\((['"]?)([^)'"]+)\1\)/g;
+
+// Reads assets directly from the live DOM subtree of the selected shape,
+// avoiding a full reparse of the root shape's HTML (which can be huge).
+//
+// Covers the four render paths from the converter:
+//   - <img data-type="image"> for image shapes
+//   - <div data-type="svg-raw"> wrapping raw SVG markup
+//   - <svg data-id="..."> for path/bool shapes (rendered as standalone SVGs)
+//   - any shape with an image fill renders as background-image: url(...)
+//     (rect/circle/frame/etc. — see converter/visual/fills.ts)
+function collectAssetsFromDom(
+  selectedShapeId: string,
+  nodeIndex: Map<string, ShapeTreeNode>,
+): Asset[] {
+  if (typeof document === 'undefined') return [];
+  const root = document.querySelector<HTMLElement>(`[data-id="${CSS.escape(selectedShapeId)}"]`);
+  if (!root) return [];
+
+  const out: Asset[] = [];
+  const seenSrcs = new Set<string>();
+  const seenSvgIds = new Set<string>();
+
+  const pushImage = (id: string, name: string, src: string, layerIdx: number) => {
+    if (seenSrcs.has(src)) return;
+    seenSrcs.add(src);
+    out.push({ id: layerIdx > 0 ? `${id}-bg-${layerIdx}` : id, name, kind: 'image', src });
+  };
+
+  const pushSvg = (id: string, name: string, svg: string) => {
+    if (seenSvgIds.has(id) || !svg) return;
+    seenSvgIds.add(id);
+    out.push({ id, name, kind: 'svg', svg });
+  };
+
+  // Primary: <img>, <div data-type="svg-raw">, and standalone <svg data-id>
+  const primaryEls: Element[] = [];
+  const rootType = root.getAttribute('data-type');
+  const rootIsSvg = root.tagName.toLowerCase() === 'svg';
+  if (rootType === 'image' || rootType === 'svg-raw' || rootIsSvg) primaryEls.push(root);
+  primaryEls.push(
+    ...Array.from(
+      root.querySelectorAll('[data-type="image"], [data-type="svg-raw"], svg[data-id]'),
+    ),
+  );
+
+  for (const el of primaryEls) {
+    const id = el.getAttribute('data-id');
+    if (!id) continue;
+    const name = nodeIndex.get(id)?.name ?? id;
+    const type = el.getAttribute('data-type');
+    const tagName = el.tagName.toLowerCase();
+    if (type === 'image' && tagName === 'img') {
+      const src = el.getAttribute('src');
+      if (src) pushImage(id, name, src, 0);
+    } else if (type === 'svg-raw') {
+      pushSvg(id, name, el.innerHTML.trim());
+    } else if (tagName === 'svg') {
+      // Skip SVGs nested inside a svg-raw wrapper (the wrapper already owns them)
+      if (el !== root && el.closest('[data-type="svg-raw"]')) continue;
+      pushSvg(id, name, el.outerHTML);
+    }
+  }
+
+  // Image fills rendered as background-image: url(...) on any shape type
+  const bgEls: HTMLElement[] = [];
+  if (root.hasAttribute('data-id') && root.style.backgroundImage) bgEls.push(root);
+  bgEls.push(
+    ...Array.from(root.querySelectorAll<HTMLElement>('[data-id][style*="background-image"]')),
+  );
+
+  for (const el of bgEls) {
+    const id = el.getAttribute('data-id');
+    if (!id) continue;
+    const name = nodeIndex.get(id)?.name ?? id;
+    const bg = el.style.backgroundImage;
+    if (!bg || bg === 'none') continue;
+    BG_URL_REGEX.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    let layerIdx = 0;
+    while ((m = BG_URL_REGEX.exec(bg)) !== null) {
+      const src = m[2];
+      // Skip intra-document references (mask/clipPath via url(#id))
+      if (!src || src.startsWith('#')) continue;
+      pushImage(id, name, src, layerIdx);
+      layerIdx++;
+    }
+  }
+
+  return out;
+}
+
+function sanitizeFilename(name: string): string {
+  const cleaned = name.replace(/[\\/:*?"<>|]/g, '_').trim();
+  return cleaned.slice(0, 200) || 'asset';
+}
+
+function triggerBlobDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function downloadImageAsset(src: string, baseName: string) {
+  try {
+    const res = await fetch(src);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const ext = (blob.type.split('/')[1] || 'png').split(';')[0];
+    triggerBlobDownload(blob, `${sanitizeFilename(baseName)}.${ext}`);
+  } catch {
+    // CORS or network failure — fall back to opening the asset in a new tab
+    window.open(src, '_blank', 'noopener');
+  }
+}
+
+function downloadSvgAsset(markup: string, baseName: string) {
+  const trimmed = markup.trim();
+  const hasSvgRoot = /^<svg[\s>]/i.test(trimmed);
+  const content = hasSvgRoot ? trimmed : `<svg xmlns="http://www.w3.org/2000/svg">${trimmed}</svg>`;
+  const blob = new Blob([content], { type: 'image/svg+xml' });
+  triggerBlobDownload(blob, `${sanitizeFilename(baseName)}.svg`);
+}
+
+function AssetItem({ asset }: { asset: Asset }) {
+  const [busy, setBusy] = useState(false);
+
+  const onDownload = async () => {
+    setBusy(true);
+    try {
+      if (asset.kind === 'image' && asset.src) {
+        await downloadImageAsset(asset.src, asset.name);
+      } else if (asset.kind === 'svg' && asset.svg) {
+        downloadSvgAsset(asset.svg, asset.name);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-gray-100 bg-gray-50 p-2">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded border border-gray-200 bg-white">
+        {asset.kind === 'image' && asset.src ? (
+          <img src={asset.src} alt="" className="max-h-full max-w-full object-contain" />
+        ) : (
+          <div
+            className="flex h-full w-full items-center justify-center [&>svg]:max-h-full [&>svg]:max-w-full"
+            dangerouslySetInnerHTML={{ __html: asset.svg ?? '' }}
+          />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-medium text-gray-800" title={asset.name}>
+          {asset.name}
+        </p>
+        <p className="text-[10px] tracking-wider text-gray-400 uppercase">
+          {asset.kind === 'image' ? 'Image' : 'SVG'}
+        </p>
+      </div>
+      <button
+        onClick={onDownload}
+        disabled={busy}
+        className="flex items-center rounded px-1.5 py-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:opacity-50"
+        title="Download"
+      >
+        <Download size={12} />
+      </button>
+    </div>
+  );
+}
+
 export function InspectorSidebar({
   fileId,
   pageId,
@@ -686,6 +884,10 @@ export function InspectorSidebar({
     'px',
   );
 
+  const nodeIndex = useMemo(() => buildNodeIndex(data.tree), [data.tree]);
+  const [assetsOpen, setAssetsOpen] = useState(false);
+  const [assets, setAssets] = useState<Asset[]>([]);
+
   const node = findNodeById(data.tree, selectedShapeId);
   const rootNode = findRootContaining(data.tree, selectedShapeId);
   const rootShape = data.shapes.find((s) => s.id === rootNode?.id);
@@ -695,6 +897,17 @@ export function InspectorSidebar({
     const raf = requestAnimationFrame(() => setMargins(computeMargins(selectedShapeId)));
     return () => cancelAnimationFrame(raf);
   }, [selectedShapeId, data]);
+
+  // Collapse assets and drop cached list whenever the selected shape changes.
+  useEffect(() => {
+    setAssetsOpen(false);
+    setAssets([]);
+  }, [selectedShapeId]);
+
+  const handleToggleAssets = () => {
+    if (!assetsOpen) setAssets(collectAssetsFromDom(selectedShapeId, nodeIndex));
+    setAssetsOpen((o) => !o);
+  };
 
   if (!node || !rootShape) return null;
 
@@ -801,6 +1014,34 @@ export function InspectorSidebar({
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-gray-100">
+          <button
+            type="button"
+            onClick={handleToggleAssets}
+            className="flex w-full items-center gap-1 px-4 pt-3 pb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase transition-colors hover:text-gray-700"
+          >
+            <ChevronRight
+              size={12}
+              className={`transition-transform ${assetsOpen ? 'rotate-90' : ''}`}
+            />
+            Assets
+            {assetsOpen && (
+              <span className="ml-auto font-mono text-[10px] tracking-normal text-gray-400 normal-case">
+                {assets.length}
+              </span>
+            )}
+          </button>
+          {assetsOpen && (
+            <div className="flex flex-col gap-2 px-4 pb-4">
+              {assets.length === 0 ? (
+                <p className="text-xs text-gray-400">No assets</p>
+              ) : (
+                assets.map((a) => <AssetItem key={a.id} asset={a} />)
+              )}
             </div>
           )}
         </div>
