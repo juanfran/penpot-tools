@@ -149,6 +149,7 @@ export const Render = ({
         className={`relative h-full w-full bg-[#e8e9ea] contain-strict ${
           isSpacePressed ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
         }`}
+        onClick={() => onShapeSelect?.(undefined)}
       >
         <TransformWrapper
           key={pageId}
