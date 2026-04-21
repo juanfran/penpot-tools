@@ -166,6 +166,8 @@ export const Render = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -176,6 +178,33 @@ export const Render = ({
     });
     observer.observe(el);
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const isTextInput = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable;
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.repeat) return;
+      if (isTextInput(e.target)) return;
+      e.preventDefault();
+      setIsSpacePressed(true);
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return;
+      setIsSpacePressed(false);
+    };
+    const onBlur = () => setIsSpacePressed(false);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+    };
   }, []);
 
   const goToShape = useCallback(
@@ -237,7 +266,12 @@ export const Render = ({
       )}
       {data.tokensCss && <style>{data.tokensCss}</style>}
 
-      <div ref={containerRef} className="relative h-full w-full bg-[#e8e9ea] contain-strict">
+      <div
+        ref={containerRef}
+        className={`relative h-full w-full bg-[#e8e9ea] contain-strict ${
+          isSpacePressed ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
+        }`}
+      >
         <TransformWrapper
           key={pageId}
           ref={transformRef}
@@ -249,8 +283,11 @@ export const Render = ({
           initialPositionX={initialTransform?.positionX}
           initialPositionY={initialTransform?.positionY}
           onTransform={handleTransform}
+          onPanningStart={() => setIsPanning(true)}
+          onPanningStop={() => setIsPanning(false)}
           smooth={false}
           wheel={{ step: 0.1 }}
+          panning={{ activationKeys: [' '] }}
           doubleClick={{ disabled: true }}
         >
           <ZoomControls />
@@ -271,7 +308,7 @@ export const Render = ({
                   <ShapeNode html={shape.html} />
                 </Virtualize>
               ))}
-              {onShapeSelect && (
+              {onShapeSelect && !isSpacePressed && (
                 <>
                   <div
                     className="pointer-events-auto absolute inset-0"
@@ -335,26 +372,27 @@ export const Render = ({
                       }}
                     />
                   ))}
-                  {(() => {
-                    const node = selectedShapeId ? findNodeById(data.tree, selectedShapeId) : null;
-                    if (!node) return null;
-                    return (
-                      <div
-                        className="pointer-events-none absolute"
-                        style={{
-                          left: node.x,
-                          top: node.y,
-                          width: node.width,
-                          height: node.height,
-                          zIndex: 2,
-                          outline: '2px solid #2196f3',
-                          outlineOffset: '1px',
-                        }}
-                      />
-                    );
-                  })()}
                 </>
               )}
+              {onShapeSelect &&
+                (() => {
+                  const node = selectedShapeId ? findNodeById(data.tree, selectedShapeId) : null;
+                  if (!node) return null;
+                  return (
+                    <div
+                      className="pointer-events-none absolute"
+                      style={{
+                        left: node.x,
+                        top: node.y,
+                        width: node.width,
+                        height: node.height,
+                        zIndex: 2,
+                        outline: '2px solid #2196f3',
+                        outlineOffset: '1px',
+                      }}
+                    />
+                  );
+                })()}
             </div>
           </TransformComponent>
         </TransformWrapper>
