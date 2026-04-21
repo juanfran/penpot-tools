@@ -13,6 +13,13 @@ import { deepestAt, findNodeById, findParent, topChildAt } from './tree-utils';
 import { loadTransform, saveTransform, type SavedTransform } from './transform-storage';
 import { ZoomControls } from './zoom-controls';
 import { ShapeNode } from './shape-node';
+import { DistanceLines } from './distance-lines';
+import {
+  UNIT_FORMATS,
+  UNIT_FORMAT_KEY,
+  type UnitFormat,
+  useLocalStoragePref,
+} from '#/components/inspector-sidebar/format-prefs';
 
 export type RenderHandle = {
   goToShape: (shapeId: string) => void;
@@ -46,6 +53,8 @@ export const Render = ({
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
+  const [hoveredShapeId, setHoveredShapeId] = useState<string | undefined>(undefined);
+  const [unitFormat] = useLocalStoragePref<UnitFormat>(UNIT_FORMAT_KEY, UNIT_FORMATS, 'px');
 
   useEffect(() => {
     const el = containerRef.current;
@@ -192,6 +201,9 @@ export const Render = ({
                   <div
                     className="pointer-events-auto absolute inset-0"
                     onClick={() => onShapeSelect(undefined)}
+                    onMouseMove={() => {
+                      if (hoveredShapeId !== undefined) setHoveredShapeId(undefined);
+                    }}
                   />
                   {data.shapes.map((shape) => (
                     <div
@@ -203,6 +215,18 @@ export const Render = ({
                         width: shape.width,
                         height: shape.height,
                         zIndex: 1,
+                      }}
+                      onMouseMove={(e) => {
+                        if (!selectedShapeId) {
+                          if (hoveredShapeId !== undefined) setHoveredShapeId(undefined);
+                          return;
+                        }
+                        const cx = shape.x + e.nativeEvent.offsetX;
+                        const cy = shape.y + e.nativeEvent.offsetY;
+                        const hit = deepestAt(data.tree, cx, cy);
+                        const id = hit?.id ?? shape.id;
+                        const next = id === selectedShapeId ? undefined : id;
+                        if (next !== hoveredShapeId) setHoveredShapeId(next);
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -270,6 +294,37 @@ export const Render = ({
                         outlineOffset: '1px',
                       }}
                     />
+                  );
+                })()}
+              {onShapeSelect &&
+                !isSpacePressed &&
+                selectedShapeId &&
+                hoveredShapeId &&
+                hoveredShapeId !== selectedShapeId &&
+                (() => {
+                  const selectedNode = findNodeById(data.tree, selectedShapeId);
+                  const hoveredNode = findNodeById(data.tree, hoveredShapeId);
+                  if (!selectedNode || !hoveredNode) return null;
+                  return (
+                    <>
+                      <div
+                        className="pointer-events-none absolute"
+                        style={{
+                          left: hoveredNode.x,
+                          top: hoveredNode.y,
+                          width: hoveredNode.width,
+                          height: hoveredNode.height,
+                          zIndex: 3,
+                          outline: '2px solid #f59e0b',
+                          outlineOffset: '1px',
+                        }}
+                      />
+                      <DistanceLines
+                        selected={selectedNode}
+                        hovered={hoveredNode}
+                        unit={unitFormat}
+                      />
+                    </>
                   );
                 })()}
             </div>
