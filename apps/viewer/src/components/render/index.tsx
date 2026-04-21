@@ -45,6 +45,7 @@ export const Render = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
+  const justPannedRef = useRef(false);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
@@ -153,7 +154,14 @@ export const Render = ({
         className={`relative h-full w-full bg-[#e8e9ea] contain-strict ${
           isSpacePressed ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
         }`}
-        onClick={() => onShapeSelect?.(undefined)}
+        onClick={() => {
+          if (justPannedRef.current) {
+            justPannedRef.current = false;
+            return;
+          }
+          if (isSpacePressed) return;
+          onShapeSelect?.(undefined);
+        }}
       >
         <TransformWrapper
           key={pageId}
@@ -167,7 +175,10 @@ export const Render = ({
           initialPositionY={initialTransform?.positionY}
           onTransform={handleTransform}
           onPanningStart={() => setIsPanning(true)}
-          onPanningStop={() => setIsPanning(false)}
+          onPanningStop={() => {
+            setIsPanning(false);
+            justPannedRef.current = true;
+          }}
           smooth={false}
           wheel={{ step: 0.1 }}
           panning={{ activationKeys: [' '] }}
