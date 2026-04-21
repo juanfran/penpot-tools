@@ -58,6 +58,17 @@ export function tokenToCssVarName(tokenName: string): string {
 }
 
 /**
+ * Returns a CSS `var(--token-name, fallback)` reference for a token. The fallback is the
+ * resolved color value from the tokens map, which makes the output readable and provides
+ * a safety net if the custom property is missing.
+ */
+export function tokenToCssVar(tokenName: string, tokens?: Map<string, string>): string {
+  const varName = tokenToCssVarName(tokenName);
+  const fallback = tokens?.get(tokenName);
+  return fallback ? `var(--${varName}, ${fallback})` : `var(--${varName})`;
+}
+
+/**
  * Converts a token map to a CSS `:root { ... }` block with custom properties.
  * Returns `''` when the map is empty.
  */

@@ -4,7 +4,7 @@ import { tag } from '../utils/html';
 import { px } from '../utils/css';
 import { mergeStyles } from '../utils/style';
 import { hexOpacityToCss } from '../utils/color';
-import { tokenToCssVarName } from '../tokens';
+import { tokenToCssVar } from '../tokens';
 import { resolvePositionOutput } from '../visual/position';
 import { baseStyles } from '../visual/base';
 
@@ -40,8 +40,12 @@ export function textLeafToStyles(
   return parts.join(' ');
 }
 
-export function textLeafColorStyle(leaf: TextLeaf, fillTokenName?: string): string {
-  if (fillTokenName) return `color: var(--${tokenToCssVarName(fillTokenName)});`;
+export function textLeafColorStyle(
+  leaf: TextLeaf,
+  fillTokenName?: string,
+  tokens?: Map<string, string>,
+): string {
+  if (fillTokenName) return `color: ${tokenToCssVar(fillTokenName, tokens)};`;
   const fills = leaf.fills;
   if (!fills || fills.length === 0) return '';
   const first = fills[0];
@@ -50,17 +54,21 @@ export function textLeafColorStyle(leaf: TextLeaf, fillTokenName?: string): stri
   return `color: ${cssColor};`;
 }
 
-export function renderParagraph(para: ParagraphNode, fillTokenName?: string): string {
+export function renderParagraph(
+  para: ParagraphNode,
+  fillTokenName?: string,
+  tokens?: Map<string, string>,
+): string {
   const paraLeaf: TextLeaf = { text: '', ...para };
   const paraBaseStyle = textLeafToStyles(paraLeaf);
   const firstLeaf = para.children[0];
-  const paraColorStyle = firstLeaf ? textLeafColorStyle(firstLeaf, fillTokenName) : '';
+  const paraColorStyle = firstLeaf ? textLeafColorStyle(firstLeaf, fillTokenName, tokens) : '';
   const paraStyle = mergeStyles(paraBaseStyle, paraColorStyle);
 
   const inner = para.children
     .map((leaf) => {
       const leafBaseStyle = textLeafToStyles(leaf);
-      const leafColorStyle = textLeafColorStyle(leaf, fillTokenName);
+      const leafColorStyle = textLeafColorStyle(leaf, fillTokenName, tokens);
       const leafStyle = mergeStyles(leafBaseStyle, leafColorStyle);
 
       if (leafStyle === paraStyle) return leaf.text;
@@ -141,7 +149,7 @@ export function renderText(shape: TextShape, ctx: ConverterContext): string {
   if (shape.content) {
     inner = shape.content.children
       .flatMap((set) => set.children)
-      .map((para) => renderParagraph(para, fillTokenName))
+      .map((para) => renderParagraph(para, fillTokenName, ctx.tokens))
       .join('');
   }
 

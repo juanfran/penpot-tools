@@ -249,7 +249,7 @@ describe('integration', () => {
 
     expect(html.trim()).toBe(getExpected('transparent-fill-token'));
     // Only the visible rect resolves to the token; the transparent one emits no background.
-    expect(html).toContain('background-color: var(--button-bg)');
+    expect(html).toContain('background-color: var(--button-bg,');
     const occurrences = html.match(/background-color/g) ?? [];
     expect(occurrences.length).toBe(1);
   });

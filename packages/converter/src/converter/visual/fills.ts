@@ -1,7 +1,7 @@
 import type { Fill, Gradient, GradientStop } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 import { hexOpacityToCss } from '../utils/color';
-import { tokenToCssVarName } from '../tokens';
+import { tokenToCssVar } from '../tokens';
 
 function gradientStopToCss(stop: GradientStop): string {
   const color = hexOpacityToCss(stop.color, stop.opacity);
@@ -123,7 +123,7 @@ export function fillsToOutput(
   if (fills.length === 1 && fills[0].fillOpacity === 0) return '';
 
   if (fillTokenName && ctx.tokens?.has(fillTokenName)) {
-    return `background-color: var(--${tokenToCssVarName(fillTokenName)});`;
+    return `background-color: ${tokenToCssVar(fillTokenName, ctx.tokens)};`;
   }
 
   if (fills.length === 1) {

@@ -17,7 +17,7 @@ export function renderCircle(
   const posStyle = resolvePositionOutput(shape, ctx);
   const firstStroke = (shape.strokes ?? [])[0];
   const stroke = firstStroke
-    ? solidStrokeToStyle(firstStroke, shape.appliedTokens?.strokeColor)
+    ? solidStrokeToStyle(firstStroke, shape.appliedTokens?.strokeColor, ctx.tokens)
     : '';
 
   const style = mergeStyles(posStyle, base, fills, stroke, 'border-radius: 50%;');

@@ -1,6 +1,6 @@
 import type { Stroke } from '../../penpot.types';
 import { hexOpacityToCss } from '../utils/color';
-import { tokenToCssVarName } from '../tokens';
+import { tokenToCssVar } from '../tokens';
 
 const STROKE_STYLE_VALUE: Record<string, string> = {
   solid: 'solid',
@@ -8,7 +8,11 @@ const STROKE_STYLE_VALUE: Record<string, string> = {
   dotted: 'dotted',
 };
 
-export function solidStrokeToStyle(stroke: Stroke, strokeTokenName?: string): string {
+export function solidStrokeToStyle(
+  stroke: Stroke,
+  strokeTokenName?: string,
+  tokens?: Map<string, string>,
+): string {
   if (!stroke.strokeColor && !stroke.strokeWidth) {
     return '';
   }
@@ -16,7 +20,7 @@ export function solidStrokeToStyle(stroke: Stroke, strokeTokenName?: string): st
   const rawColor = stroke.strokeColor
     ? hexOpacityToCss(stroke.strokeColor, stroke.strokeOpacity)
     : 'transparent';
-  const color = strokeTokenName ? `var(--${tokenToCssVarName(strokeTokenName)})` : rawColor;
+  const color = strokeTokenName ? tokenToCssVar(strokeTokenName, tokens) : rawColor;
   const width = stroke.strokeWidth ?? 1;
   const alignment = stroke.strokeAlignment ?? 'center';
 

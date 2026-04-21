@@ -34,7 +34,7 @@ export function renderFrame(
   const clipStyle = shape.clipContent !== false && !shape.showContent ? 'overflow: hidden;' : '';
   const firstStroke = (shape.strokes ?? [])[0];
   const stroke = firstStroke
-    ? solidStrokeToStyle(firstStroke, shape.appliedTokens?.strokeColor)
+    ? solidStrokeToStyle(firstStroke, shape.appliedTokens?.strokeColor, ctx.tokens)
     : '';
 
   let positionStyle = '';
