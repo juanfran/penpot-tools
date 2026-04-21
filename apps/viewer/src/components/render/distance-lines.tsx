@@ -1,9 +1,10 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties } from 'react';
 import type { ShapeTreeNode } from '#/lib/server/penpot-api';
 import { transformValue, type UnitFormat } from '#/components/inspector-sidebar/format-prefs';
+import { computeDistanceLines, type GapLineSpec } from './distance-lines-compute';
 
 const COLOR = '#f59e0b';
-const EPS = 0.5;
+const LINE_INSET = 3;
 
 function formatDistance(px: number, unit: UnitFormat): string {
   const rounded = Math.round(px * 10) / 10;
@@ -19,96 +20,16 @@ export function DistanceLines({
   hovered: ShapeTreeNode;
   unit: UnitFormat;
 }) {
-  const a = selected;
-  const b = hovered;
-  const aRight = a.x + a.width;
-  const aBottom = a.y + a.height;
-  const bRight = b.x + b.width;
-  const bBottom = b.y + b.height;
-
-  const xDisjoint = aRight < b.x - EPS || bRight < a.x - EPS;
-  const yDisjoint = aBottom < b.y - EPS || bBottom < a.y - EPS;
-
-  const elements: ReactNode[] = [];
-
-  if (xDisjoint || yDisjoint) {
-    // Sibling-style relationship: show only gap lines on the separated axes.
-    if (xDisjoint) {
-      const hStart = aRight < b.x ? aRight : bRight;
-      const hEnd = aRight < b.x ? b.x : a.x;
-      const hLineY = (a.y + a.height / 2 + b.y + b.height / 2) / 2;
-      elements.push(
-        <GapLine key="hgap" orientation="h" start={hStart} end={hEnd} cross={hLineY} unit={unit} />,
-      );
-    }
-    if (yDisjoint) {
-      const vStart = aBottom < b.y ? aBottom : bBottom;
-      const vEnd = aBottom < b.y ? b.y : a.y;
-      const vLineX = (a.x + a.width / 2 + b.x + b.width / 2) / 2;
-      elements.push(
-        <GapLine key="vgap" orientation="v" start={vStart} end={vEnd} cross={vLineX} unit={unit} />,
-      );
-    }
-  } else {
-    // Both axes overlap — parent/child or intersecting shapes.
-    // Show the four edge-to-edge inset distances.
-    const yCross = (Math.max(a.y, b.y) + Math.min(aBottom, bBottom)) / 2;
-    const xCross = (Math.max(a.x, b.x) + Math.min(aRight, bRight)) / 2;
-    if (Math.abs(a.x - b.x) > EPS) {
-      elements.push(
-        <GapLine
-          key="hleft"
-          orientation="h"
-          start={Math.min(a.x, b.x)}
-          end={Math.max(a.x, b.x)}
-          cross={yCross}
-          unit={unit}
-        />,
-      );
-    }
-    if (Math.abs(aRight - bRight) > EPS) {
-      elements.push(
-        <GapLine
-          key="hright"
-          orientation="h"
-          start={Math.min(aRight, bRight)}
-          end={Math.max(aRight, bRight)}
-          cross={yCross}
-          unit={unit}
-        />,
-      );
-    }
-    if (Math.abs(a.y - b.y) > EPS) {
-      elements.push(
-        <GapLine
-          key="vtop"
-          orientation="v"
-          start={Math.min(a.y, b.y)}
-          end={Math.max(a.y, b.y)}
-          cross={xCross}
-          unit={unit}
-        />,
-      );
-    }
-    if (Math.abs(aBottom - bBottom) > EPS) {
-      elements.push(
-        <GapLine
-          key="vbot"
-          orientation="v"
-          start={Math.min(aBottom, bBottom)}
-          end={Math.max(aBottom, bBottom)}
-          cross={xCross}
-          unit={unit}
-        />,
-      );
-    }
-  }
-
-  if (elements.length === 0) return null;
-  return <>{elements}</>;
+  const lines = computeDistanceLines(selected, hovered);
+  if (lines.length === 0) return null;
+  return (
+    <>
+      {lines.map(({ key, ...rest }) => (
+        <GapLine key={key} {...rest} unit={unit} />
+      ))}
+    </>
+  );
 }
-
-const LINE_INSET = 3;
 
 function GapLine({
   orientation,
@@ -116,13 +37,7 @@ function GapLine({
   end,
   cross,
   unit,
-}: {
-  orientation: 'h' | 'v';
-  start: number;
-  end: number;
-  cross: number;
-  unit: UnitFormat;
-}) {
+}: Omit<GapLineSpec, 'key'> & { unit: UnitFormat }) {
   const label = formatDistance(end - start, unit);
   const inset = Math.max(0, Math.min(LINE_INSET, (end - start - 1) / 2));
   const lineStart = start + inset;
