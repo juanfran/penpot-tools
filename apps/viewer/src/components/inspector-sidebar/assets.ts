@@ -54,6 +54,35 @@ export function collectAssetsFromDom(
     out.push({ id, name, kind: 'svg', svg });
   };
 
+  // Paths are emitted with a viewBox offset to page-absolute coords (see
+  // converter/shapes/path.ts) — the preview renders fine but standalone copies
+  // are positioned far from origin. Normalize to viewBox="0 0 w h" and shift
+  // contents into a translating <g>, so downloads and pastes stay at origin.
+  const normalizeStandaloneSvg = (svgEl: Element): string => {
+    const clone = svgEl.cloneNode(true) as SVGElement;
+    clone.removeAttribute('data-id');
+    clone.removeAttribute('data-type');
+    clone.removeAttribute('style');
+    const viewBox = clone.getAttribute('viewBox');
+    if (viewBox) {
+      const parts = viewBox
+        .trim()
+        .split(/[\s,]+/)
+        .map(Number);
+      if (parts.length === 4 && parts.every(Number.isFinite)) {
+        const [x, y, w, h] = parts;
+        if (x !== 0 || y !== 0) {
+          clone.setAttribute('viewBox', `0 0 ${w} ${h}`);
+          const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          g.setAttribute('transform', `translate(${-x}, ${-y})`);
+          while (clone.firstChild) g.appendChild(clone.firstChild);
+          clone.appendChild(g);
+        }
+      }
+    }
+    return clone.outerHTML;
+  };
+
   // Primary: <img>, <div data-type="svg-raw">, and standalone <svg data-id>
   const primaryEls: Element[] = [];
   const rootType = root.getAttribute('data-type');
@@ -79,7 +108,7 @@ export function collectAssetsFromDom(
     } else if (tagName === 'svg') {
       // Skip SVGs nested inside a svg-raw wrapper (the wrapper already owns them)
       if (el !== root && el.closest('[data-type="svg-raw"]')) continue;
-      pushSvg(id, name, el.outerHTML);
+      pushSvg(id, name, normalizeStandaloneSvg(el));
     }
   }
 

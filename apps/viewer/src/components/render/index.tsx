@@ -1,11 +1,4 @@
-import {
-  useRef,
-  useState,
-  useEffect,
-  useImperativeHandle,
-  useCallback,
-  useMemo,
-} from 'react';
+import { useRef, useState, useEffect, useImperativeHandle, useCallback, useMemo } from 'react';
 import { Debouncer } from '@tanstack/pacer';
 import { getPageShapesFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';

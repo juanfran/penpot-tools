@@ -7,12 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { AssetItem } from './asset-item';
 import { type Asset, buildNodeIndex, collectAssetsFromDom } from './assets';
-import {
-  EMPTY_MARGINS,
-  type Margins,
-  computeMargins,
-  extractBoxModel,
-} from './box-model';
+import { EMPTY_MARGINS, type Margins, computeMargins, extractBoxModel } from './box-model';
 import { BoxModelViz } from './box-model-viz';
 import {
   COLOR_FORMATS,
