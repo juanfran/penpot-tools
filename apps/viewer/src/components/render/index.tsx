@@ -2,145 +2,30 @@ import {
   useRef,
   useState,
   useEffect,
-  memo,
   useImperativeHandle,
   useCallback,
   useMemo,
 } from 'react';
 import { Debouncer } from '@tanstack/pacer';
-import { type ShapeTreeNode, getPageShapesFn } from '#/lib/server/penpot-api';
+import { getPageShapesFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
-import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import {
   TransformWrapper,
   TransformComponent,
-  useControls,
   Virtualize,
   type ReactZoomPanPinchRef,
 } from 'react-zoom-pan-pinch';
+
+import { deepestAt, findNodeById, findParent, topChildAt } from './tree-utils';
+import { loadTransform, saveTransform, type SavedTransform } from './transform-storage';
+import { ZoomControls } from './zoom-controls';
+import { ShapeNode } from './shape-node';
 
 export type RenderHandle = {
   goToShape: (shapeId: string) => void;
 };
 
 const VISIBILITY_MARGIN = 500;
-
-const TRANSFORM_STORAGE_PREFIX = 'penpot-viewer:transform';
-
-type SavedTransform = { scale: number; positionX: number; positionY: number };
-
-function transformStorageKey(fileId: string, pageId: string) {
-  return `${TRANSFORM_STORAGE_PREFIX}:${fileId}:${pageId}`;
-}
-
-function loadTransform(fileId: string, pageId: string): SavedTransform | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(transformStorageKey(fileId, pageId));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (
-      parsed &&
-      typeof parsed.scale === 'number' &&
-      typeof parsed.positionX === 'number' &&
-      typeof parsed.positionY === 'number'
-    ) {
-      return parsed;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function saveTransform(fileId: string, pageId: string, state: SavedTransform) {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(transformStorageKey(fileId, pageId), JSON.stringify(state));
-  } catch {
-    /* ignore quota or access errors */
-  }
-}
-
-function findNodeById(nodes: ShapeTreeNode[], id: string): ShapeTreeNode | null {
-  for (const node of nodes) {
-    if (node.id === id) return node;
-    const found = findNodeById(node.children, id);
-    if (found) return found;
-  }
-  return null;
-}
-
-function hitTest(node: ShapeTreeNode, x: number, y: number): boolean {
-  return x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height;
-}
-
-// Returns the topmost (last in array = visually on top) child that contains (x, y)
-function topChildAt(children: ShapeTreeNode[], x: number, y: number): ShapeTreeNode | null {
-  let result: ShapeTreeNode | null = null;
-  for (const child of children) {
-    if (hitTest(child, x, y)) result = child;
-  }
-  return result;
-}
-
-function findParent(nodes: ShapeTreeNode[], targetId: string): ShapeTreeNode | null {
-  for (const node of nodes) {
-    if (node.children.some((c) => c.id === targetId)) return node;
-    const found = findParent(node.children, targetId);
-    if (found) return found;
-  }
-  return null;
-}
-
-// Returns the deepest node that contains (x, y), preferring topmost siblings
-function deepestAt(nodes: ShapeTreeNode[], x: number, y: number): ShapeTreeNode | null {
-  let result: ShapeTreeNode | null = null;
-  for (const node of nodes) {
-    if (hitTest(node, x, y)) {
-      result = node;
-      const deeper = deepestAt(node.children, x, y);
-      if (deeper) result = deeper;
-    }
-  }
-  return result;
-}
-
-const ZoomControls = () => {
-  const { zoomIn, zoomOut, resetTransform } = useControls();
-
-  return (
-    <div className="absolute right-4 bottom-4 z-50 flex items-center gap-1 rounded-xl border border-white/10 bg-black/60 p-1 shadow-xl backdrop-blur-sm">
-      <button
-        onClick={() => zoomIn()}
-        className="rounded-lg p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-        title="Zoom in"
-      >
-        <ZoomIn size={16} />
-      </button>
-      <div className="h-4 w-px bg-white/20" />
-      <button
-        onClick={() => zoomOut()}
-        className="rounded-lg p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-        title="Zoom out"
-      >
-        <ZoomOut size={16} />
-      </button>
-      <div className="h-4 w-px bg-white/20" />
-      <button
-        onClick={() => resetTransform()}
-        className="rounded-lg p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-        title="Reset zoom"
-      >
-        <Maximize size={16} />
-      </button>
-    </div>
-  );
-};
-
-const ShapeNode = memo(({ html }: { html: string }) => (
-  <div dangerouslySetInnerHTML={{ __html: html }} />
-));
 
 export const getPageShapesOptions = (fileId: string, pageId: string) =>
   queryOptions({
