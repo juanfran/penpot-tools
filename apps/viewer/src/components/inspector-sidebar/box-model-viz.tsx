@@ -13,7 +13,7 @@ export function BoxModelViz({ model, margins }: { model: BoxModel; margins: Marg
   const [bt, br, bb, bl] = model.border;
   const [pt, pr, pb, pl] = model.padding;
 
-  const lbl = 'absolute text-[10px] font-mono leading-none select-none';
+  const lbl = 'absolute z-10 text-[10px] font-mono leading-none select-none';
 
   return (
     <div className="px-4 pt-3 pb-4">
