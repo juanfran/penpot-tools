@@ -1,4 +1,13 @@
-import { useRef, useState, useEffect, memo, useImperativeHandle, useCallback } from 'react';
+import {
+  useRef,
+  useState,
+  useEffect,
+  memo,
+  useImperativeHandle,
+  useCallback,
+  useMemo,
+} from 'react';
+import { Debouncer } from '@tanstack/pacer';
 import { type ShapeTreeNode, getPageShapesFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
@@ -15,6 +24,43 @@ export type RenderHandle = {
 };
 
 const VISIBILITY_MARGIN = 500;
+
+const TRANSFORM_STORAGE_PREFIX = 'penpot-viewer:transform';
+
+type SavedTransform = { scale: number; positionX: number; positionY: number };
+
+function transformStorageKey(fileId: string, pageId: string) {
+  return `${TRANSFORM_STORAGE_PREFIX}:${fileId}:${pageId}`;
+}
+
+function loadTransform(fileId: string, pageId: string): SavedTransform | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(transformStorageKey(fileId, pageId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed.scale === 'number' &&
+      typeof parsed.positionX === 'number' &&
+      typeof parsed.positionY === 'number'
+    ) {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveTransform(fileId: string, pageId: string, state: SavedTransform) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(transformStorageKey(fileId, pageId), JSON.stringify(state));
+  } catch {
+    /* ignore quota or access errors */
+  }
+}
 
 function findNodeById(nodes: ShapeTreeNode[], id: string): ShapeTreeNode | null {
   for (const node of nodes) {
@@ -154,6 +200,29 @@ export const Render = ({
 
   useImperativeHandle(ref, () => ({ goToShape }), [goToShape]);
 
+  const initialTransform = useMemo(() => loadTransform(fileId, pageId), [fileId, pageId]);
+
+  const saveDebouncer = useMemo(
+    () =>
+      new Debouncer((state: SavedTransform) => saveTransform(fileId, pageId, state), {
+        wait: 300,
+      }),
+    [fileId, pageId],
+  );
+
+  useEffect(() => {
+    return () => {
+      saveDebouncer.flush();
+    };
+  }, [saveDebouncer]);
+
+  const handleTransform = useCallback(
+    (_ref: ReactZoomPanPinchRef, state: SavedTransform) => {
+      saveDebouncer.maybeExecute(state);
+    },
+    [saveDebouncer],
+  );
+
   return (
     <>
       <title>{data.name}</title>
@@ -175,7 +244,11 @@ export const Render = ({
           minScale={0.05}
           maxScale={10}
           limitToBounds={false}
-          centerOnInit={true}
+          centerOnInit={!initialTransform}
+          initialScale={initialTransform?.scale}
+          initialPositionX={initialTransform?.positionX}
+          initialPositionY={initialTransform?.positionY}
+          onTransform={handleTransform}
           smooth={false}
           wheel={{ step: 0.1 }}
           doubleClick={{ disabled: true }}
