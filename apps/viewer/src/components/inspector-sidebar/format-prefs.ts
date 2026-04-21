@@ -1,31 +1,9 @@
-import { useEffect, useState } from 'react';
-
 export type ColorFormat = 'hex' | 'rgb' | 'hsl';
 export type UnitFormat = 'px' | 'rem' | 'em';
 
 export const COLOR_FORMATS = ['hex', 'rgb', 'hsl'] as const;
 export const UNIT_FORMATS = ['px', 'rem', 'em'] as const;
-export const COLOR_FORMAT_KEY = 'inspector.colorFormat';
-export const UNIT_FORMAT_KEY = 'inspector.unitFormat';
 const BASE_FONT_PX = 16;
-
-function readPref<T extends string>(key: string, options: readonly T[], fallback: T): T {
-  if (typeof window === 'undefined') return fallback;
-  const v = window.localStorage.getItem(key);
-  return (options as readonly string[]).includes(v ?? '') ? (v as T) : fallback;
-}
-
-export function useLocalStoragePref<T extends string>(
-  key: string,
-  options: readonly T[],
-  fallback: T,
-): [T, (value: T) => void] {
-  const [value, setValue] = useState<T>(() => readPref(key, options, fallback));
-  useEffect(() => {
-    window.localStorage.setItem(key, value);
-  }, [key, value]);
-  return [value, setValue];
-}
 
 interface RGBA {
   r: number;

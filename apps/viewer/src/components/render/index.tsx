@@ -14,12 +14,7 @@ import { loadTransform, saveTransform, type SavedTransform } from './transform-s
 import { ZoomControls } from './zoom-controls';
 import { ShapeNode } from './shape-node';
 import { DistanceLines } from './distance-lines';
-import {
-  UNIT_FORMATS,
-  UNIT_FORMAT_KEY,
-  type UnitFormat,
-  useLocalStoragePref,
-} from '#/components/inspector-sidebar/format-prefs';
+import { useInspectorPrefs } from '#/components/inspector-sidebar/prefs-store';
 
 export type RenderHandle = {
   goToShape: (shapeId: string) => void;
@@ -54,7 +49,7 @@ export const Render = ({
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const [hoveredShapeId, setHoveredShapeId] = useState<string | undefined>(undefined);
-  const [unitFormat] = useLocalStoragePref<UnitFormat>(UNIT_FORMAT_KEY, UNIT_FORMATS, 'px');
+  const unitFormat = useInspectorPrefs((s) => s.unitFormat);
 
   useEffect(() => {
     const el = containerRef.current;

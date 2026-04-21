@@ -9,16 +9,8 @@ import { AssetItem } from './asset-item';
 import { type Asset, buildNodeIndex, collectAssetsFromDom } from './assets';
 import { EMPTY_MARGINS, type Margins, computeMargins, extractBoxModel } from './box-model';
 import { BoxModelViz } from './box-model-viz';
-import {
-  COLOR_FORMATS,
-  COLOR_FORMAT_KEY,
-  type ColorFormat,
-  UNIT_FORMATS,
-  UNIT_FORMAT_KEY,
-  type UnitFormat,
-  transformValue,
-  useLocalStoragePref,
-} from './format-prefs';
+import { COLOR_FORMATS, UNIT_FORMATS, transformValue } from './format-prefs';
+import { useInspectorPrefs } from './prefs-store';
 import { Segmented } from './segmented';
 import { shapeIcon } from './shape-icon';
 import { StyleDecl } from './style-decl';
@@ -44,16 +36,10 @@ export function InspectorSidebar({
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
   const [copied, setCopied] = useState<'css' | 'text' | null>(null);
   const [margins, setMargins] = useState<Margins>(EMPTY_MARGINS);
-  const [colorFormat, setColorFormat] = useLocalStoragePref<ColorFormat>(
-    COLOR_FORMAT_KEY,
-    COLOR_FORMATS,
-    'hex',
-  );
-  const [unitFormat, setUnitFormat] = useLocalStoragePref<UnitFormat>(
-    UNIT_FORMAT_KEY,
-    UNIT_FORMATS,
-    'px',
-  );
+  const colorFormat = useInspectorPrefs((s) => s.colorFormat);
+  const setColorFormat = useInspectorPrefs((s) => s.setColorFormat);
+  const unitFormat = useInspectorPrefs((s) => s.unitFormat);
+  const setUnitFormat = useInspectorPrefs((s) => s.setUnitFormat);
 
   const nodeIndex = useMemo(() => buildNodeIndex(data.tree), [data.tree]);
   const [assetsOpen, setAssetsOpen] = useState(false);
