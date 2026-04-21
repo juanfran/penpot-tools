@@ -1,5 +1,11 @@
 import { type ShapeTreeNode } from '#/lib/server/penpot-api';
 import { getPageShapesOptions } from '#/components/render';
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+} from '#/components/ui/context-menu';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -14,6 +20,7 @@ import {
   Minus,
   Star,
   GitMerge,
+  Crosshair,
 } from 'lucide-react';
 
 function shapeIcon(type: string) {
@@ -61,12 +68,14 @@ function ShapeTreeItem({
   selectedShapeId,
   ancestorIds,
   onShapeSelect,
+  onGoToShape,
 }: {
   node: ShapeTreeNode;
   depth: number;
   selectedShapeId?: string;
   ancestorIds: Set<string>;
   onShapeSelect: (id: string) => void;
+  onGoToShape: (id: string) => void;
 }) {
   const isSelected = node.id === selectedShapeId;
   const isAncestor = ancestorIds.has(node.id);
@@ -84,30 +93,38 @@ function ShapeTreeItem({
 
   return (
     <li>
-      <div
-        ref={rowRef}
-        className={`flex w-full cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-gray-100 ${isSelected ? 'bg-blue-100 text-blue-900' : ''}`}
-        style={{ paddingLeft: `${4 + depth * 12}px` }}
-        onClick={() => onShapeSelect(node.id)}
-      >
-        <span
-          className="flex w-3 shrink-0 items-center justify-center"
-          onClick={(e) => {
-            if (!hasChildren) return;
-            e.stopPropagation();
-            setOpen((o) => !o);
-          }}
+      <ContextMenu>
+        <ContextMenuTrigger
+          ref={rowRef}
+          className={`flex w-full cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-gray-100 ${isSelected ? 'bg-blue-100 text-blue-900' : ''}`}
+          style={{ paddingLeft: `${4 + depth * 12}px` }}
+          onClick={() => onShapeSelect(node.id)}
         >
-          {hasChildren && (
-            <ChevronRight
-              size={10}
-              className={`text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}
-            />
-          )}
-        </span>
-        {shapeIcon(node.type)}
-        <span className="truncate text-sm text-gray-700">{node.name}</span>
-      </div>
+          <span
+            className="flex w-3 shrink-0 items-center justify-center"
+            onClick={(e) => {
+              if (!hasChildren) return;
+              e.stopPropagation();
+              setOpen((o) => !o);
+            }}
+          >
+            {hasChildren && (
+              <ChevronRight
+                size={10}
+                className={`text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}
+              />
+            )}
+          </span>
+          {shapeIcon(node.type)}
+          <span className="truncate text-sm text-gray-700">{node.name}</span>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem onClick={() => onGoToShape(node.id)}>
+            <Crosshair />
+            Go to shape
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
       {isOpen && hasChildren && (
         <ul>
           {node.children.map((child) => (
@@ -118,6 +135,7 @@ function ShapeTreeItem({
               selectedShapeId={selectedShapeId}
               ancestorIds={ancestorIds}
               onShapeSelect={onShapeSelect}
+              onGoToShape={onGoToShape}
             />
           ))}
         </ul>
@@ -131,11 +149,13 @@ function ShapeTree({
   pageId,
   selectedShapeId,
   onShapeSelect,
+  onGoToShape,
 }: {
   fileId: string;
   pageId: string;
   selectedShapeId?: string;
   onShapeSelect: (id: string) => void;
+  onGoToShape: (id: string) => void;
 }) {
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
 
@@ -154,6 +174,7 @@ function ShapeTree({
           selectedShapeId={selectedShapeId}
           ancestorIds={ancestorIds}
           onShapeSelect={onShapeSelect}
+          onGoToShape={onGoToShape}
         />
       ))}
     </ul>
@@ -172,6 +193,7 @@ interface PagesSidebarProps {
   teamId?: string;
   selectedShapeId?: string;
   onShapeSelect: (id: string) => void;
+  onGoToShape: (id: string) => void;
 }
 
 export function PagesSidebar({
@@ -181,6 +203,7 @@ export function PagesSidebar({
   teamId,
   selectedShapeId,
   onShapeSelect,
+  onGoToShape,
 }: PagesSidebarProps) {
   return (
     <aside className="flex w-84 flex-col border-r border-gray-200">
@@ -211,6 +234,7 @@ export function PagesSidebar({
             pageId={pageId}
             selectedShapeId={selectedShapeId}
             onShapeSelect={onShapeSelect}
+            onGoToShape={onGoToShape}
           />
         </div>
       </div>

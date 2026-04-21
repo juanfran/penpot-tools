@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, memo } from 'react';
+import { useRef, useState, useEffect, memo, useImperativeHandle, useCallback } from 'react';
 import { type ShapeTreeNode, getPageShapesFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
@@ -7,7 +7,12 @@ import {
   TransformComponent,
   useControls,
   Virtualize,
+  type ReactZoomPanPinchRef,
 } from 'react-zoom-pan-pinch';
+
+export type RenderHandle = {
+  goToShape: (shapeId: string) => void;
+};
 
 const VISIBILITY_MARGIN = 500;
 
@@ -102,15 +107,18 @@ export const Render = ({
   fileId,
   selectedShapeId,
   onShapeSelect,
+  ref,
 }: {
   pageId: string;
   fileId: string;
   selectedShapeId?: string;
   onShapeSelect?: (id: string | undefined) => void;
+  ref?: React.Ref<RenderHandle>;
 }) => {
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -123,6 +131,28 @@ export const Render = ({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  const goToShape = useCallback(
+    (shapeId: string) => {
+      const node = findNodeById(data.tree, shapeId);
+      const api = transformRef.current;
+      if (!node || !api) return;
+      const W = containerSize.width;
+      const H = containerSize.height;
+      if (!W || !H || !node.width || !node.height) return;
+      const margin = 0.9;
+      const scaleFit = Math.min(W / node.width, H / node.height) * margin;
+      const scale = Math.min(Math.max(scaleFit, 0.05), 2);
+      const cx = node.x + node.width / 2;
+      const cy = node.y + node.height / 2;
+      const positionX = W / 2 - scale * cx;
+      const positionY = H / 2 - scale * cy;
+      api.setTransform(positionX, positionY, scale, 300);
+    },
+    [data.tree, containerSize],
+  );
+
+  useImperativeHandle(ref, () => ({ goToShape }), [goToShape]);
 
   return (
     <>
@@ -141,6 +171,7 @@ export const Render = ({
       <div ref={containerRef} className="relative h-full w-full bg-[#e8e9ea] contain-strict">
         <TransformWrapper
           key={pageId}
+          ref={transformRef}
           minScale={0.05}
           maxScale={10}
           limitToBounds={false}

@@ -1,10 +1,10 @@
-import { getPageShapesOptions, Render } from '#/components/render';
+import { getPageShapesOptions, Render, type RenderHandle } from '#/components/render';
 import { PagesSidebar } from '#/components/pages-sidebar';
 import { InspectorSidebar } from '#/components/inspector-sidebar';
 import { getFileSummaryFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
-import { Suspense, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 import { z } from 'zod';
 
 const getFileSummaryQueryOptions = (fileId: string) => {
@@ -84,11 +84,13 @@ function SidebarWrapper({
   pageId,
   selectedShapeId,
   onShapeSelect,
+  onGoToShape,
 }: {
   fileId: string;
   pageId: string;
   selectedShapeId: string | undefined;
   onShapeSelect: (id: string) => void;
+  onGoToShape: (id: string) => void;
 }) {
   const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
   const { teamId } = Route.useSearch();
@@ -101,6 +103,7 @@ function SidebarWrapper({
       teamId={teamId}
       selectedShapeId={selectedShapeId}
       onShapeSelect={onShapeSelect}
+      onGoToShape={onGoToShape}
     />
   );
 }
@@ -108,6 +111,12 @@ function SidebarWrapper({
 function RouteComponent() {
   const { fileId, pageId } = Route.useParams();
   const [selectedShapeId, setSelectedShapeId] = useState<string | undefined>(undefined);
+  const renderRef = useRef<RenderHandle>(null);
+
+  const handleGoToShape = (id: string) => {
+    renderRef.current?.goToShape(id);
+    setSelectedShapeId(id);
+  };
 
   return (
     <>
@@ -122,11 +131,13 @@ function RouteComponent() {
               pageId={pageId}
               selectedShapeId={selectedShapeId}
               onShapeSelect={setSelectedShapeId}
+              onGoToShape={handleGoToShape}
             />
           </Suspense>
           <main className="relative flex-1 overflow-auto">
             <Suspense fallback={<div>Loading...</div>}>
               <Render
+                ref={renderRef}
                 fileId={fileId}
                 pageId={pageId}
                 selectedShapeId={selectedShapeId}
