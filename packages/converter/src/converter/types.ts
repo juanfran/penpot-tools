@@ -24,6 +24,8 @@ export interface ConverterContext {
   _parentIsLayoutAutoW?: boolean;
   /** @internal When true alongside _parentIsLayout, the child must emit its own explicit height instead of h-full (auto v-sizing) */
   _parentIsLayoutAutoH?: boolean;
+  /** @internal Layout-item / grid-cell styles to merge onto the child (in place of a wrapper div) */
+  _parentLayoutItemStyles?: string;
   /** @internal Page background color applied to the root frame */
   _pageBackground?: string;
   /** @internal When true, the shape uses relative positioning instead of absolute */

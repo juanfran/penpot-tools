@@ -46,32 +46,36 @@ All styling is emitted as inline `style=` attributes.
 
 ## ConverterContext flags
 
-| Flag                | Meaning                                                            |
-| ------------------- | ------------------------------------------------------------------ |
-| `_parentIsLayout`   | Parent is flex/grid; child emits `width/height: 100%`              |
-| `_forceRelative`    | Emit `position: relative` (grid children, export root)             |
-| `_isCanvasTopLevel` | Direct child of root frame; use `translate()` for position         |
-| `_isChildOfRoot`    | Enables `position: fixed` for `fixedScroll` shapes                 |
-| `_offsetX/_offsetY` | Parent's page-absolute position for computing relative top/left    |
-| `_pageBackground`   | Background color for root frame                                    |
-| `_fontCollector`    | Map populated by text renderers                                    |
-| `tokens`            | `Map<tokenName, cssColor>` for design token → CSS var substitution |
-| `format`            | When `false`, skip `oxfmt` formatting (required in the browser)    |
+| Flag                       | Meaning                                                                                       |
+| -------------------------- | --------------------------------------------------------------------------------------------- |
+| `_parentIsLayout`          | Parent is flex/grid; child emits `width/height: 100%` (or injected px via `_parentLayoutItemStyles`) |
+| `_parentLayoutItemStyles`  | Layout-item / grid-cell styles merged onto the child directly (replaces the old wrapper div)  |
+| `_parentIsLayoutAutoW/H`   | Child emits explicit `width/height: Npx` instead of 100% (auto sizing, absolute items)        |
+| `_forceRelative`           | Emit `position: relative` (grid children, export root)                                        |
+| `_isCanvasTopLevel`        | Direct child of root frame; use `translate()` for position                                    |
+| `_isChildOfRoot`           | Enables `position: fixed` for `fixedScroll` shapes                                            |
+| `_offsetX/_offsetY`        | Parent's page-absolute position for computing relative top/left                               |
+| `_pageBackground`          | Background color for root frame                                                               |
+| `_fontCollector`           | Map populated by text renderers                                                               |
+| `tokens`                   | `Map<tokenName, cssColor>` for design token → CSS var substitution                            |
+| `format`                   | When `false`, skip `oxfmt` formatting (required in the browser)                               |
 
 ## Shape positioning (`resolvePositionOutput` in `visual/position.ts`)
 
 Priority (highest first):
 
-1. `_parentIsLayout` → `width: 100%; height: 100%;`
+1. `_parentIsLayout` → `width: 100%; height: 100%;` (autoW/autoH replace a dim with `Npx`; a dim is omitted if `_parentLayoutItemStyles` already declares it)
 2. `_forceRelative` → `position: relative; width: Npx; height: Npx;`
 3. `_isCanvasTopLevel` → `position: absolute; top: 0; left: 0; … transform: translate(x,y);`
 4. default → `position: absolute; left: Npx; top: Npx; width: Npx; height: Npx;`
 
+When `_parentLayoutItemStyles` is set (flex/grid child), the result above is `mergeStyles`'d with it so layout-item sizing/margin/align-self/z-index/grid-cell placement lands on the child's own div.
+
 ## Frame rendering (`shapes/frame.ts`)
 
 - **Root frame** (`parentId === id`): `position: relative; width; height`. Never rendered directly.
-- **Flex frame**: `display: flex` + direction/align/justify/gap/padding. Children wrapped in sizing divs.
-- **Grid frame**: `display: grid` + `grid-template-columns/rows` + gap/padding. Children wrapped in cell divs with `grid-row-start` / `grid-column-start`.
+- **Flex frame**: `display: flex` + direction/align/justify/gap/padding. Layout-item styles (`flex: 1` / `width: Npx` / margin / align-self / z-index / absolute) are passed to each child via `_parentLayoutItemStyles` and merged onto the child's own div.
+- **Grid frame**: `display: grid` + `grid-template-columns/rows` + gap/padding. `grid-row-start` / `grid-column-start` are passed via `_parentLayoutItemStyles` and merged onto the child's own div.
 - **Plain frame**: children rendered with absolute positioning offset by frame's `x/y`.
 - `clipContent !== false` → `overflow: hidden`.
 
@@ -79,17 +83,19 @@ Priority (highest first):
 
 Penpot stores flex children in Z-order (back-to-front). For `row` and `column` directions the array is reversed before rendering. For `row-reverse` and `column-reverse` the array is used as-is (Penpot already stores them in visual order), and the CSS `flex-direction` emitted is `row` / `column` (not `-reverse`).
 
-## Flex child sizing pattern
+## Flex / grid child sizing pattern
+
+Layout-item / grid-cell styles (sizing, margin, `align-self`, `z-index`, `grid-row/column-start`, `layoutItemAbsolute`) are merged directly onto the child's own `data-id` div via `ctx._parentLayoutItemStyles`. No wrapper div is emitted.
 
 ```html
-<div style="width: 240px; height: 50px">
-  <!-- wrapper: layout-item sizing -->
-  <div style="width: 100%; height: 100%; display: flex; …">…</div>
-  <!-- child -->
+<div data-id="…" data-type="frame" style="width: 240px; height: 50px; display: flex; …">
+  …
 </div>
 ```
 
-Wrapper is omitted when its style is empty.
+`resolvePositionOutput` reads `_parentLayoutItemStyles` and skips emitting its own `width: 100%` / `height: 100%` when the layout-item styles already declare `width:` / `height:`. For `layoutItemAbsolute` items, `layoutItemSizingStyle` is skipped entirely and the child emits its own explicit px via the `autoW`/`autoH` path.
+
+`_parentLayoutItemStyles` must be cleared (`undefined`) in every context that is NOT a flex/grid child — plain frame children, group children — to prevent inheritance.
 
 ## Stroke alignment
 

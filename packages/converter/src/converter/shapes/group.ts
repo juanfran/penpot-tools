@@ -153,6 +153,10 @@ export function renderGroup(
     ...ctx,
     _isCanvasTopLevel: false,
     _forceRelative: false,
+    _parentIsLayout: false,
+    _parentIsLayoutAutoW: undefined,
+    _parentIsLayoutAutoH: undefined,
+    _parentLayoutItemStyles: undefined,
     _offsetX: shape.x ?? 0,
     _offsetY: shape.y ?? 0,
   };

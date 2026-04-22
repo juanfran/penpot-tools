@@ -92,44 +92,43 @@ export function renderFrame(
     const orderedChildren = isReverseDir ? [...children] : [...children].reverse();
     inner = orderedChildren
       .map((child) => {
-        // Absolute flex items are removed from flex flow; the wrapper's `flex: 1` /
-        // `height: 100%` sizing no longer applies, so the child must emit explicit px.
+        // Absolute flex items are removed from flex flow; `flex: 1` / `height: 100%`
+        // sizing no longer applies, so the child emits its own explicit px dimensions
+        // and the sizing style is skipped (the absolute-position style provides placement).
         const isAbsolute = !!(child as unknown as { layoutItemAbsolute?: boolean })
           .layoutItemAbsolute;
-        const autoW =
-          isAbsolute ||
-          child.layoutItemHSizing === 'auto' ||
-          (!(flexDir === 'row' || flexDir === 'row-reverse' || flexDir === undefined) &&
-            child.layoutItemHSizing === 'fill');
+        const autoW = isAbsolute || child.layoutItemHSizing === 'auto';
         const autoH = isAbsolute || child.layoutItemVSizing === 'auto';
-        const flexCtx: ConverterContext = {
-          ...ctx,
-          _parentIsLayout: true,
-          _parentIsLayoutAutoW: autoW || undefined,
-          _parentIsLayoutAutoH: autoH || undefined,
-        };
+        const sizingStyle = isAbsolute ? '' : layoutItemSizingStyle(child, shape);
         const itemStyle = mergeStyles(
-          layoutItemSizingStyle(child, shape),
+          sizingStyle,
           layoutItemMarginStyle(child),
           layoutItemAlignSelfStyle(child),
           layoutItemMinMaxStyle(child),
           layoutItemZIndexStyle(child),
           layoutItemAbsoluteStyle(child, frameOffsetX, frameOffsetY),
         );
-        const childHtml = renderShape(child, objects, flexCtx);
-        if (!itemStyle) return childHtml;
-        return tag('div', { style: itemStyle || undefined }, childHtml);
+        const flexCtx: ConverterContext = {
+          ...ctx,
+          _parentIsLayout: true,
+          _parentIsLayoutAutoW: autoW || undefined,
+          _parentIsLayoutAutoH: autoH || undefined,
+          _parentLayoutItemStyles: itemStyle || undefined,
+        };
+        return renderShape(child, objects, flexCtx);
       })
       .join('');
   } else if (isGrid) {
-    const gridCtx: ConverterContext = { ...ctx, _forceRelative: true };
     inner = children
       .map((child) => {
         const cell = findCellForShape(shape, child.id);
         const cellStyle = cell ? gridCellStyle(cell) : '';
-        const childHtml = renderShape(child, objects, gridCtx);
-        if (!cellStyle) return childHtml;
-        return tag('div', { style: cellStyle }, childHtml);
+        const gridCtx: ConverterContext = {
+          ...ctx,
+          _forceRelative: true,
+          _parentLayoutItemStyles: cellStyle || undefined,
+        };
+        return renderShape(child, objects, gridCtx);
       })
       .join('');
   } else {
@@ -141,6 +140,7 @@ export function renderFrame(
       _parentIsLayout: false,
       _parentIsLayoutAutoW: undefined,
       _parentIsLayoutAutoH: undefined,
+      _parentLayoutItemStyles: undefined,
       _offsetX: shape.x ?? 0,
       _offsetY: shape.y ?? 0,
     };

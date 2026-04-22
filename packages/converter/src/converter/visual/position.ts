@@ -54,12 +54,35 @@ export function topLevelPositionStyle(shape: ShapeCommon, isChildOfRoot = false)
 }
 
 export function resolvePositionOutput(shape: ShapeCommon, ctx: ConverterContext): string {
+  let positionStyle: string;
   if (ctx._parentIsLayout) {
-    const w = ctx._parentIsLayoutAutoW ? `width: ${px(shape.width ?? 0)};` : 'width: 100%;';
-    const h = ctx._parentIsLayoutAutoH ? `height: ${px(shape.height ?? 0)};` : 'height: 100%;';
-    return `${w} ${h}`;
+    const itemStyles = ctx._parentLayoutItemStyles ?? '';
+    const itemHasWidth = /(^|\s|;)\s*width\s*:/.test(itemStyles);
+    const itemHasHeight = /(^|\s|;)\s*height\s*:/.test(itemStyles);
+
+    const parts: string[] = [];
+    if (!itemHasWidth) {
+      parts.push(ctx._parentIsLayoutAutoW ? `width: ${px(shape.width ?? 0)};` : 'width: 100%;');
+    }
+    if (!itemHasHeight) {
+      parts.push(ctx._parentIsLayoutAutoH ? `height: ${px(shape.height ?? 0)};` : 'height: 100%;');
+    }
+    positionStyle = parts.join(' ');
+  } else if (ctx._forceRelative) {
+    positionStyle = relativePositionStyle(shape);
+  } else if (ctx._isCanvasTopLevel) {
+    positionStyle = topLevelPositionStyle(shape, ctx._isChildOfRoot);
+  } else {
+    positionStyle = absolutePositionStyle(
+      shape,
+      ctx._isChildOfRoot,
+      ctx._offsetX ?? 0,
+      ctx._offsetY ?? 0,
+    );
   }
-  if (ctx._forceRelative) return relativePositionStyle(shape);
-  if (ctx._isCanvasTopLevel) return topLevelPositionStyle(shape, ctx._isChildOfRoot);
-  return absolutePositionStyle(shape, ctx._isChildOfRoot, ctx._offsetX ?? 0, ctx._offsetY ?? 0);
+
+  if (ctx._parentLayoutItemStyles) {
+    return mergeStyles(positionStyle, ctx._parentLayoutItemStyles);
+  }
+  return positionStyle;
 }
