@@ -134,6 +134,10 @@ export interface ShapeTreeNode {
   width: number;
   height: number;
   children: ShapeTreeNode[];
+  componentRoot?: boolean;
+  componentId?: string;
+  componentFile?: string;
+  shapeRef?: string;
 }
 
 function buildShapeTree(objects: Page['objects'], id: string): ShapeTreeNode | null {
@@ -143,7 +147,7 @@ function buildShapeTree(objects: Page['objects'], id: string): ShapeTreeNode | n
     'shapes' in shape && Array.isArray((shape as { shapes?: unknown }).shapes)
       ? (shape as { shapes: string[] }).shapes
       : [];
-  return {
+  const node: ShapeTreeNode = {
     id: shape.id,
     name: shape.name,
     type: shape.type,
@@ -153,6 +157,11 @@ function buildShapeTree(objects: Page['objects'], id: string): ShapeTreeNode | n
     height: shape.selrect.height,
     children: childIds.flatMap((cid) => buildShapeTree(objects, cid) ?? []),
   };
+  if (shape.componentRoot) node.componentRoot = true;
+  if (shape.componentId) node.componentId = shape.componentId;
+  if (shape.componentFile) node.componentFile = shape.componentFile;
+  if (shape.shapeRef) node.shapeRef = shape.shapeRef;
+  return node;
 }
 
 export const getPageShapesFn = createServerFn({ method: 'GET' })
@@ -188,4 +197,72 @@ export const getPageShapesFn = createServerFn({ method: 'GET' })
 
     console.timeEnd(`convertPageShapes ${data.pageId}`);
     return result;
+  });
+
+export interface VariantProperty {
+  name: string;
+  value: string;
+}
+
+export interface LibraryComponent {
+  id: string;
+  name: string;
+  path: string;
+  variantId: string | null;
+  variantProperties: VariantProperty[];
+}
+
+export interface LibraryComponents {
+  fileId: string;
+  components: Record<string, LibraryComponent>;
+}
+
+interface RawComponent {
+  id?: string;
+  name?: string;
+  path?: string;
+  variantId?: string;
+  variantProperties?: VariantProperty[];
+}
+
+const FEATURES_FOR_COMPONENTS = [
+  'fdata/path-data',
+  'design-tokens/v1',
+  'variants/v1',
+  'layout/grid',
+  'styles/v2',
+  'fdata/objects-map',
+  'components/v2',
+  'fdata/shape-data-type',
+];
+
+interface RawFileWithComponents {
+  name?: string;
+  data?: { components?: Record<string, RawComponent> };
+}
+
+export const getLibraryComponentsFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ fileId: z.uuid() }))
+  .middleware([authMiddleware])
+  .handler(async ({ data, context }): Promise<LibraryComponents> => {
+    const file = await rpc<RawFileWithComponents>(context.token, 'get-file', {
+      params: {
+        id: data.fileId,
+        features: FEATURES_FOR_COMPONENTS,
+      },
+    });
+
+    const raw = file.data?.components ?? {};
+    const components: Record<string, LibraryComponent> = {};
+    for (const [id, comp] of Object.entries(raw)) {
+      components[id] = {
+        id: comp.id ?? id,
+        name: comp.name ?? 'Unknown',
+        path: comp.path ?? '',
+        variantId: comp.variantId ?? null,
+        variantProperties: comp.variantProperties ?? [],
+      };
+    }
+
+    return { fileId: data.fileId, components };
   });

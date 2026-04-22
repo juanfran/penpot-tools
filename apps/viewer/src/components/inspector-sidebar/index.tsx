@@ -1,5 +1,5 @@
 import { getPageShapesOptions } from '#/components/render';
-import { findNodeById } from '#/components/render/tree-utils';
+import { findNodeById, findParent } from '#/components/render/tree-utils';
 import { type ShapeTreeNode } from '#/lib/server/penpot-api';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Check, ChevronRight, Copy } from 'lucide-react';
@@ -9,6 +9,7 @@ import { AssetItem } from './asset-item';
 import { type Asset, buildNodeIndex, collectAssetsFromDom } from './assets';
 import { EMPTY_MARGINS, type Margins, computeMargins, extractBoxModel } from './box-model';
 import { BoxModelViz } from './box-model-viz';
+import { ComponentSection, type ComponentRef } from './component-section';
 import { COLOR_FORMATS, UNIT_FORMATS, transformValue } from './format-prefs';
 import {
   INSPECTOR_MAX_WIDTH,
@@ -24,6 +25,25 @@ import { extractStyles, extractText, groupStyles } from './styles';
 function findRootContaining(roots: ShapeTreeNode[], id: string): ShapeTreeNode | null {
   for (const root of roots) {
     if (root.id === id || findNodeById(root.children, id)) return root;
+  }
+  return null;
+}
+
+// Walks up from `node` (inclusive) to find the innermost component instance.
+// A nested component instance carries `componentId` without `componentRoot`; its
+// `componentFile` is inherited from the nearest ancestor that does declare one.
+function findComponentContext(
+  roots: ShapeTreeNode[],
+  node: ShapeTreeNode,
+): { instance: ShapeTreeNode; componentFile: string } | null {
+  let current: ShapeTreeNode | null = node;
+  let instance: ShapeTreeNode | null = null;
+  while (current) {
+    if (current.componentId && !instance) instance = current;
+    if (instance && current.componentFile) {
+      return { instance, componentFile: current.componentFile };
+    }
+    current = findParent(roots, current.id);
   }
   return null;
 }
@@ -68,6 +88,20 @@ export function InspectorSidebar({
   };
 
   if (!node || !rootShape) return null;
+
+  const componentContext = findComponentContext(data.tree, node);
+  const componentRef: ComponentRef | null =
+    componentContext && componentContext.instance.componentId
+      ? {
+          componentId: componentContext.instance.componentId,
+          componentFile: componentContext.componentFile,
+          fallbackName: componentContext.instance.name,
+          isExternal: componentContext.componentFile !== fileId,
+          isNested: componentContext.instance.id !== node.id,
+          nestedShapeName:
+            componentContext.instance.id !== node.id ? node.name : undefined,
+        }
+      : null;
 
   const rawDecls = extractStyles(rootShape.html, selectedShapeId);
   const decls = rawDecls.map(({ prop, value }) => ({
@@ -136,6 +170,8 @@ export function InspectorSidebar({
       {/* Styles */}
       <div className="flex min-h-0 flex-1 flex-col overflow-auto">
         <BoxModelViz model={boxModel} margins={margins} />
+
+        {componentRef && <ComponentSection info={componentRef} />}
 
         {textContent !== null && (
           <div className="border-t border-gray-100 px-4 pt-3 pb-4">
