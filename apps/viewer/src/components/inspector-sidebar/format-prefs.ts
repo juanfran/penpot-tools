@@ -161,7 +161,7 @@ function formatColor(c: RGBA, format: ColorFormat): string {
   }
 }
 
-const COLOR_REGEX = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)/gi;
+export const COLOR_REGEX = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)/gi;
 const PX_REGEX = /(-?\d*\.?\d+)px\b/g;
 
 function trimTrailingZeros(n: number): string {
