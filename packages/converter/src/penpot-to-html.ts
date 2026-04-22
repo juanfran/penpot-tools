@@ -215,13 +215,13 @@ ${body}
 // Cache helpers
 // ---------------------------------------------------------------------------
 
-function cachePath(fileId: string): string {
-  return path.join('cache', `${fileId}.json`);
+function cachePath(fileId: string, pageId: string): string {
+  return path.join('cache', `${fileId}-${pageId}.json`);
 }
 
-async function loadCache(fileId: string): Promise<Page | null> {
+async function loadCache(fileId: string, pageId: string): Promise<Page | null> {
   try {
-    const raw = await fs.readFile(cachePath(fileId), 'utf8');
+    const raw = await fs.readFile(cachePath(fileId, pageId), 'utf8');
     return JSON.parse(raw) as Page;
   } catch {
     return null;
@@ -230,7 +230,7 @@ async function loadCache(fileId: string): Promise<Page | null> {
 
 async function saveCache(fileId: string, page: Page): Promise<void> {
   await fs.mkdir('cache', { recursive: true });
-  await fs.writeFile(cachePath(fileId), JSON.stringify(page), 'utf8');
+  await fs.writeFile(cachePath(fileId, page.id), JSON.stringify(page), 'utf8');
 }
 
 // ---------------------------------------------------------------------------
@@ -245,10 +245,10 @@ async function main(): Promise<void> {
 
   let page: Page | null = null;
 
-  if (cache) {
-    page = await loadCache(fileId);
+  if (cache && pageId) {
+    page = await loadCache(fileId, pageId);
     if (page) {
-      console.error(`Using cached file: ${cachePath(fileId)}`);
+      console.error(`Using cached file: ${cachePath(fileId, pageId)}`);
     }
   }
 
