@@ -4,7 +4,11 @@ import { renderShape } from './render';
 import { renderPage } from './page';
 import { buildTree, getChildren } from './tree';
 export { buildGoogleFontsUrls } from './utils/fonts';
-import * as oxfmt from 'oxfmt';
+
+async function formatHtml(html: string): Promise<string> {
+  const oxfmt = await import('oxfmt');
+  return (await oxfmt.format('index.html', html)).code;
+}
 
 export interface ShapeResult {
   id: string;
@@ -32,7 +36,7 @@ export async function convertPage(page: Page, ctx: ConverterContext): Promise<Co
   const html = renderPage(page, { ...ctx, _fontCollector: fontCollector });
   const shouldFormat = ctx.format !== false;
   return {
-    html: shouldFormat ? (await oxfmt.format('index.html', html)).code : html,
+    html: shouldFormat ? await formatHtml(html) : html,
     fonts: extractFonts(fontCollector),
   };
 }
@@ -77,7 +81,7 @@ export async function convertShape(
 
   const shouldFormat = ctx.format !== false;
   return {
-    html: shouldFormat ? (await oxfmt.format('index.html', html)).code : html,
+    html: shouldFormat ? await formatHtml(html) : html,
     fonts: extractFonts(fontCollector),
   };
 }
@@ -104,7 +108,7 @@ export async function convertPageShapes(
   const shapes = await Promise.all(
     getChildren(root, page.objects).map(async (child) => {
       const raw = renderShape(child, page.objects, shapeCtx);
-      const html = shouldFormat ? (await oxfmt.format('index.html', raw)).code : raw;
+      const html = shouldFormat ? await formatHtml(raw) : raw;
       return {
         id: child.id,
         html,

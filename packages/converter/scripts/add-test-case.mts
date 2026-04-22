@@ -79,7 +79,8 @@ Next: add this test case to src/intengration/integration.test.ts:
   it('${name}', async () => {
     const page = getPage('${name}');
     const shape = page.objects['${boardId}'];
-    const { html } = await convertShape(shape, page.objects, ctx);
-    expect(html.trim()).toBe(getExpected('${name}'));
+    const { html, fonts } = await convertShape(shape, page.objects, ctx);
+    const el = await mount({ html, fonts });
+    await expect(el).toMatchScreenshot('${name}');
   });
 `);

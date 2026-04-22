@@ -1,76 +1,45 @@
-# penpot-to-html
+# penpot-random
 
-Fetches a Penpot page via the API and outputs its HTML
+Monorepo for converting [Penpot](https://penpot.app/) design files into standalone HTML.
 
-## Usage
+## Packages
 
-```bash
-PENPOT_TOKEN=<token> pnpm penpot-to-html \
-  --file-id <uuid> \
-  [--page-id <uuid>] \
-  [--base-url https://your-instance.com/api/main] \
-  > output.html
-```
+| Path                  | Name                        | What it does                                                                 |
+| --------------------- | --------------------------- | ---------------------------------------------------------------------------- |
+| `packages/converter`  | `@penpot-random/converter`  | Library + CLI that turns a Penpot page/shape (JSON) into HTML + inline CSS   |
+| `apps/viewer`         | `viewer`                    | React app that fetches a Penpot file and renders it using the converter      |
 
-## Authentication (pick one)
-
-| Env var                            | Description                               |
-| ---------------------------------- | ----------------------------------------- |
-| `PENPOT_TOKEN`                     | Access token from Penpot profile settings |
-| `PENPOT_EMAIL` + `PENPOT_PASSWORD` | Username/password login                   |
-
-## Options
-
-| Flag         | Required | Description                                                       |
-| ------------ | -------- | ----------------------------------------------------------------- |
-| `--file-id`  | yes      | UUID of the Penpot file                                           |
-| `--page-id`  | no       | UUID of the page (defaults to first page)                         |
-| `--shape-id` | no       | UUID of a specific shape to render (renders full page if omitted) |
-| `--output`   | no       | Path to write the HTML file (prints to stdout if omitted)         |
-| `--cache`    | no       | Use cached response from `cache/<file-id>.json` if available      |
-| `--base-url` | no       | API base URL (default: `https://design.penpot.app/api/main`)      |
-
-## Cache
-
-Every API response is automatically saved to `cache/<file-id>.json`. Pass `--cache` to reuse it on subsequent calls and skip the network request.
-
-## Examples
+## Setup
 
 ```bash
-# Full page to stdout
-PENPOT_TOKEN=xxx pnpm penpot-to-html --file-id <uuid>
-
-# Full page to file
-PENPOT_TOKEN=xxx pnpm penpot-to-html --file-id <uuid> --output page.html
-
-# Specific shape to file
-PENPOT_TOKEN=xxx pnpm penpot-to-html --file-id <uuid> --page-id <uuid> --shape-id <uuid> --output shape.html
-
-# Use cached response (no network request if cache exists)
-PENPOT_TOKEN=xxx pnpm penpot-to-html --file-id <uuid> --cache --output page.html
-
-# Self-hosted instance
-PENPOT_TOKEN=xxx pnpm penpot-to-html --file-id <uuid> --base-url https://your-instance.com/api/main --output page.html
+pnpm install
 ```
 
-## Preview integration test fixtures
-
-Visualize a `.expected.html` fixture in the browser with Tailwind CSS, design tokens, and Google Fonts applied:
+The converter's integration tests use Vitest browser mode with Playwright. The first time you run them you also need:
 
 ```bash
-pnpm preview <name>
+pnpm exec playwright install chromium
 ```
 
-Examples:
+## Commands (root)
 
 ```bash
-pnpm preview card
-pnpm preview tokens
-pnpm preview grid-stroke-shadow-overflow
+pnpm test         # run tests across all packages
+pnpm lint         # oxlint
+pnpm format       # oxfmt --check
+pnpm check        # oxlint --fix-dangerously && oxfmt
+pnpm typecheck    # tsc --noEmit across all packages
+pnpm knip         # detect unused code in converter
+pnpm viewer-dev   # start the viewer app (http://localhost:3000)
+pnpm penpot-to-html ...   # shortcut to the converter CLI (see its README)
 ```
 
-The script reads `src/intengration/<name>.expected.html` and the corresponding `<name>.json`, injects CSS custom properties for any design tokens, loads the required Google Fonts, and opens the result in the browser.
+## Per-package docs
 
-# How to run Ralph
+- [`packages/converter`](packages/converter/README.md) — CLI usage, auth, preview, integration tests, dev scripts.
 
+## How to run Ralph
+
+```
 /ralph-loop:ralph-loop "READ PROMPT.md a follow instructions" --completion-promise "DONE" --max-iterations 10
+```

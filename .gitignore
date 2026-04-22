@@ -19,3 +19,4 @@ storybook-static
 **/cache/*
 **/tmp/*
 **/info.md
+.vitest-attachments/

@@ -1,11 +1,9 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { Page } from '../penpot.types';
 
-export function getExpected(name: string): string {
-  return readFileSync(join(__dirname, `${name}.expected.html`), 'utf-8').trim();
-}
+const pages = import.meta.glob<Page>('./*.json', { eager: true, import: 'default' });
 
 export function getPage(name: string): Page {
-  return JSON.parse(readFileSync(join(__dirname, `${name}.json`), 'utf-8'));
+  const page = pages[`./${name}.json`];
+  if (!page) throw new Error(`Page fixture not found: ${name}`);
+  return page;
 }
