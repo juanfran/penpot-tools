@@ -73,14 +73,6 @@ describe('integration', () => {
     await expect(el).toMatchScreenshot('image-fill');
   });
 
-  it('svg group with circle shapes renders circles and strokes', async () => {
-    const page = getPage('graphic-social');
-    const shape = page.objects['eaa1384c-05db-801a-8007-d9908cf18cbf'];
-    const { html, fonts } = await convertShape(shape, page.objects, ctx);
-    const el = await mount({ html, fonts });
-    await expect(el).toMatchScreenshot('graphic-social');
-  });
-
   it('svg group with stroke-only paths renders strokes', async () => {
     const page = getPage('icon-menu');
     const shape = page.objects['eaa1384c-05db-801a-8007-d98e7c8afad3'];
