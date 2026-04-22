@@ -21,7 +21,7 @@ import { findNodeById } from './tree-utils';
 import { loadTransform, saveTransform, type SavedTransform } from './transform-storage';
 import { ZoomControls } from './zoom-controls';
 import { ShapeNode } from './shape-node';
-import { SelectionHighlights, ShapeHitZones } from './shape-overlays';
+import { SelectionHighlights, ShapeHitZone } from './shape-overlays';
 import { useInspectorPrefs } from '#/components/inspector-sidebar/prefs-store';
 
 export type RenderHandle = {
@@ -219,8 +219,7 @@ export const Render = ({
                 </Virtualize>
               ))}
               {onShapeSelect && !isSpacePressed && (
-                <ShapeHitZones
-                  shapes={data.shapes}
+                <ShapeHitZone
                   tree={data.tree}
                   selectedShapeId={selectedShapeId}
                   hoveredShapeId={hoveredShapeId}
