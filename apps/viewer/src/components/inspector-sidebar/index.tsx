@@ -3,14 +3,18 @@ import { findNodeById } from '#/components/render/tree-utils';
 import { type ShapeTreeNode } from '#/lib/server/penpot-api';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Check, ChevronRight, Copy } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { AssetItem } from './asset-item';
 import { type Asset, buildNodeIndex, collectAssetsFromDom } from './assets';
 import { EMPTY_MARGINS, type Margins, computeMargins, extractBoxModel } from './box-model';
 import { BoxModelViz } from './box-model-viz';
 import { COLOR_FORMATS, UNIT_FORMATS, transformValue } from './format-prefs';
-import { useInspectorPrefs } from './prefs-store';
+import {
+  INSPECTOR_MAX_WIDTH,
+  INSPECTOR_MIN_WIDTH,
+  useInspectorPrefs,
+} from './prefs-store';
 import { Segmented } from './segmented';
 import { shapeIcon } from './shape-icon';
 import { StyleDecl } from './style-decl';
@@ -40,6 +44,9 @@ export function InspectorSidebar({
   const setColorFormat = useInspectorPrefs((s) => s.setColorFormat);
   const unitFormat = useInspectorPrefs((s) => s.unitFormat);
   const setUnitFormat = useInspectorPrefs((s) => s.setUnitFormat);
+  const width = useInspectorPrefs((s) => s.width);
+  const setWidth = useInspectorPrefs((s) => s.setWidth);
+  const asideRef = useRef<HTMLElement>(null);
 
   const nodeIndex = useMemo(() => buildNodeIndex(data.tree), [data.tree]);
   const [assetsOpen, setAssetsOpen] = useState(false);
@@ -79,8 +86,42 @@ export function InspectorSidebar({
     });
   };
 
+  const handleResizePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const aside = asideRef.current;
+    if (!aside) return;
+    let next = width;
+    const onMove = (ev: PointerEvent) => {
+      next = Math.min(
+        INSPECTOR_MAX_WIDTH,
+        Math.max(INSPECTOR_MIN_WIDTH, window.innerWidth - ev.clientX),
+      );
+      aside.style.width = `${next}px`;
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      setWidth(next);
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+
   return (
-    <aside className="flex w-80 flex-col border-l border-gray-200 bg-white">
+    <aside
+      ref={asideRef}
+      style={{ width: `${width}px` }}
+      className="relative flex shrink-0 flex-col border-l border-gray-200 bg-white"
+    >
+      <div
+        onPointerDown={handleResizePointerDown}
+        className="absolute top-0 bottom-0 -left-0.5 z-10 w-1 cursor-col-resize hover:bg-blue-400/60"
+        title="Drag to resize"
+      />
       {/* Shape header */}
       <div className="border-b border-gray-100 px-4 py-3">
         <div className="mb-1 flex items-center gap-1.5">

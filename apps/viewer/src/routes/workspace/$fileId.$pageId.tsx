@@ -1,6 +1,7 @@
 import { getPageShapesOptions, Render, type RenderHandle } from '#/components/render';
 import { PagesSidebar } from '#/components/pages-sidebar';
 import { InspectorSidebar } from '#/components/inspector-sidebar';
+import { useInspectorPrefs } from '#/components/inspector-sidebar/prefs-store';
 import { getFileSummaryFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
@@ -112,6 +113,7 @@ function RouteComponent() {
   const { fileId, pageId } = Route.useParams();
   const [selectedShapeId, setSelectedShapeId] = useState<string | undefined>(undefined);
   const renderRef = useRef<RenderHandle>(null);
+  const inspectorWidth = useInspectorPrefs((s) => s.width);
 
   const handleGoToShape = (id: string) => {
     renderRef.current?.goToShape(id);
@@ -146,7 +148,14 @@ function RouteComponent() {
             </Suspense>
           </main>
           {selectedShapeId && (
-            <Suspense fallback={<aside className="w-80 border-l border-gray-200" />}>
+            <Suspense
+              fallback={
+                <aside
+                  style={{ width: `${inspectorWidth}px` }}
+                  className="shrink-0 border-l border-gray-200"
+                />
+              }
+            >
               <InspectorSidebar
                 key={selectedShapeId}
                 fileId={fileId}
