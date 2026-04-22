@@ -5,7 +5,15 @@ export interface Rect {
   height: number;
 }
 
-export type GapLineKey = 'hgap' | 'vgap' | 'hleft' | 'hright' | 'vtop' | 'vbot';
+export type GapLineKey =
+  | 'hgap'
+  | 'vgap'
+  | 'hleft'
+  | 'hright'
+  | 'vtop'
+  | 'vbot'
+  | 'hproj'
+  | 'vproj';
 
 export interface GapLineSpec {
   key: GapLineKey;
@@ -13,16 +21,21 @@ export interface GapLineSpec {
   start: number;
   end: number;
   cross: number;
+  /** Projection guide — drawn without a distance label. */
+  noLabel?: boolean;
 }
 
 const EPS = 0.5;
 
 /**
- * Given two rects (selected and hovered shape bounds, in canvas coords),
+ * Given two rects (selected = a, hovered = b, in canvas coords),
  * returns the set of lines to draw visualizing the distance between them.
  *
- * - Sibling relationship (ranges disjoint on at least one axis):
- *   one gap line per separated axis, placed between the shapes.
+ * - Both axes disjoint (diagonally separated):
+ *   two measurement lines anchored to the selected shape's near corner
+ *   plus two projection guides to the hovered shape's near corner.
+ * - Single axis disjoint (sibling):
+ *   one gap line per separated axis, placed inside the overlap on the other axis.
  * - Parent/child or intersecting (both axes overlap):
  *   up to four edge-to-edge inset lines (left, right, top, bottom),
  *   only drawn where the edges differ.
@@ -36,29 +49,47 @@ export function computeDistanceLines(a: Rect, b: Rect): GapLineSpec[] {
   const xDisjoint = aRight < b.x - EPS || bRight < a.x - EPS;
   const yDisjoint = aBottom < b.y - EPS || bBottom < a.y - EPS;
 
+  if (xDisjoint && yDisjoint) {
+    const aLeftOfB = aRight < b.x;
+    const aAboveB = aBottom < b.y;
+    const aNearX = aLeftOfB ? aRight : a.x;
+    const aNearY = aAboveB ? aBottom : a.y;
+    const bNearX = aLeftOfB ? b.x : bRight;
+    const bNearY = aAboveB ? b.y : bBottom;
+    const minX = Math.min(aNearX, bNearX);
+    const maxX = Math.max(aNearX, bNearX);
+    const minY = Math.min(aNearY, bNearY);
+    const maxY = Math.max(aNearY, bNearY);
+    return [
+      { key: 'hgap', orientation: 'h', start: minX, end: maxX, cross: aNearY },
+      { key: 'vgap', orientation: 'v', start: minY, end: maxY, cross: aNearX },
+      { key: 'hproj', orientation: 'h', start: minX, end: maxX, cross: bNearY, noLabel: true },
+      { key: 'vproj', orientation: 'v', start: minY, end: maxY, cross: bNearX, noLabel: true },
+    ];
+  }
+
   const lines: GapLineSpec[] = [];
 
-  if (xDisjoint || yDisjoint) {
-    if (xDisjoint) {
-      const aLeftOfB = aRight < b.x;
-      lines.push({
-        key: 'hgap',
-        orientation: 'h',
-        start: aLeftOfB ? aRight : bRight,
-        end: aLeftOfB ? b.x : a.x,
-        cross: (a.y + a.height / 2 + b.y + b.height / 2) / 2,
-      });
-    }
-    if (yDisjoint) {
-      const aAboveB = aBottom < b.y;
-      lines.push({
-        key: 'vgap',
-        orientation: 'v',
-        start: aAboveB ? aBottom : bBottom,
-        end: aAboveB ? b.y : a.y,
-        cross: (a.x + a.width / 2 + b.x + b.width / 2) / 2,
-      });
-    }
+  if (xDisjoint) {
+    const aLeftOfB = aRight < b.x;
+    lines.push({
+      key: 'hgap',
+      orientation: 'h',
+      start: aLeftOfB ? aRight : bRight,
+      end: aLeftOfB ? b.x : a.x,
+      cross: (Math.max(a.y, b.y) + Math.min(aBottom, bBottom)) / 2,
+    });
+    return lines;
+  }
+  if (yDisjoint) {
+    const aAboveB = aBottom < b.y;
+    lines.push({
+      key: 'vgap',
+      orientation: 'v',
+      start: aAboveB ? aBottom : bBottom,
+      end: aAboveB ? b.y : a.y,
+      cross: (Math.max(a.x, b.x) + Math.min(aRight, bRight)) / 2,
+    });
     return lines;
   }
 

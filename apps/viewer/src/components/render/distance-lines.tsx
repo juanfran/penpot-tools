@@ -36,10 +36,11 @@ function GapLine({
   start,
   end,
   cross,
+  noLabel,
   unit,
 }: Omit<GapLineSpec, 'key'> & { unit: UnitFormat }) {
   const label = formatDistance(end - start, unit);
-  const inset = Math.max(0, Math.min(LINE_INSET, (end - start - 1) / 2));
+  const inset = noLabel ? 0 : Math.max(0, Math.min(LINE_INSET, (end - start - 1) / 2));
   const lineStart = start + inset;
   const lineEnd = end - inset;
   const labelStyle: CSSProperties = {
@@ -52,6 +53,8 @@ function GapLine({
     whiteSpace: 'nowrap',
     display: 'inline-block',
   };
+  const borderStyle = noLabel ? 'dotted' : 'dashed';
+  const lineColor = noLabel ? `${COLOR}99` : COLOR;
 
   if (orientation === 'h') {
     return (
@@ -63,21 +66,23 @@ function GapLine({
             top: cross,
             width: lineEnd - lineStart,
             height: 0,
-            borderTop: `1px dashed ${COLOR}`,
+            borderTop: `1px ${borderStyle} ${lineColor}`,
             zIndex: 4,
           }}
         />
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            left: (start + end) / 2,
-            top: cross,
-            transform: 'translate(-50%, calc(-100% - 2px))',
-            zIndex: 5,
-          }}
-        >
-          <span style={labelStyle}>{label}</span>
-        </div>
+        {!noLabel && (
+          <div
+            className="pointer-events-none absolute"
+            style={{
+              left: (start + end) / 2,
+              top: cross,
+              transform: 'translate(-50%, calc(-100% - 2px))',
+              zIndex: 5,
+            }}
+          >
+            <span style={labelStyle}>{label}</span>
+          </div>
+        )}
       </>
     );
   }
@@ -91,21 +96,23 @@ function GapLine({
           top: lineStart,
           width: 0,
           height: lineEnd - lineStart,
-          borderLeft: `1px dashed ${COLOR}`,
+          borderLeft: `1px ${borderStyle} ${lineColor}`,
           zIndex: 4,
         }}
       />
-      <div
-        className="pointer-events-none absolute"
-        style={{
-          left: cross,
-          top: (start + end) / 2,
-          transform: 'translate(4px, -50%)',
-          zIndex: 5,
-        }}
-      >
-        <span style={labelStyle}>{label}</span>
-      </div>
+      {!noLabel && (
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            left: cross,
+            top: (start + end) / 2,
+            transform: 'translate(4px, -50%)',
+            zIndex: 5,
+          }}
+        >
+          <span style={labelStyle}>{label}</span>
+        </div>
+      )}
     </>
   );
 }

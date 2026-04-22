@@ -67,29 +67,70 @@ describe('computeDistanceLines', () => {
       ]);
     });
 
-    it('draws horizontal + vertical gap lines when diagonally separated', () => {
+    it('draws measurement + projection lines when diagonally separated', () => {
+      // A's top-left at (0,0), B's top-left at (200,200).
+      // A is top-left of B; A's near corner = (aRight=100, aBottom=50);
+      // B's near corner = (b.x=200, b.y=200).
       const a = rect(0, 0, 100, 50);
       const b = rect(200, 200, 100, 50);
-      // a y-center = 25; b y-center = 225; hgap cross = 125
-      // a x-center = 50; b x-center = 250; vgap cross = 150
 
       const lines = computeDistanceLines(a, b);
 
-      expect(lines).toHaveLength(2);
+      expect(lines).toHaveLength(4);
+      // Horizontal measurement along A's near horizontal edge (bottom of A).
       expect(lines).toContainEqual({
         key: 'hgap',
         orientation: 'h',
         start: 100,
         end: 200,
-        cross: 125,
+        cross: 50,
       });
+      // Vertical measurement along A's near vertical edge (right of A).
       expect(lines).toContainEqual({
         key: 'vgap',
         orientation: 'v',
         start: 50,
         end: 200,
-        cross: 150,
+        cross: 100,
       });
+      // Projection guides at B's near edges — no label, close the rectangle.
+      expect(lines).toContainEqual({
+        key: 'hproj',
+        orientation: 'h',
+        start: 100,
+        end: 200,
+        cross: 200,
+        noLabel: true,
+      });
+      expect(lines).toContainEqual({
+        key: 'vproj',
+        orientation: 'v',
+        start: 50,
+        end: 200,
+        cross: 200,
+        noLabel: true,
+      });
+    });
+
+    it('anchors diagonal lines to the selected shape regardless of quadrant', () => {
+      // B is top-left of A: A's near corner is its top-left (a.x, a.y).
+      const a = rect(789.625, 441.566, 160.562, 104.608);
+      const b = rect(-120.227, 76.652, 642.249, 82.713);
+      // aRight ≈ 950.187, aBottom ≈ 546.174
+      // bRight ≈ 522.022, bBottom ≈ 159.365
+      // aLeftOfB = false (A is right of B); aAboveB = false (A is below B)
+      // A near = (a.x, a.y) = (789.625, 441.566)
+      // B near = (bRight, bBottom) = (522.022, 159.365)
+
+      const lines = computeDistanceLines(a, b);
+
+      expect(lines).toHaveLength(4);
+      const hgap = lines.find((l) => l.key === 'hgap')!;
+      const vgap = lines.find((l) => l.key === 'vgap')!;
+      // Horizontal measurement sits on A's top edge (a.y), touching A's top-left corner.
+      expect(hgap.cross).toBeCloseTo(441.566);
+      // Vertical measurement sits on A's left edge (a.x), touching the same corner.
+      expect(vgap.cross).toBeCloseTo(789.625);
     });
 
     it('does not emit edge-offset lines for sibling shapes (only gap)', () => {
