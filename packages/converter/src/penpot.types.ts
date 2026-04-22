@@ -665,10 +665,19 @@ export interface CircleShape extends ShapeCommon {
 // SVG-Raw Shape
 // ============================================================
 
+export interface SvgRawContentNode {
+  tag: string;
+  attrs?: Record<string, string | number>;
+  content?: Array<SvgRawContentNode | string>;
+}
+
 export interface SvgRawShape extends ShapeCommon {
   type: 'svg-raw';
-  /** Raw SVG markup */
-  content: string;
+  /**
+   * SVG content. May be a raw markup string, or Penpot's parsed SVG tree node
+   * (`{ tag, attrs, content }`) — the form delivered by `get-page`.
+   */
+  content: string | SvgRawContentNode;
   x?: number;
   y?: number;
   width?: number;

@@ -89,4 +89,26 @@ describe('renderSvgRaw', () => {
   it('has no class attribute', () => {
     expect(renderSvgRaw(makeSvgRaw(), ctx)).not.toContain('class=');
   });
+
+  it('serializes tree-node content into SVG markup', () => {
+    const content = {
+      tag: 'svg',
+      attrs: { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24' },
+      content: [
+        { tag: 'circle', attrs: { cx: 12, cy: 12, r: 10, fill: 'red' } },
+        { tag: 'g', content: [{ tag: 'rect', attrs: { width: 4, height: 4 } }] },
+      ],
+    };
+    const html = renderSvgRaw(makeSvgRaw({ content }), ctx);
+    expect(html).toContain('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">');
+    expect(html).toContain('<circle cx="12" cy="12" r="10" fill="red" />');
+    expect(html).toContain('<g><rect width="4" height="4" /></g>');
+  });
+
+  it('escapes attribute values in tree-node content', () => {
+    const content = { tag: 'svg', attrs: { 'data-x': '"><script>alert(1)</script>' } };
+    const html = renderSvgRaw(makeSvgRaw({ content }), ctx);
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&quot;');
+  });
 });
