@@ -47,7 +47,6 @@ export const Route = createFileRoute('/workspace/$fileId/$pageId')({
 });
 
 function PageSkeleton() {
-  const inspectorWidth = useInspectorPrefs((s) => s.width);
   return (
     <div className="flex h-screen flex-col">
       <PageHeaderFallback />
@@ -56,7 +55,6 @@ function PageSkeleton() {
         <main className="relative flex-1 overflow-auto">
           <RenderFallback />
         </main>
-        <InspectorSidebarFallback width={inspectorWidth} />
       </div>
     </div>
   );
