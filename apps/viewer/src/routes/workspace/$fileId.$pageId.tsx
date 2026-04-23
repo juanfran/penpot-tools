@@ -2,21 +2,16 @@ import { getPageShapesOptions, Render, type RenderHandle } from '#/components/re
 import { PagesSidebar } from '#/components/pages-sidebar';
 import { InspectorSidebar } from '#/components/inspector-sidebar';
 import { useInspectorPrefs } from '#/components/inspector-sidebar/prefs-store';
-import { getFileSummaryFn } from '#/lib/server/penpot-api';
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, Link, redirect } from '@tanstack/react-router';
+import {
+  PageHeader,
+  PageHeaderFallback,
+  getFileSummaryQueryOptions,
+} from '#/components/page-header';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { Suspense, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
-
-const getFileSummaryQueryOptions = (fileId: string) => {
-  return queryOptions({
-    queryKey: ['get-file', fileId],
-    queryFn: () => {
-      return getFileSummaryFn({ data: { fileId } });
-    },
-  });
-};
 
 export const Route = createFileRoute('/workspace/$fileId/$pageId')({
   validateSearch: z.object({
@@ -51,52 +46,11 @@ export const Route = createFileRoute('/workspace/$fileId/$pageId')({
   },
 });
 
-function Header({ fileId, pageId }: { fileId: string; pageId: string }) {
-  const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
-  const { teamId } = Route.useSearch();
-
-  const penpotParams = new URLSearchParams({ 'file-id': fileId, 'page-id': pageId });
-  if (teamId) penpotParams.set('team-id', teamId);
-  const penpotUrl = `https://design.penpot.app/#/workspace?${penpotParams.toString()}`;
-
-  return (
-    <header className="flex h-12 items-center gap-3 border-b border-gray-200 px-4">
-      <Link
-        to="/"
-        search={{ teamId }}
-        className="text-sm font-semibold text-gray-900 hover:text-gray-600"
-      >
-        Penpot Viewer
-      </Link>
-      <span className="text-gray-300">/</span>
-      <span className="text-sm text-gray-600">{file.name}</span>
-      <div className="ml-auto flex items-center gap-4">
-        <Link
-          to="/tokens/$fileId/$pageId"
-          params={{ fileId, pageId }}
-          search={{ teamId }}
-          className="text-sm text-gray-500 hover:text-gray-800"
-        >
-          Tokens
-        </Link>
-        <a
-          href={penpotUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="text-sm text-gray-500 hover:text-gray-800"
-        >
-          Open in Penpot ↗
-        </a>
-      </div>
-    </header>
-  );
-}
-
 function PageSkeleton() {
   const inspectorWidth = useInspectorPrefs((s) => s.width);
   return (
     <div className="flex h-screen flex-col">
-      <HeaderFallback />
+      <PageHeaderFallback />
       <div className="flex flex-1 overflow-hidden">
         <PagesSidebarFallback />
         <main className="relative flex-1 overflow-auto">
@@ -105,17 +59,6 @@ function PageSkeleton() {
         <InspectorSidebarFallback width={inspectorWidth} />
       </div>
     </div>
-  );
-}
-
-function HeaderFallback() {
-  return (
-    <header className="flex h-12 items-center gap-3 border-b border-gray-200 px-4">
-      <div className="h-4 w-28 animate-pulse rounded bg-gray-200" />
-      <span className="text-gray-300">/</span>
-      <div className="h-3 w-40 animate-pulse rounded bg-gray-100" />
-      <div className="ml-auto h-3 w-24 animate-pulse rounded bg-gray-100" />
-    </header>
   );
 }
 
@@ -198,6 +141,7 @@ function SidebarWrapper({
 
 function RouteComponent() {
   const { fileId, pageId } = Route.useParams();
+  const { teamId } = Route.useSearch();
   const [selectedShapeId, setSelectedShapeId] = useState<string | undefined>(undefined);
   const renderRef = useRef<RenderHandle>(null);
   const inspectorWidth = useInspectorPrefs((s) => s.width);
@@ -210,8 +154,8 @@ function RouteComponent() {
   return (
     <>
       <div className="flex h-screen flex-col">
-        <Suspense fallback={<HeaderFallback />}>
-          <Header fileId={fileId} pageId={pageId} />
+        <Suspense fallback={<PageHeaderFallback />}>
+          <PageHeader fileId={fileId} pageId={pageId} teamId={teamId} view="workspace" />
         </Suspense>
         <div className="flex flex-1 overflow-hidden">
           <Suspense fallback={<PagesSidebarFallback />}>

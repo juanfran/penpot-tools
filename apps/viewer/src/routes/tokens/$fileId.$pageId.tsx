@@ -1,22 +1,21 @@
-import { getFileSummaryFn, getPageTokensFn, type PageTokens } from '#/lib/server/penpot-api';
+import { getPageTokensFn, type PageTokens } from '#/lib/server/penpot-api';
 import { Input } from '#/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '#/components/ui/tooltip';
+import {
+  PageHeader,
+  PageHeaderFallback,
+  getFileSummaryQueryOptions,
+} from '#/components/page-header';
 import { COLOR_FORMATS, UNIT_FORMATS, transformValue } from '#/components/inspector-sidebar/format-prefs';
 import { useInspectorPrefs } from '#/components/inspector-sidebar/prefs-store';
 import { Segmented } from '#/components/inspector-sidebar/segmented';
 import type { TokenCategory, TokenInfo } from '@penpot-random/converter/tokens';
 import { tokenToCssVarName } from '@penpot-random/converter/tokens';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, Link, redirect } from '@tanstack/react-router';
-import { Check, Copy, ExternalLink, Loader2, Search } from 'lucide-react';
+import { createFileRoute, redirect } from '@tanstack/react-router';
+import { Check, Copy, Loader2, Search } from 'lucide-react';
 import { Suspense, useDeferredValue, useMemo, useState } from 'react';
 import { z } from 'zod';
-
-const fileSummaryOptions = (fileId: string) =>
-  queryOptions({
-    queryKey: ['get-file', fileId],
-    queryFn: () => getFileSummaryFn({ data: { fileId } }),
-  });
 
 const pageTokensOptions = (fileId: string, pageId: string) =>
   queryOptions<PageTokens>({
@@ -32,7 +31,9 @@ export const Route = createFileRoute('/tokens/$fileId/$pageId')({
   pendingMs: 0,
   beforeLoad: async ({ params, search, context }) => {
     if (params.pageId !== '0000-0000-0000-0000') return;
-    const file = await context.queryClient.ensureQueryData(fileSummaryOptions(params.fileId));
+    const file = await context.queryClient.ensureQueryData(
+      getFileSummaryQueryOptions(params.fileId),
+    );
     const firstPageId = file.data.pages[0];
     if (!firstPageId) throw new Error('File has no pages');
     throw redirect({
@@ -43,7 +44,7 @@ export const Route = createFileRoute('/tokens/$fileId/$pageId')({
     });
   },
   loader: ({ params, context }) => {
-    context.queryClient.prefetchQuery(fileSummaryOptions(params.fileId));
+    context.queryClient.prefetchQuery(getFileSummaryQueryOptions(params.fileId));
     context.queryClient.prefetchQuery(pageTokensOptions(params.fileId, params.pageId));
   },
 });
@@ -70,10 +71,11 @@ const CATEGORY_LABEL: Record<TokenCategory, string> = {
 
 function RouteComponent() {
   const { fileId, pageId } = Route.useParams();
+  const { teamId } = Route.useSearch();
   return (
     <div className="flex h-screen flex-col bg-gray-50">
-      <Suspense fallback={<HeaderFallback />}>
-        <Header fileId={fileId} pageId={pageId} />
+      <Suspense fallback={<PageHeaderFallback />}>
+        <TokensHeader fileId={fileId} pageId={pageId} teamId={teamId} />
       </Suspense>
       <Suspense fallback={<BodyFallback />}>
         <TokensBody fileId={fileId} pageId={pageId} />
@@ -82,56 +84,24 @@ function RouteComponent() {
   );
 }
 
-function Header({ fileId, pageId }: { fileId: string; pageId: string }) {
-  const { data: file } = useSuspenseQuery(fileSummaryOptions(fileId));
+function TokensHeader({
+  fileId,
+  pageId,
+  teamId,
+}: {
+  fileId: string;
+  pageId: string;
+  teamId: string | undefined;
+}) {
   const { data: page } = useSuspenseQuery(pageTokensOptions(fileId, pageId));
-  const { teamId } = Route.useSearch();
-  const penpotParams = new URLSearchParams({ 'file-id': fileId, 'page-id': pageId });
-  if (teamId) penpotParams.set('team-id', teamId);
-  const penpotUrl = `https://design.penpot.app/#/workspace?${penpotParams.toString()}`;
-
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4">
-      <Link to="/" search={{ teamId }} className="text-sm font-semibold text-gray-900 hover:text-gray-600">
-        Penpot Viewer
-      </Link>
-      <span className="text-gray-300">/</span>
-      <span className="text-sm text-gray-600">{file.name}</span>
-      <span className="text-gray-300">/</span>
-      <span className="text-sm text-gray-900">{page.pageName}</span>
-      <span className="ml-2 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-medium text-white">
-        Tokens
-      </span>
-      <div className="ml-auto flex items-center gap-4">
-        <Link
-          to="/workspace/$fileId/$pageId"
-          params={{ fileId, pageId }}
-          search={{ teamId }}
-          className="text-sm text-gray-500 hover:text-gray-800"
-        >
-          Workspace
-        </Link>
-        <a
-          href={penpotUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"
-        >
-          Open in Penpot <ExternalLink className="h-3 w-3" />
-        </a>
-      </div>
-    </header>
-  );
-}
-
-function HeaderFallback() {
-  return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4">
-      <div className="h-4 w-28 animate-pulse rounded bg-gray-200" />
-      <span className="text-gray-300">/</span>
-      <div className="h-3 w-40 animate-pulse rounded bg-gray-100" />
-      <div className="ml-auto h-3 w-24 animate-pulse rounded bg-gray-100" />
-    </header>
+    <PageHeader
+      fileId={fileId}
+      pageId={pageId}
+      teamId={teamId}
+      view="tokens"
+      pageName={page.pageName}
+    />
   );
 }
 
@@ -146,7 +116,7 @@ function BodyFallback() {
 function PageSkeleton() {
   return (
     <div className="flex h-screen flex-col bg-gray-50">
-      <HeaderFallback />
+      <PageHeaderFallback />
       <BodyFallback />
     </div>
   );
