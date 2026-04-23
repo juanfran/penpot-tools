@@ -302,4 +302,70 @@ describe('renderFrame', () => {
       expect(html).toContain('top: 10px;');
     });
   });
+
+  describe('layoutItemAbsolute flex child', () => {
+    it('does not override its own position: absolute with position: relative', () => {
+      const frame = makeFrame({
+        parentId: 'parent-frame' as Uuid,
+        id: 'frame-1' as Uuid,
+        layoutItemAbsolute: true,
+      });
+      const absoluteCtx: ConverterContext = {
+        ...ctx,
+        _parentIsLayout: true,
+        _parentIsLayoutAutoW: true,
+        _parentIsLayoutAutoH: true,
+        _parentLayoutItemStyles: 'position: absolute; left: 464px; top: 157.5px;',
+      };
+      const html = renderFrame(frame, [], {}, absoluteCtx);
+      expect(html).toContain('position: absolute;');
+      expect(html).not.toContain('position: relative;');
+    });
+
+    it('keeps position: absolute when it is a flex frame with absolute children', () => {
+      // Reproduces a bug where a layoutItemAbsolute flex frame with absolute children
+      // got `position: relative` appended after `position: absolute`, causing CSS to
+      // use relative (last wins) and placing the frame in flex flow instead of at its
+      // own left/top coordinates.
+      const frame = makeFrame({
+        parentId: 'parent-frame' as Uuid,
+        id: 'frame-1' as Uuid,
+        layoutType: 'flex',
+        layoutFlexDir: 'row',
+        layoutItemAbsolute: true,
+      });
+      const absoluteChild = { ...makeChild('abs-child'), layoutItemAbsolute: true };
+      const objects: Record<string, Shape> = { 'abs-child': absoluteChild };
+      const absoluteCtx: ConverterContext = {
+        ...ctx,
+        _parentIsLayout: true,
+        _parentIsLayoutAutoW: true,
+        _parentIsLayoutAutoH: true,
+        _parentLayoutItemStyles: 'position: absolute; left: 464px; top: 157.5px;',
+      };
+      const html = renderFrame(frame, [absoluteChild], objects, absoluteCtx);
+      expect(html).toContain('position: absolute;');
+      expect(html).not.toContain('position: relative;');
+    });
+
+    it('keeps position: absolute when it is a plain frame with children', () => {
+      const frame = makeFrame({
+        parentId: 'parent-frame' as Uuid,
+        id: 'frame-1' as Uuid,
+        layoutItemAbsolute: true,
+      });
+      const child = makeChild('child-1');
+      const objects: Record<string, Shape> = { 'child-1': child };
+      const absoluteCtx: ConverterContext = {
+        ...ctx,
+        _parentIsLayout: true,
+        _parentIsLayoutAutoW: true,
+        _parentIsLayoutAutoH: true,
+        _parentLayoutItemStyles: 'position: absolute; left: 50px; top: 80px;',
+      };
+      const html = renderFrame(frame, [child], objects, absoluteCtx);
+      expect(html).toContain('position: absolute;');
+      expect(html).not.toContain('position: relative;');
+    });
+  });
 });

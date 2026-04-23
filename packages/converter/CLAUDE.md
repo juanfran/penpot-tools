@@ -129,3 +129,15 @@ Tests run in Vitest browser mode (Playwright + Chromium) and compare screenshots
 
 - Workflow for adding a test and regenerating baselines: see [`README.md`](README.md#integration-tests-visual-regression).
 - `oxfmt` is imported dynamically in `converter/index.ts` because it uses `createRequire`, which would break the browser bundle. Integration tests pass `format: false` in the context.
+
+## Debugging a real shape from the cache
+
+When a user reports a bug on a specific `file-id` / `shape-id`, use `scripts/inspect-shape.mts` instead of writing a throwaway script. It prints the parent chain (with layout / sizing / `layoutItemAbsolute` flags highlighted), the shape data, and optionally the rendered HTML.
+
+```bash
+pnpm exec tsx scripts/inspect-shape.mts --file-id <uuid> --shape-id <uuid> [--page-id <uuid>] [--html]
+```
+
+Cache paths follow the CLI convention `cache/<file-id>-<page-id>.json` (the CLI at `penpot-to-html.ts` writes them via `cachePath(fileId, pageId)`). The script auto-detects the page file when `--page-id` is omitted. If the cache is missing, fetch it first with `pnpm penpot-to-html --file-id <uuid> --page-id <uuid> --cache`.
+
+If you need something the script doesn't cover, extend it rather than creating a new ad-hoc tmp file — future debugging sessions should reuse the same entry point.

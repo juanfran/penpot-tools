@@ -67,10 +67,14 @@ export function renderFrame(
   const plainFrameNeedsRelative =
     !isFlex && !isGrid && !isRoot && children.length > 0 && ctx._parentIsLayout;
 
-  const extraPositionStyle =
-    plainFrameNeedsRelative || (hasAbsoluteChild && ctx._parentIsLayout)
-      ? 'position: relative;'
-      : '';
+  // If the shape itself is layoutItemAbsolute, the layout-item style already emits
+  // position: absolute, which creates a containing block. Adding position: relative
+  // on top would override the absolute positioning and place the shape in flex flow.
+  const needsContainingBlock =
+    !shape.layoutItemAbsolute &&
+    (plainFrameNeedsRelative || (hasAbsoluteChild && ctx._parentIsLayout));
+
+  const extraPositionStyle = needsContainingBlock ? 'position: relative;' : '';
 
   const style = mergeStyles(
     positionStyle,

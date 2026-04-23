@@ -3,15 +3,16 @@
  * Optionally generates the HTML output for the shape.
  *
  * Usage:
- *   pnpm exec tsx scripts/inspect-shape.mts --file-id <uuid> --shape-id <uuid> [--html]
+ *   pnpm exec tsx scripts/inspect-shape.mts --file-id <uuid> --shape-id <uuid> [--page-id <uuid>] [--html]
  *
  * Flags:
- *   --file-id   UUID of the file (matches cache/<file-id>.json)
+ *   --file-id   UUID of the file (matches cache/<file-id>-<page-id>.json)
  *   --shape-id  UUID of the shape to inspect
+ *   --page-id   UUID of the page (optional — picks the first matching cache file)
  *   --html      Also render and print the HTML output for this shape
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { convertShape } from '../src/converter/index.ts';
 import { extractTokens } from '../src/converter/tokens.ts';
@@ -26,21 +27,40 @@ const has = (flag: string): boolean => args.includes(flag);
 
 const fileId = get('--file-id');
 const shapeId = get('--shape-id');
+const pageId = get('--page-id');
 const renderHtml = has('--html');
 
 if (!fileId || !shapeId) {
   console.error(
-    'Usage: pnpm exec tsx scripts/inspect-shape.mts --file-id <uuid> --shape-id <uuid> [--html]',
+    'Usage: pnpm exec tsx scripts/inspect-shape.mts --file-id <uuid> --shape-id <uuid> [--page-id <uuid>] [--html]',
   );
   process.exit(1);
 }
 
-const cacheFile = join('cache', `${fileId}.json`);
+function resolveCacheFile(fileId: string, pageId: string | undefined): string | undefined {
+  if (pageId) {
+    return join('cache', `${fileId}-${pageId}.json`);
+  }
+  // Auto-detect: match cache/<file-id>-<anything>.json, then fall back to cache/<file-id>.json
+  let entries: string[];
+  try {
+    entries = readdirSync('cache');
+  } catch {
+    return undefined;
+  }
+  const match = entries.find((f) => f.startsWith(`${fileId}-`) && f.endsWith('.json'));
+  if (match) return join('cache', match);
+  if (entries.includes(`${fileId}.json`)) return join('cache', `${fileId}.json`);
+  return undefined;
+}
+
+const cacheFile = resolveCacheFile(fileId, pageId);
 let page: Page;
 try {
+  if (!cacheFile) throw new Error('not found');
   page = JSON.parse(readFileSync(cacheFile, 'utf-8')) as Page;
 } catch {
-  console.error(`Cache file not found: ${cacheFile}`);
+  console.error(`Cache file not found for file-id=${fileId}${pageId ? ` page-id=${pageId}` : ''}`);
   console.error(`Run first: pnpm penpot-to-html --file-id ${fileId} --page-id <page-id> --cache`);
   process.exit(1);
 }
