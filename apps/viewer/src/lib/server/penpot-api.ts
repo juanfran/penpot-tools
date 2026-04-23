@@ -2,7 +2,12 @@ import { createServerFn } from '@tanstack/react-start';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import z from 'zod';
 import { convertPage, convertPageShapes, buildGoogleFontsUrls } from '@penpot-random/converter';
-import { extractTokens, tokensToCss } from '@penpot-random/converter/tokens';
+import {
+  extractTokens,
+  tokensToCss,
+  extractAllTokens,
+  type TokenInfo,
+} from '@penpot-random/converter/tokens';
 import type { Page, Uuid } from '@penpot-random/penpot-types';
 import type { ConverterContext } from '@penpot-random/converter';
 import { getFileSummary, rpc } from './penpot-api-utils.server';
@@ -197,6 +202,24 @@ export const getPageShapesFn = createServerFn({ method: 'GET' })
 
     console.timeEnd(`convertPageShapes ${data.pageId}`);
     return result;
+  });
+
+export interface PageTokens {
+  pageName: string;
+  tokens: TokenInfo[];
+}
+
+export const getPageTokensFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ fileId: z.uuid(), pageId: z.uuid() }))
+  .middleware([authMiddleware])
+  .handler(async ({ data, context }): Promise<PageTokens> => {
+    const page = await rpc<Page>(context.token, 'get-page', {
+      params: { 'file-id': data.fileId, 'page-id': data.pageId },
+    });
+    console.time(`extractAllTokens ${data.pageId}`);
+    const tokens = extractAllTokens(page.objects);
+    console.timeEnd(`extractAllTokens ${data.pageId}`);
+    return { pageName: page.name, tokens };
   });
 
 export interface VariantProperty {

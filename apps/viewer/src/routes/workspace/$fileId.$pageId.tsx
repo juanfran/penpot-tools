@@ -70,14 +70,24 @@ function Header({ fileId, pageId }: { fileId: string; pageId: string }) {
       </Link>
       <span className="text-gray-300">/</span>
       <span className="text-sm text-gray-600">{file.name}</span>
-      <a
-        href={penpotUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="ml-auto text-sm text-gray-500 hover:text-gray-800"
-      >
-        Open in Penpot ↗
-      </a>
+      <div className="ml-auto flex items-center gap-4">
+        <Link
+          to="/tokens/$fileId/$pageId"
+          params={{ fileId, pageId }}
+          search={{ teamId }}
+          className="text-sm text-gray-500 hover:text-gray-800"
+        >
+          Tokens
+        </Link>
+        <a
+          href={penpotUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="text-sm text-gray-500 hover:text-gray-800"
+        >
+          Open in Penpot ↗
+        </a>
+      </div>
     </header>
   );
 }

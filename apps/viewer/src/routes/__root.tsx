@@ -6,6 +6,7 @@ import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from '@tanst
 
 import appCss from '../styles.css?url';
 import type { QueryClient } from '@tanstack/react-query';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -43,7 +44,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <div className="root">{children}</div>
+        <div className="root">
+          <TooltipProvider>{children}</TooltipProvider>
+        </div>
         {/* <TanStackDevtools
           config={{
             hideUntilHover: true,

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkspaceFileIdPageIdRouteImport } from './routes/workspace/$fileId.$pageId'
+import { Route as TokensFileIdPageIdRouteImport } from './routes/tokens/$fileId.$pageId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -28,34 +29,52 @@ const WorkspaceFileIdPageIdRoute = WorkspaceFileIdPageIdRouteImport.update({
   path: '/workspace/$fileId/$pageId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TokensFileIdPageIdRoute = TokensFileIdPageIdRouteImport.update({
+  id: '/tokens/$fileId/$pageId',
+  path: '/tokens/$fileId/$pageId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/tokens/$fileId/$pageId': typeof TokensFileIdPageIdRoute
   '/workspace/$fileId/$pageId': typeof WorkspaceFileIdPageIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/tokens/$fileId/$pageId': typeof TokensFileIdPageIdRoute
   '/workspace/$fileId/$pageId': typeof WorkspaceFileIdPageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/tokens/$fileId/$pageId': typeof TokensFileIdPageIdRoute
   '/workspace/$fileId/$pageId': typeof WorkspaceFileIdPageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/workspace/$fileId/$pageId'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/tokens/$fileId/$pageId'
+    | '/workspace/$fileId/$pageId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/workspace/$fileId/$pageId'
-  id: '__root__' | '/' | '/login' | '/workspace/$fileId/$pageId'
+  to: '/' | '/login' | '/tokens/$fileId/$pageId' | '/workspace/$fileId/$pageId'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/tokens/$fileId/$pageId'
+    | '/workspace/$fileId/$pageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  TokensFileIdPageIdRoute: typeof TokensFileIdPageIdRoute
   WorkspaceFileIdPageIdRoute: typeof WorkspaceFileIdPageIdRoute
 }
 
@@ -82,12 +101,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspaceFileIdPageIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tokens/$fileId/$pageId': {
+      id: '/tokens/$fileId/$pageId'
+      path: '/tokens/$fileId/$pageId'
+      fullPath: '/tokens/$fileId/$pageId'
+      preLoaderRoute: typeof TokensFileIdPageIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  TokensFileIdPageIdRoute: TokensFileIdPageIdRoute,
   WorkspaceFileIdPageIdRoute: WorkspaceFileIdPageIdRoute,
 }
 export const routeTree = rootRouteImport
