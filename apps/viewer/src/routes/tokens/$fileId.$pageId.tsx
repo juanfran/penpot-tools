@@ -6,9 +6,15 @@ import {
   PageHeaderFallback,
   getFileSummaryQueryOptions,
 } from '#/components/page-header';
-import { COLOR_FORMATS, UNIT_FORMATS, transformValue } from '#/components/inspector-sidebar/format-prefs';
+import {
+  COLOR_FORMATS,
+  UNIT_FORMATS,
+  transformValue,
+} from '#/components/inspector-sidebar/format-prefs';
 import { useInspectorPrefs } from '#/components/inspector-sidebar/prefs-store';
 import { Segmented } from '#/components/inspector-sidebar/segmented';
+import { StyleDecl } from '#/components/inspector-sidebar/style-decl';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs';
 import type { TokenCategory, TokenInfo } from '@penpot-random/converter/tokens';
 import { tokenToCssVarName } from '@penpot-random/converter/tokens';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
@@ -126,28 +132,43 @@ function TokensBody({ fileId, pageId }: { fileId: string; pageId: string }) {
   const { data } = useSuspenseQuery(pageTokensOptions(fileId, pageId));
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
+  const [tab, setTab] = useState<'preview' | 'css'>('preview');
 
   const colorFormat = useInspectorPrefs((s) => s.colorFormat);
   const setColorFormat = useInspectorPrefs((s) => s.setColorFormat);
   const unitFormat = useInspectorPrefs((s) => s.unitFormat);
   const setUnitFormat = useInspectorPrefs((s) => s.setUnitFormat);
 
-  const displayTokens = useMemo<DisplayToken[]>(
-    () =>
-      data.tokens.map((t) => ({
-        ...t,
+  const displayTokens = useMemo<DisplayToken[]>(() => {
+    const map = new Map<string, DisplayToken>();
+    for (const t of data.tokens) {
+      const existing = map.get(t.name);
+      if (existing) {
+        if (!existing.attributes.includes(t.attribute)) existing.attributes.push(t.attribute);
+        existing.usageCount += t.usageCount;
+        continue;
+      }
+      map.set(t.name, {
+        name: t.name,
+        category: t.category,
+        value: t.value,
+        numericValue: t.numericValue,
+        attributes: [t.attribute],
+        usageCount: t.usageCount,
         displayValue: shouldTransform(t)
           ? transformValue(t.value, colorFormat, unitFormat)
           : t.value,
-      })),
-    [data.tokens, colorFormat, unitFormat],
-  );
+      });
+    }
+    return Array.from(map.values());
+  }, [data.tokens, colorFormat, unitFormat]);
 
   const grouped = useMemo(
     () => groupTokens(displayTokens, deferredQuery),
     [displayTokens, deferredQuery],
   );
-  const totalCount = data.tokens.length;
+  const cssGroups = useMemo(() => groupTokens(displayTokens, ''), [displayTokens]);
+  const totalCount = displayTokens.length;
   const visibleCount = grouped.reduce((sum, g) => sum + g.items.length, 0);
 
   if (totalCount === 0) {
@@ -159,52 +180,148 @@ function TokensBody({ fileId, pageId }: { fileId: string; pageId: string }) {
   }
 
   return (
-    <div className="flex flex-1 overflow-hidden">
-      <Sidebar groups={grouped} />
-      <main className="flex-1 overflow-auto">
-        <div className="mx-auto w-full max-w-5xl px-6 py-6">
-          <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-3">
-            <div className="relative min-w-60 flex-1">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input
-                type="search"
-                placeholder="Search tokens by name or value…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="pl-8"
+    <Tabs
+      value={tab}
+      onValueChange={(v) => setTab(v as 'preview' | 'css')}
+      className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden"
+    >
+      <div className="border-b border-gray-200 bg-white px-6">
+        <TabsList variant="line" className="h-10 p-0">
+          <TabsTrigger value="preview">Preview</TabsTrigger>
+          <TabsTrigger value="css">CSS</TabsTrigger>
+        </TabsList>
+      </div>
+      <TabsContent value="preview" className="flex min-h-0 overflow-hidden">
+        <Sidebar groups={grouped} />
+        <main className="flex-1 overflow-auto">
+          <div className="mx-auto w-full max-w-5xl px-6 py-6">
+            <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-3">
+              <div className="relative min-w-60 flex-1">
+                <Search className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="search"
+                  placeholder="Search tokens by name or value…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <Segmented
+                label="Color"
+                value={colorFormat}
+                onChange={setColorFormat}
+                options={COLOR_FORMATS}
               />
+              <Segmented
+                label="Unit"
+                value={unitFormat}
+                onChange={setUnitFormat}
+                options={UNIT_FORMATS}
+              />
+              <span className="text-xs whitespace-nowrap text-gray-500">
+                {visibleCount} / {totalCount} tokens
+              </span>
             </div>
-            <Segmented
-              label="Color"
-              value={colorFormat}
-              onChange={setColorFormat}
-              options={COLOR_FORMATS}
-            />
-            <Segmented
-              label="Unit"
-              value={unitFormat}
-              onChange={setUnitFormat}
-              options={UNIT_FORMATS}
-            />
-            <span className="text-xs whitespace-nowrap text-gray-500">
-              {visibleCount} / {totalCount} tokens
-            </span>
-          </div>
 
-          {grouped.length === 0 ? (
-            <p className="text-sm text-gray-500">No tokens match your search.</p>
-          ) : (
-            grouped.map((group) => (
-              <CategorySection key={group.category} category={group.category} items={group.items} />
-            ))
-          )}
+            {grouped.length === 0 ? (
+              <p className="text-sm text-gray-500">No tokens match your search.</p>
+            ) : (
+              grouped.map((group) => (
+                <CategorySection
+                  key={group.category}
+                  category={group.category}
+                  items={group.items}
+                />
+              ))
+            )}
+          </div>
+        </main>
+      </TabsContent>
+      <TabsContent value="css" className="min-h-0 overflow-auto">
+        <CssView groups={cssGroups} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function CssView({ groups }: { groups: TokenGroup[] }) {
+  const [copied, setCopied] = useState(false);
+  const colorFormat = useInspectorPrefs((s) => s.colorFormat);
+  const setColorFormat = useInspectorPrefs((s) => s.setColorFormat);
+  const unitFormat = useInspectorPrefs((s) => s.unitFormat);
+  const setUnitFormat = useInspectorPrefs((s) => s.setUnitFormat);
+
+  const cssText = useMemo(() => {
+    const lines: string[] = [':root {'];
+    groups.forEach((g, i) => {
+      if (i > 0) lines.push('');
+      lines.push(`  /* ${CATEGORY_LABEL[g.category]} */`);
+      for (const t of g.items) {
+        lines.push(`  --${tokenToCssVarName(t.name)}: ${t.displayValue};`);
+      }
+    });
+    lines.push('}');
+    return lines.join('\n');
+  }, [groups]);
+
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(cssText).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-5xl px-6 py-6">
+      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-3">
+        <h2 className="text-sm font-semibold text-gray-900">CSS Custom Properties</h2>
+        <div className="ml-auto flex flex-wrap items-center gap-3">
+          <Segmented
+            label="Color"
+            value={colorFormat}
+            onChange={setColorFormat}
+            options={COLOR_FORMATS}
+          />
+          <Segmented
+            label="Unit"
+            value={unitFormat}
+            onChange={setUnitFormat}
+            options={UNIT_FORMATS}
+          />
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+          >
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            <span>{copied ? 'Copied!' : 'Copy all'}</span>
+          </button>
         </div>
-      </main>
+      </div>
+      <div className="rounded-md bg-gray-50 px-3 py-3 font-mono text-xs leading-relaxed">
+        <div className="text-gray-600">:root {'{'}</div>
+        {groups.map((g, i) => (
+          <div key={g.category} className={i > 0 ? 'mt-2' : ''}>
+            <div className="pl-3 text-gray-400">/* {CATEGORY_LABEL[g.category]} */</div>
+            <div className="pl-3">
+              {g.items.map((t) => (
+                <StyleDecl
+                  key={t.name}
+                  prop={`--${tokenToCssVarName(t.name)}`}
+                  value={t.displayValue}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+        <div className="text-gray-600">{'}'}</div>
+      </div>
     </div>
   );
 }
 
-interface DisplayToken extends TokenInfo {
+interface DisplayToken extends Omit<TokenInfo, 'attribute'> {
+  attributes: string[];
   displayValue: string;
 }
 
@@ -229,7 +346,7 @@ function groupTokens(tokens: DisplayToken[], query: string): TokenGroup[] {
   const buckets = new Map<TokenCategory, DisplayToken[]>();
   for (const t of tokens) {
     if (q) {
-      const hay = `${t.name} ${t.displayValue} ${t.attribute}`.toLowerCase();
+      const hay = `${t.name} ${t.displayValue} ${t.attributes.join(' ')}`.toLowerCase();
       if (!hay.includes(q)) continue;
     }
     let list = buckets.get(t.category);
@@ -274,15 +391,13 @@ function Sidebar({ groups }: { groups: TokenGroup[] }) {
   );
 }
 
-function CategorySection({
-  category,
-  items,
-}: {
-  category: TokenCategory;
-  items: DisplayToken[];
-}) {
+function CategorySection({ category, items }: { category: TokenCategory; items: DisplayToken[] }) {
   return (
-    <section id={`cat-${category}`} className="mb-8 scroll-mt-4" style={{ contentVisibility: 'auto' }}>
+    <section
+      id={`cat-${category}`}
+      className="mb-8 scroll-mt-4"
+      style={{ contentVisibility: 'auto' }}
+    >
       <div className="mb-3 flex items-baseline gap-2">
         <h2 className="text-sm font-semibold text-gray-900">{CATEGORY_LABEL[category]}</h2>
         <span className="text-xs text-gray-400">{items.length}</span>
@@ -295,7 +410,7 @@ function CategorySection({
         }
       >
         {items.map((t) => (
-          <TokenCard key={`${t.attribute}::${t.name}`} token={t} />
+          <TokenCard key={t.name} token={t} />
         ))}
       </div>
     </section>
@@ -309,11 +424,13 @@ function TokenCard({ token }: { token: DisplayToken }) {
       <TokenPreview token={token} />
       <div className="min-w-0 flex-1">
         <p className="truncate font-mono text-[13px] text-gray-900">{token.name}</p>
-        <p className="mt-0.5 truncate font-mono text-[11px] text-gray-500">
-          {token.displayValue}
-        </p>
-        <div className="mt-1 flex items-center gap-2 text-[10px] text-gray-400">
-          <span className="rounded bg-gray-100 px-1.5 py-0.5">{token.attribute}</span>
+        <p className="mt-0.5 truncate font-mono text-[11px] text-gray-500">{token.displayValue}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-gray-400">
+          {token.attributes.map((a) => (
+            <span key={a} className="rounded bg-gray-100 px-1.5 py-0.5">
+              {a}
+            </span>
+          ))}
           <span>
             Used {token.usageCount}
             {token.usageCount === 1 ? ' time' : ' times'}
@@ -403,10 +520,7 @@ function RadiusPreview({ token }: { token: DisplayToken }) {
   const r = Math.min(token.numericValue ?? 0, 22);
   return (
     <div className="flex h-14 w-14 shrink-0 items-center justify-center bg-gray-50">
-      <div
-        className="h-10 w-10 border border-gray-900"
-        style={{ borderRadius: `${r}px` }}
-      />
+      <div className="h-10 w-10 border border-gray-900" style={{ borderRadius: `${r}px` }} />
     </div>
   );
 }
@@ -423,17 +537,14 @@ function StrokePreview({ width }: { width: number }) {
 function RotationPreview({ deg }: { deg: number }) {
   return (
     <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-gray-50">
-      <div
-        className="h-8 w-8 border border-gray-900"
-        style={{ transform: `rotate(${deg}deg)` }}
-      />
+      <div className="h-8 w-8 border border-gray-900" style={{ transform: `rotate(${deg}deg)` }} />
     </div>
   );
 }
 
 function TypographyPreview({ token }: { token: DisplayToken }) {
   const style: React.CSSProperties = {};
-  switch (token.attribute) {
+  switch (token.attributes[0]) {
     case 'fontSize':
       style.fontSize = `${Math.min(token.numericValue ?? 16, 32)}px`;
       break;
@@ -455,7 +566,7 @@ function TypographyPreview({ token }: { token: DisplayToken }) {
   }
   return (
     <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-gray-50 text-gray-900">
-      <span style={style} className="font-semibold leading-none">
+      <span style={style} className="leading-none font-semibold">
         Aa
       </span>
     </div>

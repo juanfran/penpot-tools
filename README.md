@@ -4,10 +4,10 @@ Monorepo for converting [Penpot](https://penpot.app/) design files into standalo
 
 ## Packages
 
-| Path                  | Name                        | What it does                                                                 |
-| --------------------- | --------------------------- | ---------------------------------------------------------------------------- |
-| `packages/converter`  | `@penpot-random/converter`  | Library + CLI that turns a Penpot page/shape (JSON) into HTML + inline CSS   |
-| `apps/viewer`         | `viewer`                    | React app that fetches a Penpot file and renders it using the converter      |
+| Path                 | Name                       | What it does                                                               |
+| -------------------- | -------------------------- | -------------------------------------------------------------------------- |
+| `packages/converter` | `@penpot-random/converter` | Library + CLI that turns a Penpot page/shape (JSON) into HTML + inline CSS |
+| `apps/viewer`        | `viewer`                   | React app that fetches a Penpot file and renders it using the converter    |
 
 ## Setup
 

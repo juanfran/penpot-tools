@@ -124,9 +124,9 @@ pnpm test --run
 
 ## Dev scripts
 
-| Script                            | What it does                                                                      |
-| --------------------------------- | --------------------------------------------------------------------------------- |
-| `scripts/add-test-case.mts`       | Creates an integration fixture from a cached page + prints a test snippet         |
-| `scripts/regen-expected.mts`      | Regenerates every `.expected.html` file from the current converter output         |
-| `scripts/inspect-shape.mts`       | Prints a shape and its parent chain from a cached page (add `--html` for output)  |
-| `src/intengration/preview.mts`    | Opens an `.expected.html` fragment as a full page in the browser                  |
+| Script                         | What it does                                                                     |
+| ------------------------------ | -------------------------------------------------------------------------------- |
+| `scripts/add-test-case.mts`    | Creates an integration fixture from a cached page + prints a test snippet        |
+| `scripts/regen-expected.mts`   | Regenerates every `.expected.html` file from the current converter output        |
+| `scripts/inspect-shape.mts`    | Prints a shape and its parent chain from a cached page (add `--html` for output) |
+| `src/intengration/preview.mts` | Opens an `.expected.html` fragment as a full page in the browser                 |

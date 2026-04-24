@@ -37,9 +37,7 @@ function RedirectPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center">
-      <p className="text-muted-foreground text-sm">
-        {error ?? 'Redirecting...'}
-      </p>
+      <p className="text-muted-foreground text-sm">{error ?? 'Redirecting...'}</p>
     </main>
   );
 }

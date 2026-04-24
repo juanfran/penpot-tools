@@ -13,9 +13,7 @@ function serializeNode(node: SvgRawContentNode | string): string {
         .join('')
     : '';
   const children = (node.content ?? []).map(serializeNode).join('');
-  return children
-    ? `<${node.tag}${attrs}>${children}</${node.tag}>`
-    : `<${node.tag}${attrs} />`;
+  return children ? `<${node.tag}${attrs}>${children}</${node.tag}>` : `<${node.tag}${attrs} />`;
 }
 
 function sanitizeSvg(content: string): string {

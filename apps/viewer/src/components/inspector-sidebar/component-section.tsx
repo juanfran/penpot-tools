@@ -8,6 +8,7 @@ const libraryComponentsOptions = (fileId: string) =>
     queryFn: () => getLibraryComponentsFn({ data: { fileId } }),
     staleTime: Infinity,
     gcTime: Infinity,
+    retry: false,
   });
 
 export interface ComponentRef {
@@ -61,14 +62,10 @@ export function ComponentSection({ info }: { info: ComponentRef }) {
           </p>
         )}
 
-        {isLoading && (
-          <p className="mt-1 text-[11px] text-gray-400">Loading variant data…</p>
-        )}
+        {isLoading && <p className="mt-1 text-[11px] text-gray-400">Loading variant data…</p>}
 
         {isError && (
-          <p className="mt-1 text-[11px] text-amber-600">
-            Could not load component library.
-          </p>
+          <p className="mt-1 text-[11px] text-amber-600">Could not load component library.</p>
         )}
 
         {!isLoading && !isError && variants.length === 0 && (

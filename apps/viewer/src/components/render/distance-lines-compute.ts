@@ -5,15 +5,7 @@ export interface Rect {
   height: number;
 }
 
-export type GapLineKey =
-  | 'hgap'
-  | 'vgap'
-  | 'hleft'
-  | 'hright'
-  | 'vtop'
-  | 'vbot'
-  | 'hproj'
-  | 'vproj';
+export type GapLineKey = 'hgap' | 'vgap' | 'hleft' | 'hright' | 'vtop' | 'vbot' | 'hproj' | 'vproj';
 
 export interface GapLineSpec {
   key: GapLineKey;

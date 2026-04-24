@@ -268,12 +268,22 @@ export const getLibraryComponentsFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ fileId: z.uuid() }))
   .middleware([authMiddleware])
   .handler(async ({ data, context }): Promise<LibraryComponents> => {
-    const file = await rpc<RawFileWithComponents>(context.token, 'get-file', {
-      params: {
-        id: data.fileId,
-        features: FEATURES_FOR_COMPONENTS,
-      },
-    });
+    let file: RawFileWithComponents;
+    try {
+      file = await rpc<RawFileWithComponents>(context.token, 'get-file', {
+        params: {
+          id: data.fileId,
+          features: FEATURES_FOR_COMPONENTS,
+        },
+      });
+    } catch (err) {
+      console.log('Error fetching library components for file', data.fileId, err);
+
+      if (err instanceof Error && err.message === 'HTTP error 404') {
+        return { fileId: data.fileId, components: {} };
+      }
+      throw err;
+    }
 
     const raw = file.data?.components ?? {};
     const components: Record<string, LibraryComponent> = {};

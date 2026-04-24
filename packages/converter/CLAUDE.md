@@ -46,19 +46,19 @@ All styling is emitted as inline `style=` attributes.
 
 ## ConverterContext flags
 
-| Flag                       | Meaning                                                                                       |
-| -------------------------- | --------------------------------------------------------------------------------------------- |
-| `_parentIsLayout`          | Parent is flex/grid; child emits `width/height: 100%` (or injected px via `_parentLayoutItemStyles`) |
-| `_parentLayoutItemStyles`  | Layout-item / grid-cell styles merged onto the child directly (replaces the old wrapper div)  |
-| `_parentIsLayoutAutoW/H`   | Child emits explicit `width/height: Npx` instead of 100% (auto sizing, absolute items)        |
-| `_forceRelative`           | Emit `position: relative` (grid children, export root)                                        |
-| `_isCanvasTopLevel`        | Direct child of root frame; use `translate()` for position                                    |
-| `_isChildOfRoot`           | Enables `position: fixed` for `fixedScroll` shapes                                            |
-| `_offsetX/_offsetY`        | Parent's page-absolute position for computing relative top/left                               |
-| `_pageBackground`          | Background color for root frame                                                               |
-| `_fontCollector`           | Map populated by text renderers                                                               |
-| `tokens`                   | `Map<tokenName, cssColor>` for design token → CSS var substitution                            |
-| `format`                   | When `false`, skip `oxfmt` formatting (required in the browser)                               |
+| Flag                      | Meaning                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `_parentIsLayout`         | Parent is flex/grid; child emits `width/height: 100%` (or injected px via `_parentLayoutItemStyles`) |
+| `_parentLayoutItemStyles` | Layout-item / grid-cell styles merged onto the child directly (replaces the old wrapper div)         |
+| `_parentIsLayoutAutoW/H`  | Child emits explicit `width/height: Npx` instead of 100% (auto sizing, absolute items)               |
+| `_forceRelative`          | Emit `position: relative` (grid children, export root)                                               |
+| `_isCanvasTopLevel`       | Direct child of root frame; use `translate()` for position                                           |
+| `_isChildOfRoot`          | Enables `position: fixed` for `fixedScroll` shapes                                                   |
+| `_offsetX/_offsetY`       | Parent's page-absolute position for computing relative top/left                                      |
+| `_pageBackground`         | Background color for root frame                                                                      |
+| `_fontCollector`          | Map populated by text renderers                                                                      |
+| `tokens`                  | `Map<tokenName, cssColor>` for design token → CSS var substitution                                   |
+| `format`                  | When `false`, skip `oxfmt` formatting (required in the browser)                                      |
 
 ## Shape positioning (`resolvePositionOutput` in `visual/position.ts`)
 
@@ -88,9 +88,7 @@ Penpot stores flex children in Z-order (back-to-front). For `row` and `column` d
 Layout-item / grid-cell styles (sizing, margin, `align-self`, `z-index`, `grid-row/column-start`, `layoutItemAbsolute`) are merged directly onto the child's own `data-id` div via `ctx._parentLayoutItemStyles`. No wrapper div is emitted.
 
 ```html
-<div data-id="…" data-type="frame" style="width: 240px; height: 50px; display: flex; …">
-  …
-</div>
+<div data-id="…" data-type="frame" style="width: 240px; height: 50px; display: flex; …">…</div>
 ```
 
 `resolvePositionOutput` reads `_parentLayoutItemStyles` and skips emitting its own `width: 100%` / `height: 100%` when the layout-item styles already declare `width:` / `height:`. For `layoutItemAbsolute` items, `layoutItemSizingStyle` is skipped entirely and the child emits its own explicit px via the `autoW`/`autoH` path.

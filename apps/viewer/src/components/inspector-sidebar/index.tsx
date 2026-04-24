@@ -11,11 +11,7 @@ import { EMPTY_MARGINS, type Margins, computeMargins, extractBoxModel } from './
 import { BoxModelViz } from './box-model-viz';
 import { ComponentSection, type ComponentRef } from './component-section';
 import { COLOR_FORMATS, UNIT_FORMATS, transformValue } from './format-prefs';
-import {
-  INSPECTOR_MAX_WIDTH,
-  INSPECTOR_MIN_WIDTH,
-  useInspectorPrefs,
-} from './prefs-store';
+import { INSPECTOR_MAX_WIDTH, INSPECTOR_MIN_WIDTH, useInspectorPrefs } from './prefs-store';
 import { Segmented } from './segmented';
 import { shapeIcon } from './shape-icon';
 import { StyleDecl } from './style-decl';
@@ -98,8 +94,7 @@ export function InspectorSidebar({
           fallbackName: componentContext.instance.name,
           isExternal: componentContext.componentFile !== fileId,
           isNested: componentContext.instance.id !== node.id,
-          nestedShapeName:
-            componentContext.instance.id !== node.id ? node.name : undefined,
+          nestedShapeName: componentContext.instance.id !== node.id ? node.name : undefined,
         }
       : null;
 
