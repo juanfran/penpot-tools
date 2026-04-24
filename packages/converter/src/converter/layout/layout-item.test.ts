@@ -177,21 +177,33 @@ describe('layoutItemMinMaxStyle', () => {
   it('returns empty string when no min/max set', () => {
     expect(layoutItemMinMaxStyle(makeShape())).toBe('');
   });
-  it('emits min-width', () => {
-    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMinW: 50 }))).toContain('min-width: 50px;');
+  it('emits min-width when hSizing is fill', () => {
+    expect(
+      layoutItemMinMaxStyle(makeShape({ layoutItemHSizing: 'fill', layoutItemMinW: 50 })),
+    ).toContain('min-width: 50px;');
   });
-  it('emits max-width', () => {
-    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMaxW: 200 }))).toContain(
-      'max-width: 200px;',
-    );
+  it('emits max-width when hSizing is fill', () => {
+    expect(
+      layoutItemMinMaxStyle(makeShape({ layoutItemHSizing: 'fill', layoutItemMaxW: 200 })),
+    ).toContain('max-width: 200px;');
   });
-  it('emits min-height', () => {
-    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMinH: 30 }))).toContain('min-height: 30px;');
+  it('emits min-height when vSizing is fill', () => {
+    expect(
+      layoutItemMinMaxStyle(makeShape({ layoutItemVSizing: 'fill', layoutItemMinH: 30 })),
+    ).toContain('min-height: 30px;');
   });
-  it('emits max-height', () => {
-    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMaxH: 100 }))).toContain(
-      'max-height: 100px;',
-    );
+  it('emits max-height when vSizing is auto', () => {
+    expect(
+      layoutItemMinMaxStyle(makeShape({ layoutItemVSizing: 'auto', layoutItemMaxH: 100 })),
+    ).toContain('max-height: 100px;');
+  });
+  it('skips min-height when vSizing is fix (explicit dimension wins)', () => {
+    expect(
+      layoutItemMinMaxStyle(makeShape({ layoutItemVSizing: 'fix', layoutItemMinH: 80 })),
+    ).toBe('');
+  });
+  it('skips min-width when hSizing is undefined (defaults to fix)', () => {
+    expect(layoutItemMinMaxStyle(makeShape({ layoutItemMinW: 80 }))).toBe('');
   });
 });
 

@@ -65,11 +65,22 @@ export function layoutItemAlignSelfStyle(shape: ShapeCommon): string {
 }
 
 export function layoutItemMinMaxStyle(shape: ShapeCommon): string {
+  // Penpot only applies layoutItemMin*/Max* when the axis grows/shrinks
+  // (sizing = fill / auto). For a fix axis the size is explicit and min/max
+  // are stale data — emitting them would let min-width / min-height override
+  // the declared width / height in CSS.
+  const hFixed = shape.layoutItemHSizing === undefined || shape.layoutItemHSizing === 'fix';
+  const vFixed = shape.layoutItemVSizing === undefined || shape.layoutItemVSizing === 'fix';
+
   const parts: string[] = [];
-  if (shape.layoutItemMinW !== undefined) parts.push(`min-width: ${px(shape.layoutItemMinW)};`);
-  if (shape.layoutItemMaxW !== undefined) parts.push(`max-width: ${px(shape.layoutItemMaxW)};`);
-  if (shape.layoutItemMinH !== undefined) parts.push(`min-height: ${px(shape.layoutItemMinH)};`);
-  if (shape.layoutItemMaxH !== undefined) parts.push(`max-height: ${px(shape.layoutItemMaxH)};`);
+  if (!hFixed) {
+    if (shape.layoutItemMinW !== undefined) parts.push(`min-width: ${px(shape.layoutItemMinW)};`);
+    if (shape.layoutItemMaxW !== undefined) parts.push(`max-width: ${px(shape.layoutItemMaxW)};`);
+  }
+  if (!vFixed) {
+    if (shape.layoutItemMinH !== undefined) parts.push(`min-height: ${px(shape.layoutItemMinH)};`);
+    if (shape.layoutItemMaxH !== undefined) parts.push(`max-height: ${px(shape.layoutItemMaxH)};`);
+  }
   return parts.join(' ');
 }
 

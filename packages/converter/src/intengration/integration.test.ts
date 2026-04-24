@@ -178,6 +178,14 @@ describe('integration', () => {
     await expect(el).toMatchScreenshot('flex-column-path-line');
   });
 
+  it('fix-sized flex item ignores stale layoutItemMin* so the item keeps its declared size', async () => {
+    const page = getPage('flex-item-stale-min-size');
+    const shape = page.objects['toolbar'];
+    const { html, fonts } = await convertShape(shape, page.objects, ctx);
+    const el = await mount({ html, fonts });
+    await expect(el).toMatchScreenshot('flex-item-stale-min-size');
+  });
+
   it('group inside flex-col gets position: relative so its absolute children stay inside', async () => {
     const page = getPage('flex-group-absolute-children');
     const shape = page.objects['col-card'];

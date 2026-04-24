@@ -1,0 +1,219 @@
+{
+  "id": "flex-item-stale-min-size-page",
+  "name": "Flex item with stale layoutItemMin on fix axis",
+  "objects": {
+    "00000000-0000-0000-0000-000000000000": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "frame",
+      "name": "Root Frame",
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 200,
+      "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+      "strokes": [],
+      "shapes": ["toolbar"]
+    },
+    "toolbar": {
+      "id": "toolbar",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "frame",
+      "name": "Toolbar",
+      "x": 40,
+      "y": 60,
+      "width": 240,
+      "height": 48,
+      "layout": "flex",
+      "layoutFlexDir": "row",
+      "layoutAlignItems": "start",
+      "layoutJustifyContent": "start",
+      "layoutPadding": { "p1": 0, "p2": 0, "p3": 0, "p4": 0 },
+      "layoutGap": { "rowGap": 0, "columnGap": 8 },
+      "shapes": ["chip-locked", "chip-free"],
+      "fills": [{ "fillColor": "#f8fafc", "fillOpacity": 1 }],
+      "strokes": [],
+      "clipContent": false,
+      "r1": 0,
+      "r2": 0,
+      "r3": 0,
+      "r4": 0
+    },
+    "chip-locked": {
+      "id": "chip-locked",
+      "parentId": "toolbar",
+      "frameId": "toolbar",
+      "type": "frame",
+      "name": "Locked Chip",
+      "x": 40,
+      "y": 60,
+      "width": 100,
+      "height": 40,
+      "layout": "flex",
+      "layoutFlexDir": "row",
+      "layoutAlignItems": "center",
+      "layoutJustifyContent": "start",
+      "layoutPadding": { "p1": 0, "p2": 12, "p3": 0, "p4": 12 },
+      "layoutGap": { "rowGap": 0, "columnGap": 8 },
+      "layoutItemHSizing": "fix",
+      "layoutItemVSizing": "fix",
+      "layoutItemMinH": 80,
+      "shapes": ["chip-locked-dot", "chip-locked-label"],
+      "fills": [{ "fillColor": "#1e3a8a", "fillOpacity": 1 }],
+      "strokes": [],
+      "clipContent": true,
+      "r1": 8,
+      "r2": 8,
+      "r3": 8,
+      "r4": 8
+    },
+    "chip-locked-dot": {
+      "id": "chip-locked-dot",
+      "parentId": "chip-locked",
+      "frameId": "chip-locked",
+      "type": "rect",
+      "name": "Dot",
+      "x": 52,
+      "y": 76,
+      "width": 12,
+      "height": 12,
+      "layoutItemHSizing": "fix",
+      "layoutItemVSizing": "fix",
+      "layoutItemAlignSelf": "center",
+      "fills": [{ "fillColor": "#facc15", "fillOpacity": 1 }],
+      "strokes": [],
+      "r1": 6,
+      "r2": 6,
+      "r3": 6,
+      "r4": 6
+    },
+    "chip-locked-label": {
+      "id": "chip-locked-label",
+      "parentId": "chip-locked",
+      "frameId": "chip-locked",
+      "type": "text",
+      "name": "Label",
+      "x": 72,
+      "y": 75,
+      "width": 56,
+      "height": 17,
+      "growType": "auto-width",
+      "layoutItemAlignSelf": "center",
+      "fills": [],
+      "strokes": [],
+      "content": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "fontSize": "14",
+                "fontWeight": "500",
+                "fontFamily": "Arial",
+                "lineHeight": "1.2",
+                "textAlign": "left",
+                "textTransform": "none",
+                "letterSpacing": "0",
+                "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+                "children": [
+                  {
+                    "text": "Locked",
+                    "fontSize": "14",
+                    "fontWeight": "500",
+                    "fontFamily": "Arial",
+                    "lineHeight": "1.2",
+                    "textAlign": "left",
+                    "textTransform": "none",
+                    "letterSpacing": "0",
+                    "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "chip-free": {
+      "id": "chip-free",
+      "parentId": "toolbar",
+      "frameId": "toolbar",
+      "type": "frame",
+      "name": "Free Chip",
+      "x": 148,
+      "y": 60,
+      "width": 80,
+      "height": 40,
+      "layout": "flex",
+      "layoutFlexDir": "row",
+      "layoutAlignItems": "center",
+      "layoutJustifyContent": "start",
+      "layoutPadding": { "p1": 0, "p2": 12, "p3": 0, "p4": 12 },
+      "layoutGap": { "rowGap": 0, "columnGap": 8 },
+      "layoutItemHSizing": "fix",
+      "layoutItemVSizing": "fix",
+      "layoutItemMinW": 60,
+      "shapes": ["chip-free-label"],
+      "fills": [{ "fillColor": "#e5e7eb", "fillOpacity": 1 }],
+      "strokes": [],
+      "clipContent": true,
+      "r1": 8,
+      "r2": 8,
+      "r3": 8,
+      "r4": 8
+    },
+    "chip-free-label": {
+      "id": "chip-free-label",
+      "parentId": "chip-free",
+      "frameId": "chip-free",
+      "type": "text",
+      "name": "Label",
+      "x": 160,
+      "y": 75,
+      "width": 56,
+      "height": 17,
+      "growType": "auto-width",
+      "layoutItemAlignSelf": "center",
+      "fills": [],
+      "strokes": [],
+      "content": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "fontSize": "14",
+                "fontWeight": "500",
+                "fontFamily": "Arial",
+                "lineHeight": "1.2",
+                "textAlign": "left",
+                "textTransform": "none",
+                "letterSpacing": "0",
+                "fills": [{ "fillColor": "#111827", "fillOpacity": 1 }],
+                "children": [
+                  {
+                    "text": "Free",
+                    "fontSize": "14",
+                    "fontWeight": "500",
+                    "fontFamily": "Arial",
+                    "lineHeight": "1.2",
+                    "textAlign": "left",
+                    "textTransform": "none",
+                    "letterSpacing": "0",
+                    "fills": [{ "fillColor": "#111827", "fillOpacity": 1 }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
