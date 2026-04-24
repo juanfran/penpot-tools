@@ -44,12 +44,15 @@ export function textLeafColorStyle(
   leaf: TextLeaf,
   fillTokenName?: string,
   tokens?: Map<string, string>,
+  fallbackColor?: string,
 ): string {
   if (fillTokenName) return `color: ${tokenToCssVar(fillTokenName, tokens)};`;
   const fills = leaf.fills;
-  if (!fills || fills.length === 0) return '';
+  if (!fills || fills.length === 0) {
+    return fallbackColor ? `color: ${fallbackColor};` : '';
+  }
   const first = fills[0];
-  if (!first.fillColor) return '';
+  if (!first.fillColor) return fallbackColor ? `color: ${fallbackColor};` : '';
   const cssColor = hexOpacityToCss(first.fillColor, first.fillOpacity);
   return `color: ${cssColor};`;
 }
@@ -58,17 +61,20 @@ export function renderParagraph(
   para: ParagraphNode,
   fillTokenName?: string,
   tokens?: Map<string, string>,
+  fallbackColor?: string,
 ): string {
   const paraLeaf: TextLeaf = { text: '', ...para };
   const paraBaseStyle = textLeafToStyles(paraLeaf);
   const firstLeaf = para.children[0];
-  const paraColorStyle = firstLeaf ? textLeafColorStyle(firstLeaf, fillTokenName, tokens) : '';
+  const paraColorStyle = firstLeaf
+    ? textLeafColorStyle(firstLeaf, fillTokenName, tokens, fallbackColor)
+    : '';
   const paraStyle = mergeStyles(paraBaseStyle, paraColorStyle);
 
   const inner = para.children
     .map((leaf) => {
       const leafBaseStyle = textLeafToStyles(leaf);
-      const leafColorStyle = textLeafColorStyle(leaf, fillTokenName, tokens);
+      const leafColorStyle = textLeafColorStyle(leaf, fillTokenName, tokens, fallbackColor);
       const leafStyle = mergeStyles(leafBaseStyle, leafColorStyle);
 
       if (leafStyle === paraStyle) return leaf.text;
@@ -145,11 +151,18 @@ export function renderText(shape: TextShape, ctx: ConverterContext): string {
 
   const fillTokenName = shape.appliedTokens?.fill;
 
+  const shapeHasFill = (shape.fills ?? []).some((f) => f.fillColor);
+  const firstStroke = (shape.strokes ?? [])[0];
+  const strokeFallbackColor =
+    !shapeHasFill && firstStroke?.strokeColor
+      ? hexOpacityToCss(firstStroke.strokeColor, firstStroke.strokeOpacity)
+      : undefined;
+
   let inner = '';
   if (shape.content) {
     inner = shape.content.children
       .flatMap((set) => set.children)
-      .map((para) => renderParagraph(para, fillTokenName, ctx.tokens))
+      .map((para) => renderParagraph(para, fillTokenName, ctx.tokens, strokeFallbackColor))
       .join('');
   }
 

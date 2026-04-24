@@ -141,6 +141,22 @@ describe('textLeafColorStyle', () => {
     );
     expect(result).toContain('color: rgba(');
   });
+
+  it('uses fallbackColor when leaf has no fills', () => {
+    expect(textLeafColorStyle(makeLeaf(), undefined, undefined, '#f54554')).toBe(
+      'color: #f54554;',
+    );
+  });
+
+  it('prefers leaf fill over fallbackColor when both are set', () => {
+    const result = textLeafColorStyle(
+      makeLeaf({ fills: [{ fillColor: '#00ff00' as HexColor }] }),
+      undefined,
+      undefined,
+      '#f54554',
+    );
+    expect(result).toBe('color: #00ff00;');
+  });
 });
 
 const makeParagraph = (overrides: Partial<ParagraphNode> = {}): ParagraphNode => ({

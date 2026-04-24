@@ -1,0 +1,245 @@
+{
+  "id": "group-text-arrow-page",
+  "name": "Group with text and arrow",
+  "objects": {
+    "00000000-0000-0000-0000-000000000000": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "frame",
+      "name": "Root Frame",
+      "x": 0,
+      "y": 0,
+      "width": 800,
+      "height": 600,
+      "rotation": 0,
+      "selrect": {
+        "x": 0,
+        "y": 0,
+        "width": 800,
+        "height": 600,
+        "x1": 0,
+        "y1": 0,
+        "x2": 800,
+        "y2": 600
+      },
+      "points": [
+        { "x": 0, "y": 0 },
+        { "x": 800, "y": 0 },
+        { "x": 800, "y": 600 },
+        { "x": 0, "y": 600 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": null,
+      "flipY": null,
+      "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+      "strokes": [],
+      "shapes": ["annotation-group", "reference-arrow"]
+    },
+    "annotation-group": {
+      "id": "annotation-group",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "group",
+      "name": "Annotation Group",
+      "x": 120,
+      "y": 80,
+      "width": 480,
+      "height": 380,
+      "rotation": 0,
+      "selrect": {
+        "x": 120,
+        "y": 80,
+        "width": 480,
+        "height": 380,
+        "x1": 120,
+        "y1": 80,
+        "x2": 600,
+        "y2": 460
+      },
+      "points": [
+        { "x": 120, "y": 80 },
+        { "x": 600, "y": 80 },
+        { "x": 600, "y": 460 },
+        { "x": 120, "y": 460 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": false,
+      "flipY": false,
+      "strokes": [],
+      "fills": [],
+      "shapes": ["annotation-text", "annotation-arrow"]
+    },
+    "annotation-text": {
+      "id": "annotation-text",
+      "parentId": "annotation-group",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "text",
+      "name": "Annotation label",
+      "x": 140,
+      "y": 100,
+      "width": 440,
+      "height": 60,
+      "rotation": 0,
+      "selrect": {
+        "x": 140,
+        "y": 100,
+        "width": 440,
+        "height": 60,
+        "x1": 140,
+        "y1": 100,
+        "x2": 580,
+        "y2": 160
+      },
+      "points": [
+        { "x": 140, "y": 100 },
+        { "x": 580, "y": 100 },
+        { "x": 580, "y": 160 },
+        { "x": 140, "y": 160 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": null,
+      "flipY": null,
+      "growType": "auto-height",
+      "content": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "key": "p1",
+                "textAlign": "left",
+                "fontSize": "24",
+                "fontWeight": "400",
+                "fontFamily": "sans-serif",
+                "lineHeight": "1.2",
+                "children": [
+                  {
+                    "text": "Highlight the corner region below",
+                    "fontSize": "24",
+                    "fontWeight": "400",
+                    "fontFamily": "sans-serif",
+                    "lineHeight": "1.2",
+                    "textAlign": "left",
+                    "fills": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "constraintsV": "scale",
+      "constraintsH": "scale",
+      "strokes": [
+        {
+          "strokeStyle": "solid",
+          "strokeAlignment": "inner",
+          "strokeWidth": 4,
+          "strokeColor": "#e02050",
+          "strokeOpacity": 1
+        }
+      ],
+      "fills": []
+    },
+    "annotation-arrow": {
+      "id": "annotation-arrow",
+      "parentId": "annotation-group",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "path",
+      "name": "Annotation arrow",
+      "x": null,
+      "y": null,
+      "width": null,
+      "height": null,
+      "rotation": 0,
+      "selrect": {
+        "x": 160,
+        "y": 180,
+        "width": 380,
+        "height": 260,
+        "x1": 160,
+        "y1": 180,
+        "x2": 540,
+        "y2": 440
+      },
+      "points": [
+        { "x": 160, "y": 180 },
+        { "x": 540, "y": 180 },
+        { "x": 540, "y": 440 },
+        { "x": 160, "y": 440 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": null,
+      "flipY": null,
+      "growType": "fixed",
+      "content": "M160.0,180.0L160.0,440.0L540.0,440.0",
+      "constraintsV": "scale",
+      "constraintsH": "scale",
+      "strokes": [
+        {
+          "strokeStyle": "solid",
+          "strokeAlignment": "inner",
+          "strokeWidth": 6,
+          "strokeColor": "#e02050",
+          "strokeOpacity": 1,
+          "strokeCapEnd": "line-arrow"
+        }
+      ],
+      "fills": []
+    },
+    "reference-arrow": {
+      "id": "reference-arrow",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "path",
+      "name": "Reference arrow",
+      "x": null,
+      "y": null,
+      "width": null,
+      "height": null,
+      "rotation": 0,
+      "selrect": {
+        "x": 120,
+        "y": 500,
+        "width": 420,
+        "height": 1,
+        "x1": 120,
+        "y1": 500,
+        "x2": 540,
+        "y2": 501
+      },
+      "points": [
+        { "x": 120, "y": 500 },
+        { "x": 540, "y": 500 },
+        { "x": 540, "y": 501 },
+        { "x": 120, "y": 501 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": null,
+      "flipY": null,
+      "growType": "fixed",
+      "content": "M120.0,500.0L540.0,500.0",
+      "constraintsV": "top",
+      "constraintsH": "left",
+      "strokes": [
+        {
+          "strokeStyle": "solid",
+          "strokeAlignment": "inner",
+          "strokeWidth": 6,
+          "strokeColor": "#e02050",
+          "strokeOpacity": 1,
+          "strokeCapEnd": "line-arrow"
+        }
+      ],
+      "fills": []
+    }
+  }
+}

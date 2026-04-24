@@ -162,6 +162,14 @@ describe('integration', () => {
     await expect(el).toMatchScreenshot('path-image-fill');
   });
 
+  it('group with text + arrow-path renders text and full-width arrow with tip', async () => {
+    const page = getPage('group-text-arrow');
+    const shape = page.objects['00000000-0000-0000-0000-000000000000'];
+    const { html, fonts } = await convertShape(shape, page.objects, ctx);
+    const el = await mount({ html, fonts });
+    await expect(el).toMatchScreenshot('group-text-arrow');
+  });
+
   it('fillOpacity:0 overrides appliedTokens.fill and emits no background', async () => {
     const page = getPage('transparent-fill-token');
     const rootShape = page.objects['root-frame'];

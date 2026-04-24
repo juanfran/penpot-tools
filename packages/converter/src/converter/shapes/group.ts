@@ -7,8 +7,12 @@ import { baseStyles } from '../visual/base';
 import { hexOpacityToCss } from '../utils/color';
 import { renderShape } from './dispatch';
 
-function hasSvgPaths(children: Shape[]): boolean {
-  return children.some((c) => c.type === 'path' && c.x == null);
+function isSvgOnlyGroup(children: Shape[]): boolean {
+  const visible = children.filter((c) => !c.hidden);
+  if (visible.length === 0) return false;
+  const hasAbsoluteCoordPath = visible.some((c) => c.type === 'path' && c.x == null);
+  if (!hasAbsoluteCoordPath) return false;
+  return visible.every((c) => c.type === 'path' || c.type === 'circle');
 }
 
 function renderPathElement(shape: PathShape): string {
@@ -139,7 +143,7 @@ export function renderGroup(
   objects: Record<string, Shape>,
   ctx: ConverterContext,
 ): string {
-  if (hasSvgPaths(children)) {
+  if (isSvgOnlyGroup(children)) {
     return renderGroupAsSvg(shape, children, ctx);
   }
 

@@ -143,6 +143,7 @@ export function InspectorSidebar({
   return (
     <aside
       ref={asideRef}
+      data-current-id={selectedShapeId}
       style={{ width: `${width}px` }}
       className="relative flex shrink-0 flex-col border-l border-gray-200 bg-white"
     >
