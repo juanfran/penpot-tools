@@ -23,6 +23,7 @@ const cases: [string, string, typeof ctx][] = [
   ['image-fill', '0d3e2d55-6b68-8009-8007-d9885486fad8', ctx],
   ['flex-group-absolute-children', 'col-card', ctx],
   ['flex-item-stale-min-size', 'toolbar', ctx],
+  ['fab-shadow-and-icon', 'fab-root', ctx],
   ['graphic-social', 'eaa1384c-05db-801a-8007-d9908cf18cbf', ctx],
   ['icon-menu', 'eaa1384c-05db-801a-8007-d98e7c8afad3', ctx],
   ['button-stroke', 'eaa1384c-05db-801a-8007-d98c8c7c6455', ctx],

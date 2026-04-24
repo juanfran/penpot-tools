@@ -178,6 +178,14 @@ describe('integration', () => {
     await expect(el).toMatchScreenshot('flex-column-path-line');
   });
 
+  it('FAB with shadow on frame and icon flex-child with padding+margin — shadow follows rounded bg, icon visible', async () => {
+    const page = getPage('fab-shadow-and-icon');
+    const shape = page.objects['fab-root'];
+    const { html, fonts } = await convertShape(shape, page.objects, ctx);
+    const el = await mount({ html, fonts });
+    await expect(el).toMatchScreenshot('fab-shadow-and-icon');
+  });
+
   it('fix-sized flex item ignores stale layoutItemMin* so the item keeps its declared size', async () => {
     const page = getPage('flex-item-stale-min-size');
     const shape = page.objects['toolbar'];

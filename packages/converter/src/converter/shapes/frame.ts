@@ -19,6 +19,32 @@ import {
 import { gridTracksToStyle, gridCellStyle, findCellForShape } from '../layout/grid';
 import { renderShape } from './dispatch';
 
+function shadowBorderRadiusFromChildren(shape: FrameShape, children: Shape[]): string {
+  if (!shape.shadow?.length) return '';
+
+  const hasOwnRadius =
+    (shape.r1 ?? 0) !== 0 ||
+    (shape.r2 ?? 0) !== 0 ||
+    (shape.r3 ?? 0) !== 0 ||
+    (shape.r4 ?? 0) !== 0;
+  if (hasOwnRadius) return '';
+
+  const hasFill = (shape.fills ?? []).length > 0;
+  const hasStroke = (shape.strokes ?? []).length > 0;
+  if (hasFill || hasStroke) return '';
+
+  for (const child of children) {
+    if (child.hidden) continue;
+    if (child.type !== 'rect' && child.type !== 'circle') continue;
+    if ((child.width ?? 0) !== shape.width || (child.height ?? 0) !== shape.height) continue;
+    const r = child.r1 ?? 0;
+    if (r === 0) continue;
+    if ((child.r2 ?? 0) !== r || (child.r3 ?? 0) !== r || (child.r4 ?? 0) !== r) continue;
+    return `border-radius: ${r}px;`;
+  }
+  return '';
+}
+
 export function renderFrame(
   shape: FrameShape,
   children: Shape[],
@@ -76,11 +102,21 @@ export function renderFrame(
 
   const extraPositionStyle = needsContainingBlock ? 'position: relative;' : '';
 
+  // When a frame has a shadow but no border-radius of its own and is visually
+  // transparent (no fills / strokes), CSS box-shadow renders a square shadow —
+  // even though the visible content (inner rounded rects filling the frame)
+  // has rounded corners. Propagate the inner rect's border-radius to the
+  // frame so box-shadow follows the rounded shape. Combined with overflow:
+  // hidden (default via clipContent), this also keeps the inner rects clipped
+  // to the rounded shape.
+  const shadowRadius = shadowBorderRadiusFromChildren(shape, children);
+
   const style = mergeStyles(
     positionStyle,
     extraPositionStyle,
     layoutStyle,
     base,
+    shadowRadius,
     fills,
     stroke,
     clipStyle,

@@ -113,6 +113,34 @@ describe('layoutItemSizingStyle', () => {
     );
     expect(result).toBe('');
   });
+
+  it('emits flex-shrink: 0 on the main axis when fix-sized (prevents collapse to min-content)', () => {
+    const rowFix = layoutItemSizingStyle(
+      makeShape({ layoutItemHSizing: 'fix', layoutItemVSizing: 'fix' }),
+      makeRowParent(),
+    );
+    expect(rowFix).toContain('flex-shrink: 0;');
+
+    const colFix = layoutItemSizingStyle(
+      makeShape({ layoutItemHSizing: 'fix', layoutItemVSizing: 'fix' }),
+      makeColParent(),
+    );
+    expect(colFix).toContain('flex-shrink: 0;');
+  });
+
+  it('does not emit flex-shrink: 0 when main axis is fill or auto', () => {
+    const rowFill = layoutItemSizingStyle(
+      makeShape({ layoutItemHSizing: 'fill', layoutItemVSizing: 'fix' }),
+      makeRowParent(),
+    );
+    expect(rowFill).not.toContain('flex-shrink');
+
+    const colAuto = layoutItemSizingStyle(
+      makeShape({ layoutItemHSizing: 'fix', layoutItemVSizing: 'auto' }),
+      makeColParent(),
+    );
+    expect(colAuto).not.toContain('flex-shrink');
+  });
 });
 
 describe('layoutItemMarginStyle', () => {

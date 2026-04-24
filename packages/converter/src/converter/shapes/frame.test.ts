@@ -368,4 +368,109 @@ describe('renderFrame', () => {
       expect(html).not.toContain('position: relative;');
     });
   });
+
+  describe('shadow border-radius propagation', () => {
+    const makeRoundedRect = (overrides: Partial<Shape> = {}): Shape =>
+      ({
+        ...makeChild('rect-1'),
+        width: 400,
+        height: 300,
+        r1: 28,
+        r2: 28,
+        r3: 28,
+        r4: 28,
+        ...overrides,
+      }) as Shape;
+
+    it('propagates a filling rect child radius to a shadowed transparent frame', () => {
+      const frame = makeFrame({
+        parentId: 'parent-1' as Uuid,
+        shadow: [
+          {
+            color: { color: '#000000' as HexColor, opacity: 0.2 },
+            offsetX: 0,
+            offsetY: 4,
+            blur: 8,
+            spread: 0,
+            style: 'drop-shadow',
+            hidden: false,
+          },
+        ],
+      });
+      const rect = makeRoundedRect();
+      const html = renderFrame(frame, [rect], { 'rect-1': rect }, ctx);
+      const frameOpen = html.match(/^<div [^>]*data-id="frame-1"[^>]*>/)?.[0] ?? '';
+      expect(frameOpen).toContain('border-radius: 28px;');
+      expect(frameOpen).toContain('box-shadow:');
+    });
+
+    it('does not propagate when the frame already has its own border-radius', () => {
+      const frame = makeFrame({
+        parentId: 'parent-1' as Uuid,
+        r1: 8,
+        r2: 8,
+        r3: 8,
+        r4: 8,
+        shadow: [
+          {
+            color: { color: '#000000' as HexColor, opacity: 0.2 },
+            offsetX: 0,
+            offsetY: 4,
+            blur: 8,
+            spread: 0,
+            style: 'drop-shadow',
+            hidden: false,
+          },
+        ],
+      });
+      const rect = makeRoundedRect();
+      const html = renderFrame(frame, [rect], { 'rect-1': rect }, ctx);
+      const frameOpen = html.match(/^<div [^>]*data-id="frame-1"[^>]*>/)?.[0] ?? '';
+      expect(frameOpen).toContain('border-radius: 8px;');
+      expect(frameOpen).not.toContain('border-radius: 28px;');
+    });
+
+    it('does not propagate when the frame has its own fill', () => {
+      const frame = makeFrame({
+        parentId: 'parent-1' as Uuid,
+        fills: [{ fillColor: '#ffffff' as HexColor }],
+        shadow: [
+          {
+            color: { color: '#000000' as HexColor, opacity: 0.2 },
+            offsetX: 0,
+            offsetY: 4,
+            blur: 8,
+            spread: 0,
+            style: 'drop-shadow',
+            hidden: false,
+          },
+        ],
+      });
+      const rect = makeRoundedRect();
+      const html = renderFrame(frame, [rect], { 'rect-1': rect }, ctx);
+      const frameOpen = html.match(/^<div [^>]*data-id="frame-1"[^>]*>/)?.[0] ?? '';
+      expect(frameOpen).not.toContain('border-radius: 28px;');
+    });
+
+    it('skips hidden rect children when looking for a radius to propagate', () => {
+      const frame = makeFrame({
+        parentId: 'parent-1' as Uuid,
+        shadow: [
+          {
+            color: { color: '#000000' as HexColor, opacity: 0.2 },
+            offsetX: 0,
+            offsetY: 4,
+            blur: 8,
+            spread: 0,
+            style: 'drop-shadow',
+            hidden: false,
+          },
+        ],
+      });
+      const hiddenRect = makeRoundedRect({ id: 'rect-hidden' as Uuid, hidden: true, r1: 28 });
+      const html = renderFrame(frame, [hiddenRect], { 'rect-hidden': hiddenRect }, ctx);
+      const frameOpen = html.match(/^<div [^>]*data-id="frame-1"[^>]*>/)?.[0] ?? '';
+      expect(frameOpen).not.toContain('border-radius: 28px;');
+    });
+  });
 });

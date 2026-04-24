@@ -17,6 +17,8 @@ export function layoutItemSizingStyle(shape: ShapeCommon, parent: FrameShape): s
   const h = shape.height ?? shape.selrect?.height ?? 0;
 
   const parts: string[] = [];
+  let hIsExplicit = false;
+  let vIsExplicit = false;
 
   if (hSizing === 'fill') {
     // Main axis (row → h-fill): flex: 1 to grow within the flow.
@@ -25,13 +27,23 @@ export function layoutItemSizingStyle(shape: ShapeCommon, parent: FrameShape): s
     parts.push(isRowDir ? 'flex: 1;' : `width: ${px(w)};`);
   } else if (hSizing !== 'auto') {
     parts.push(`width: ${px(w)};`);
+    hIsExplicit = true;
   }
 
   if (vSizing === 'fill') {
     parts.push(isRowDir ? 'height: 100%;' : 'flex: 1;');
   } else if (vSizing !== 'auto') {
     parts.push(`height: ${px(h)};`);
+    vIsExplicit = true;
   }
+
+  // Fix-sized children should not shrink on the main axis. Without this,
+  // an item with `width: 36px` + `margin: 30px` inside a flex-row with a
+  // 36px content area (padding 30 on a 96 container) hits −60px free space
+  // and the default `flex-shrink: 1` collapses the item to min-content (0),
+  // making it invisible.
+  const mainExplicit = isRowDir ? hIsExplicit : vIsExplicit;
+  if (mainExplicit) parts.push('flex-shrink: 0;');
 
   return parts.join(' ');
 }
