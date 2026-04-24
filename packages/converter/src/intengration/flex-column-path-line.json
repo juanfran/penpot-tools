@@ -1,0 +1,197 @@
+{
+  "id": "flex-column-path-line-page",
+  "name": "Flex column with path line divider",
+  "objects": {
+    "00000000-0000-0000-0000-000000000000": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "frame",
+      "name": "Root Frame",
+      "x": 0,
+      "y": 0,
+      "width": 800,
+      "height": 400,
+      "rotation": 0,
+      "selrect": {
+        "x": 0,
+        "y": 0,
+        "width": 800,
+        "height": 400,
+        "x1": 0,
+        "y1": 0,
+        "x2": 800,
+        "y2": 400
+      },
+      "points": [
+        { "x": 0, "y": 0 },
+        { "x": 800, "y": 0 },
+        { "x": 800, "y": 400 },
+        { "x": 0, "y": 400 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": null,
+      "flipY": null,
+      "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+      "strokes": [],
+      "shapes": ["section-card"]
+    },
+    "section-card": {
+      "id": "section-card",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "frame",
+      "name": "Section card",
+      "x": 80,
+      "y": 60,
+      "width": 640,
+      "height": 200,
+      "rotation": 0,
+      "selrect": {
+        "x": 80,
+        "y": 60,
+        "width": 640,
+        "height": 200,
+        "x1": 80,
+        "y1": 60,
+        "x2": 720,
+        "y2": 260
+      },
+      "points": [
+        { "x": 80, "y": 60 },
+        { "x": 720, "y": 60 },
+        { "x": 720, "y": 260 },
+        { "x": 80, "y": 260 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": false,
+      "flipY": false,
+      "layout": "flex",
+      "layoutFlexDir": "column",
+      "layoutAlignItems": "start",
+      "layoutJustifyContent": "start",
+      "layoutGap": { "rowGap": 20, "columnGap": 0 },
+      "layoutPadding": { "p1": 30, "p2": 40, "p3": 30, "p4": 40 },
+      "layoutPaddingType": "simple",
+      "layoutWrapType": "nowrap",
+      "layoutItemHSizing": "fix",
+      "layoutItemVSizing": "auto",
+      "fills": [{ "fillColor": "#f5f5f5", "fillOpacity": 1 }],
+      "strokes": [],
+      "shapes": ["section-divider", "section-heading"],
+      "clipContent": false
+    },
+    "section-heading": {
+      "id": "section-heading",
+      "parentId": "section-card",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "text",
+      "name": "Heading",
+      "x": 120,
+      "y": 90,
+      "width": 560,
+      "height": 40,
+      "rotation": 0,
+      "selrect": {
+        "x": 120,
+        "y": 90,
+        "width": 560,
+        "height": 40,
+        "x1": 120,
+        "y1": 90,
+        "x2": 680,
+        "y2": 130
+      },
+      "points": [
+        { "x": 120, "y": 90 },
+        { "x": 680, "y": 90 },
+        { "x": 680, "y": 130 },
+        { "x": 120, "y": 130 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": null,
+      "flipY": null,
+      "layoutItemHSizing": "fill",
+      "growType": "fixed",
+      "content": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "key": "h1",
+                "textAlign": "left",
+                "fontSize": "32",
+                "fontWeight": "700",
+                "fontFamily": "sans-serif",
+                "lineHeight": "1.2",
+                "children": [
+                  {
+                    "text": "Monthly overview",
+                    "fontSize": "32",
+                    "fontWeight": "700",
+                    "fontFamily": "sans-serif",
+                    "lineHeight": "1.2",
+                    "textAlign": "left",
+                    "fills": [{ "fillColor": "#1f2937", "fillOpacity": 1 }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "strokes": [],
+      "fills": []
+    },
+    "section-divider": {
+      "id": "section-divider",
+      "parentId": "section-card",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "path",
+      "name": "Divider line",
+      "x": null,
+      "y": null,
+      "width": null,
+      "height": null,
+      "rotation": 0,
+      "selrect": {
+        "x": 120,
+        "y": 150,
+        "width": 560,
+        "height": 1,
+        "x1": 120,
+        "y1": 150,
+        "x2": 680,
+        "y2": 151
+      },
+      "points": [
+        { "x": 120, "y": 150 },
+        { "x": 680, "y": 150 },
+        { "x": 680, "y": 151 },
+        { "x": 120, "y": 151 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": null,
+      "flipY": null,
+      "layoutItemHSizing": "fill",
+      "content": "M680.0,150.0L120.0,150.0",
+      "strokes": [
+        {
+          "strokeStyle": "solid",
+          "strokeAlignment": "center",
+          "strokeWidth": 4,
+          "strokeColor": "#1f2937",
+          "strokeOpacity": 1
+        }
+      ],
+      "fills": []
+    }
+  }
+}

@@ -11,21 +11,26 @@ export function layoutItemSizingStyle(shape: ShapeCommon, parent: FrameShape): s
   const hSizing = shape.layoutItemHSizing;
   const vSizing = shape.layoutItemVSizing;
 
+  // Path shapes carry geometry in `selrect` and leave `width`/`height` null.
+  // Fall back to selrect so flex sizing doesn't collapse them to 0.
+  const w = shape.width ?? shape.selrect?.width ?? 0;
+  const h = shape.height ?? shape.selrect?.height ?? 0;
+
   const parts: string[] = [];
 
   if (hSizing === 'fill') {
     // Main axis (row → h-fill): flex: 1 to grow within the flow.
     // Cross axis (column → h-fill): explicit px to prevent content overflow
     // from inflating the flex container's cross-axis size.
-    parts.push(isRowDir ? 'flex: 1;' : `width: ${px(shape.width ?? 0)};`);
+    parts.push(isRowDir ? 'flex: 1;' : `width: ${px(w)};`);
   } else if (hSizing !== 'auto') {
-    parts.push(`width: ${px(shape.width ?? 0)};`);
+    parts.push(`width: ${px(w)};`);
   }
 
   if (vSizing === 'fill') {
     parts.push(isRowDir ? 'height: 100%;' : 'flex: 1;');
   } else if (vSizing !== 'auto') {
-    parts.push(`height: ${px(shape.height ?? 0)};`);
+    parts.push(`height: ${px(h)};`);
   }
 
   return parts.join(' ');

@@ -170,6 +170,14 @@ describe('integration', () => {
     await expect(el).toMatchScreenshot('group-text-arrow');
   });
 
+  it('flex column path line with null width/height and hSizing fill renders at selrect width', async () => {
+    const page = getPage('flex-column-path-line');
+    const shape = page.objects['00000000-0000-0000-0000-000000000000'];
+    const { html, fonts } = await convertShape(shape, page.objects, ctx);
+    const el = await mount({ html, fonts });
+    await expect(el).toMatchScreenshot('flex-column-path-line');
+  });
+
   it('fillOpacity:0 overrides appliedTokens.fill and emits no background', async () => {
     const page = getPage('transparent-fill-token');
     const rootShape = page.objects['root-frame'];

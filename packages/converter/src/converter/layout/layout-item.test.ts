@@ -75,6 +75,21 @@ describe('layoutItemSizingStyle', () => {
     expect(result).not.toContain('width: 100%;');
   });
 
+  it('falls back to selrect dimensions when shape.width/height are null (path shapes)', () => {
+    const pathLike = makeShape({
+      type: 'path',
+      width: null as unknown as number,
+      height: null as unknown as number,
+      layoutItemHSizing: 'fill',
+      selrect: { x: 0, y: 0, width: 400, height: 1 },
+    });
+    const result = layoutItemSizingStyle(pathLike, makeColParent());
+    expect(result).toContain('width: 400px;');
+    expect(result).toContain('height: 1px;');
+    expect(result).not.toContain('width: 0px');
+    expect(result).not.toContain('height: 0px');
+  });
+
   it('returns explicit width for fix HSizing', () => {
     const result = layoutItemSizingStyle(
       makeShape({ layoutItemHSizing: 'fix', width: 120 }),
