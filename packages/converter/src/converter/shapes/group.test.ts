@@ -109,4 +109,29 @@ describe('renderGroup', () => {
   it('has no class attribute', () => {
     expect(renderGroup(makeGroup(), [], {}, ctx)).not.toContain('class=');
   });
+
+  it('adds position: relative when it is a flex/grid child with children (containing block for absolute kids)', () => {
+    const child = makeRect('child-1');
+    const objects: Record<string, Shape> = { 'child-1': child };
+    const flexCtx: ConverterContext = {
+      ...ctx,
+      _parentIsLayout: true,
+      _parentLayoutItemStyles: 'width: 70px; height: 50px;',
+    };
+    const html = renderGroup(makeGroup(), [child], objects, flexCtx);
+    expect(html).toContain('position: relative;');
+    // The group's own style must not include position: absolute; the group is a layout item.
+    const outerOpen = html.match(/^<div [^>]*data-id="group-1"[^>]*>/)?.[0] ?? '';
+    expect(outerOpen).not.toContain('position: absolute');
+  });
+
+  it('does not add position: relative when it is a flex child with no children', () => {
+    const flexCtx: ConverterContext = {
+      ...ctx,
+      _parentIsLayout: true,
+      _parentLayoutItemStyles: 'width: 70px; height: 50px;',
+    };
+    const html = renderGroup(makeGroup({ shapes: [] }), [], {}, flexCtx);
+    expect(html).not.toContain('position: relative');
+  });
 });

@@ -178,6 +178,14 @@ describe('integration', () => {
     await expect(el).toMatchScreenshot('flex-column-path-line');
   });
 
+  it('group inside flex-col gets position: relative so its absolute children stay inside', async () => {
+    const page = getPage('flex-group-absolute-children');
+    const shape = page.objects['col-card'];
+    const { html, fonts } = await convertShape(shape, page.objects, ctx);
+    const el = await mount({ html, fonts });
+    await expect(el).toMatchScreenshot('flex-group-absolute-children');
+  });
+
   it('fillOpacity:0 overrides appliedTokens.fill and emits no background', async () => {
     const page = getPage('transparent-fill-token');
     const rootShape = page.objects['root-frame'];

@@ -151,7 +151,15 @@ export function renderGroup(
   const posStyle = resolvePositionOutput(shape, ctx);
   const maskStyle = shape.maskedGroup ? 'overflow: hidden;' : '';
 
-  const style = mergeStyles(posStyle, base, maskStyle);
+  // Group children render with position: absolute offset by the group's x/y.
+  // When the group itself is a flex/grid child, resolvePositionOutput emits no
+  // CSS position (only layout-item sizing), leaving the div position: static —
+  // absolute children would escape to the nearest positioned ancestor. Add
+  // position: relative so the group becomes their containing block.
+  const needsContainingBlock = ctx._parentIsLayout && children.length > 0;
+  const extraPositionStyle = needsContainingBlock ? 'position: relative;' : '';
+
+  const style = mergeStyles(posStyle, extraPositionStyle, base, maskStyle);
 
   const childCtx: ConverterContext = {
     ...ctx,

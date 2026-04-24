@@ -137,6 +137,14 @@ describe('layoutItemMarginStyle', () => {
       layoutItemMarginStyle(makeShape({ layoutItemMargin: { m1: 0, m2: 0, m3: 0, m4: 0 } })),
     ).toBe('margin: 0px;');
   });
+
+  it('treats missing margin sides as 0 (not undefined)', () => {
+    expect(
+      layoutItemMarginStyle(
+        makeShape({ layoutItemMargin: { m1: 0, m2: 0, m3: 0 } as ShapeCommon['layoutItemMargin'] }),
+      ),
+    ).toBe('margin: 0px;');
+  });
 });
 
 describe('layoutItemAlignSelfStyle', () => {

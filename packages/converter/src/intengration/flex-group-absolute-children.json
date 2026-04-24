@@ -1,0 +1,204 @@
+{
+  "id": "flex-group-absolute-children-page",
+  "name": "Flex group with absolutely-positioned children",
+  "objects": {
+    "00000000-0000-0000-0000-000000000000": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "frame",
+      "name": "Root Frame",
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 300,
+      "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+      "strokes": [],
+      "shapes": ["col-card"]
+    },
+    "col-card": {
+      "id": "col-card",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "frame",
+      "name": "Weather Card",
+      "x": 80,
+      "y": 60,
+      "width": 220,
+      "height": 180,
+      "layout": "flex",
+      "layoutFlexDir": "column",
+      "layoutAlignItems": "start",
+      "layoutJustifyContent": "start",
+      "layoutPadding": { "p1": 20, "p2": 20, "p3": 20, "p4": 20 },
+      "layoutGap": { "rowGap": 12, "columnGap": 12 },
+      "shapes": ["label-text", "reading-group"],
+      "fills": [{ "fillColor": "#eef2ff", "fillOpacity": 1 }],
+      "strokes": [],
+      "clipContent": false,
+      "r1": 8,
+      "r2": 8,
+      "r3": 8,
+      "r4": 8
+    },
+    "label-text": {
+      "id": "label-text",
+      "parentId": "col-card",
+      "frameId": "col-card",
+      "type": "text",
+      "name": "Label",
+      "x": 100,
+      "y": 80,
+      "width": 100,
+      "height": 18,
+      "growType": "auto-width",
+      "layoutItemHSizing": "auto",
+      "layoutItemVSizing": "auto",
+      "fills": [],
+      "strokes": [],
+      "content": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "fontSize": "14",
+                "fontWeight": "400",
+                "fontFamily": "Arial",
+                "lineHeight": "1.2",
+                "textAlign": "left",
+                "textTransform": "uppercase",
+                "letterSpacing": "1",
+                "fills": [{ "fillColor": "#334155", "fillOpacity": 1 }],
+                "children": [
+                  {
+                    "text": "Today",
+                    "fontSize": "14",
+                    "fontWeight": "400",
+                    "fontFamily": "Arial",
+                    "lineHeight": "1.2",
+                    "textAlign": "left",
+                    "textTransform": "uppercase",
+                    "letterSpacing": "1",
+                    "fills": [{ "fillColor": "#334155", "fillOpacity": 1 }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "reading-group": {
+      "id": "reading-group",
+      "parentId": "col-card",
+      "frameId": "col-card",
+      "type": "group",
+      "name": "Reading",
+      "x": 100,
+      "y": 110,
+      "width": 120,
+      "height": 60,
+      "layoutItemMargin": { "m1": 0, "m2": 0, "m3": 0 },
+      "shapes": ["reading-big", "reading-small"]
+    },
+    "reading-big": {
+      "id": "reading-big",
+      "parentId": "reading-group",
+      "frameId": "col-card",
+      "type": "text",
+      "name": "Big Reading",
+      "x": 100,
+      "y": 110,
+      "width": 80,
+      "height": 38,
+      "growType": "auto-width",
+      "fills": [],
+      "strokes": [],
+      "content": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "fontSize": "32",
+                "fontWeight": "700",
+                "fontFamily": "Arial",
+                "lineHeight": "1.2",
+                "textAlign": "left",
+                "textTransform": "none",
+                "letterSpacing": "0",
+                "fills": [{ "fillColor": "#1e3a8a", "fillOpacity": 1 }],
+                "children": [
+                  {
+                    "text": "24°C",
+                    "fontSize": "32",
+                    "fontWeight": "700",
+                    "fontFamily": "Arial",
+                    "lineHeight": "1.2",
+                    "textAlign": "left",
+                    "textTransform": "none",
+                    "letterSpacing": "0",
+                    "fills": [{ "fillColor": "#1e3a8a", "fillOpacity": 1 }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "reading-small": {
+      "id": "reading-small",
+      "parentId": "reading-group",
+      "frameId": "col-card",
+      "type": "text",
+      "name": "Small Reading",
+      "x": 100,
+      "y": 152,
+      "width": 120,
+      "height": 18,
+      "growType": "auto-width",
+      "fills": [],
+      "strokes": [],
+      "content": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "fontSize": "14",
+                "fontWeight": "400",
+                "fontFamily": "Arial",
+                "lineHeight": "1.2",
+                "textAlign": "left",
+                "textTransform": "none",
+                "letterSpacing": "0",
+                "fills": [{ "fillColor": "#475569", "fillOpacity": 1 }],
+                "children": [
+                  {
+                    "text": "+2° warmer",
+                    "fontSize": "14",
+                    "fontWeight": "400",
+                    "fontFamily": "Arial",
+                    "lineHeight": "1.2",
+                    "textAlign": "left",
+                    "textTransform": "none",
+                    "letterSpacing": "0",
+                    "fills": [{ "fillColor": "#475569", "fillOpacity": 1 }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -40,7 +40,10 @@ export function layoutItemMarginStyle(shape: ShapeCommon): string {
   const margin = shape.layoutItemMargin;
   if (!margin) return '';
 
-  const { m1, m2, m3, m4 } = margin;
+  const m1 = margin.m1 ?? 0;
+  const m2 = margin.m2 ?? 0;
+  const m3 = margin.m3 ?? 0;
+  const m4 = margin.m4 ?? 0;
 
   if (m1 === m2 && m2 === m3 && m3 === m4) {
     return `margin: ${px(m1)};`;
