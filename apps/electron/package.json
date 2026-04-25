@@ -1,0 +1,50 @@
+{
+  "name": "viewer-electron",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Electron wrapper that serves the Penpot viewer app",
+  "main": "main.cjs",
+  "scripts": {
+    "build:viewer": "pnpm --filter viewer build",
+    "start": "electron .",
+    "dev": "pnpm run build:viewer && electron .",
+    "package": "node scripts/package.cjs",
+    "package:linux": "node scripts/package.cjs --linux",
+    "package:mac": "node scripts/package.cjs --mac",
+    "package:win": "node scripts/package.cjs --win"
+  },
+  "devDependencies": {
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.penpot-random.viewer",
+    "productName": "Penpot Viewer",
+    "asar": true,
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "viewer-output",
+        "to": "viewer-output"
+      }
+    ],
+    "directories": {
+      "buildResources": "build"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Graphics"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.graphics-design"
+    },
+    "win": {
+      "target": ["nsis"]
+    }
+  }
+}
