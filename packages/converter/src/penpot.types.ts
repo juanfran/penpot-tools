@@ -737,6 +737,7 @@ export interface RectShape extends ShapeCommon {
 // ============================================================
 
 export interface TextInlineStyle {
+  fontId?: string;
   fontFamily?: string;
   fontSize?: string;
   fontStyle?: string;

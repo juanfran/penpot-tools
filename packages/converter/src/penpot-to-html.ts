@@ -15,7 +15,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { convertPage, convertShape, buildGoogleFontsUrls } from './converter/index.js';
+import { convertPage, convertShape, buildPenpotFontsCss } from './converter/index.js';
 import { extractTokens, tokensToCss } from './converter/tokens.js';
 import type { Page, Uuid } from './penpot.types.js';
 import type { ConverterContext, FontInfo } from './converter/types.js';
@@ -174,14 +174,15 @@ function makeImageResolver(apiBase: string): (id: Uuid) => string {
 // HTML wrapper
 // ---------------------------------------------------------------------------
 
-function wrapHtml(body: string, fonts: FontInfo[], tokens?: Map<string, string>): string {
-  const fontUrls = buildGoogleFontsUrls(fonts);
-  const fontLink =
-    fontUrls.length > 0
-      ? `  <link rel="preconnect" href="https://fonts.googleapis.com" />\n  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n${fontUrls.map((u) => `  <link rel="stylesheet" href="${u}" />`).join('\n')}`
-      : '';
-
+function wrapHtml(
+  body: string,
+  fontsCss: string,
+  tokens?: Map<string, string>,
+  baseUrl?: string,
+): string {
   const tokensCss = tokens ? tokensToCss(tokens) : '';
+  const fontsBlock = fontsCss ? `  <style>${fontsCss}</style>` : '';
+  const preconnect = fontsCss && baseUrl ? `  <link rel="preconnect" href="${baseUrl}" />` : '';
   const styleBlock = tokensCss
     ? `  <style>
     body {
@@ -203,7 +204,8 @@ function wrapHtml(body: string, fonts: FontInfo[], tokens?: Map<string, string>)
   <title>Penpot Export</title>
   <script src="https://cdn.tailwindcss.com"></script>
 ${styleBlock}
-${fontLink}
+${preconnect}
+${fontsBlock}
 </head>
 <body>
 ${body}
@@ -299,7 +301,9 @@ async function main(): Promise<void> {
 
   console.timeEnd('Render');
 
-  const html = wrapHtml(body, fonts, tokens);
+  const penpotOrigin = new URL(apiBase).origin;
+  const fontsCss = await buildPenpotFontsCss(fonts, { baseUrl: penpotOrigin });
+  const html = wrapHtml(body, fontsCss, tokens, penpotOrigin);
 
   if (output) {
     await fs.writeFile(output, html, 'utf8');

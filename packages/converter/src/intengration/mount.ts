@@ -1,5 +1,6 @@
 import type { FontInfo } from '../converter/types';
 import { tokensToCss } from '../converter/tokens';
+import { buildPenpotFontsCss } from '../converter/utils/fonts';
 
 // Mirrors Tailwind Preflight — the CSS reset applied by `cdn.tailwindcss.com` in
 // `preview.mts`. Without it, elements fall back to browser defaults (notably
@@ -43,27 +44,20 @@ function injectPreflight(): void {
   document.head.appendChild(style);
 }
 
-let fontLinkInjected = false;
-const loadedFontFamilies = new Set<string>();
+let fontStyleInjected = false;
 
-function injectGoogleFont(families: string[]): void {
-  const toAdd = families.filter((f) => !loadedFontFamilies.has(f));
-  if (toAdd.length === 0) return;
-  for (const f of toAdd) loadedFontFamilies.add(f);
-
-  const url = `https://fonts.googleapis.com/css2?${[...loadedFontFamilies]
-    .map((f) => `family=${encodeURIComponent(f)}:wght@100;400;700;900`)
-    .join('&')}&display=swap`;
-
-  let link = document.querySelector<HTMLLinkElement>('link[data-penpot-fonts]');
-  if (!link) {
-    link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.dataset.penpotFonts = '';
-    document.head.appendChild(link);
+async function injectPenpotFonts(fonts: readonly FontInfo[]): Promise<void> {
+  if (fonts.length === 0) return;
+  const css = await buildPenpotFontsCss(fonts);
+  if (!css) return;
+  let style = document.querySelector<HTMLStyleElement>('style[data-penpot-fonts]');
+  if (!style) {
+    style = document.createElement('style');
+    style.dataset.penpotFonts = '';
+    document.head.appendChild(style);
   }
-  link.href = url;
-  fontLinkInjected = true;
+  style.textContent = css;
+  fontStyleInjected = true;
 }
 
 function applyTokens(tokens?: Map<string, string>): void {
@@ -111,8 +105,7 @@ export async function mount({ html, fonts, tokens }: MountOptions): Promise<HTML
   injectPreflight();
   applyTokens(tokens);
 
-  const families = [...new Set((fonts ?? []).map((f) => f.fontFamily).filter(Boolean))];
-  if (families.length > 0) injectGoogleFont(families);
+  if (fonts && fonts.length > 0) await injectPenpotFonts(fonts);
 
   const container = document.createElement('div');
   container.id = 'penpot-root';
@@ -124,7 +117,7 @@ export async function mount({ html, fonts, tokens }: MountOptions): Promise<HTML
   container.appendChild(inner);
   document.body.appendChild(container);
 
-  if (fontLinkInjected) await document.fonts.ready;
+  if (fontStyleInjected) await document.fonts.ready;
   await waitForImages(container);
 
   // Size container to the bounding box of its content, shifting inner so the

@@ -149,15 +149,7 @@ export const Render = ({
   return (
     <>
       <title>{data.name}</title>
-      {data.googleFontsUrls && data.googleFontsUrls.length > 0 && (
-        <>
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-          {data.googleFontsUrls.map((url) => (
-            <link key={url} rel="stylesheet" href={url} />
-          ))}
-        </>
-      )}
+      {data.fontsCss && <style>{data.fontsCss}</style>}
       {data.tokensCss && <style>{data.tokensCss}</style>}
 
       <div

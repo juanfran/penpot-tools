@@ -1,7 +1,8 @@
 import { createServerFn } from '@tanstack/react-start';
+import { getRequest } from '@tanstack/react-start/server';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import z from 'zod';
-import { convertPage, convertPageShapes, buildGoogleFontsUrls } from '@penpot-random/converter';
+import { convertPage, convertPageShapes, buildPenpotFontsCss } from '@penpot-random/converter';
 import {
   extractTokens,
   tokensToCss,
@@ -13,6 +14,10 @@ import type { ConverterContext } from '@penpot-random/converter';
 import { getFileSummary, rpc } from './penpot-api-utils.server';
 
 const BASE_URL = 'https://design.penpot.app';
+
+function getFontsBaseUrl(): string {
+  return `${new URL(getRequest().url).origin}/proxy-fonts`;
+}
 
 export interface Team {
   id: string;
@@ -125,7 +130,7 @@ export const getPageHtmlFn = createServerFn({ method: 'GET' })
     const { html, fonts } = await convertPage(page, ctx);
     return {
       html,
-      googleFontsUrls: buildGoogleFontsUrls(fonts),
+      fontsCss: await buildPenpotFontsCss(fonts, { baseUrl: getFontsBaseUrl() }),
       tokensCss: tokensToCss(tokens),
     };
   });
@@ -196,7 +201,7 @@ export const getPageShapesFn = createServerFn({ method: 'GET' })
       name: page.name,
       shapes,
       tree,
-      googleFontsUrls: buildGoogleFontsUrls(fonts),
+      fontsCss: await buildPenpotFontsCss(fonts, { baseUrl: getFontsBaseUrl() }),
       tokensCss: tokensToCss(tokens),
     };
 

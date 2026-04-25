@@ -2,6 +2,7 @@ import type { Uuid } from '../penpot.types';
 
 /** Information about a font used in the converted output */
 export interface FontInfo {
+  fontId?: string;
   fontFamily: string;
   fontWeight?: string | number;
   fontStyle?: string;

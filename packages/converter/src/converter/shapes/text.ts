@@ -105,6 +105,7 @@ function collectLeafFont(
   const key = `${resolved.fontFamily}|${resolved.fontWeight ?? ''}|${resolved.fontStyle ?? ''}`;
   if (!collector.has(key)) {
     collector.set(key, {
+      fontId: resolved.fontId,
       fontFamily: resolved.fontFamily,
       fontWeight: resolved.fontWeight,
       fontStyle: resolved.fontStyle,

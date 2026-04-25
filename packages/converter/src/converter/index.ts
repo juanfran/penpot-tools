@@ -3,7 +3,8 @@ import type { ConverterContext, ConvertResult, FontInfo } from './types';
 import { renderShape } from './render';
 import { renderPage } from './page';
 import { buildTree, getChildren } from './tree';
-export { buildGoogleFontsUrls } from './utils/fonts';
+export { buildPenpotFontsCss } from './utils/fonts';
+export type { BuildPenpotFontsCssOptions } from './utils/fonts';
 
 async function formatHtml(html: string): Promise<string> {
   const oxfmt = await import('oxfmt');
