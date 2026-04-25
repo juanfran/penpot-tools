@@ -209,7 +209,7 @@ export function InspectorSidebar({
             </div>
             {textContent.plain ? (
               <div
-                className="max-h-40 overflow-auto rounded-md bg-gray-50 px-3 py-2 text-xs break-words text-gray-800 [&_p:empty]:min-h-[1em]"
+                className="max-h-40 overflow-auto rounded-md bg-gray-50 px-3 py-2 text-xs break-words text-gray-800"
                 dangerouslySetInnerHTML={{ __html: textContent.html }}
               />
             ) : (

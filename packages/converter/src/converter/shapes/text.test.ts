@@ -198,6 +198,19 @@ describe('renderParagraph', () => {
     const html = renderParagraph(makeParagraph());
     expect(html).not.toContain('class=');
   });
+
+  it('emits <br /> for paragraphs with no text so empty lines take vertical space', () => {
+    const html = renderParagraph(makeParagraph({ children: [makeLeaf({ text: '' })] }));
+    expect(html).toContain('<br />');
+  });
+
+  it('does not emit <br /> when at least one leaf has text', () => {
+    const html = renderParagraph(
+      makeParagraph({ children: [makeLeaf({ text: '' }), makeLeaf({ text: 'A' })] }),
+    );
+    expect(html).not.toContain('<br />');
+    expect(html).toContain('A');
+  });
 });
 
 const makeTextShape = (overrides: Partial<TextShape> = {}): TextShape => ({

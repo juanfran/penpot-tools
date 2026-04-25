@@ -71,17 +71,20 @@ export function renderParagraph(
     : '';
   const paraStyle = mergeStyles(paraBaseStyle, paraColorStyle);
 
-  const inner = para.children
-    .map((leaf) => {
-      const leafBaseStyle = textLeafToStyles(leaf);
-      const leafColorStyle = textLeafColorStyle(leaf, fillTokenName, tokens, fallbackColor);
-      const leafStyle = mergeStyles(leafBaseStyle, leafColorStyle);
+  const hasText = para.children.some((leaf) => leaf.text !== '');
+  const inner = hasText
+    ? para.children
+        .map((leaf) => {
+          const leafBaseStyle = textLeafToStyles(leaf);
+          const leafColorStyle = textLeafColorStyle(leaf, fillTokenName, tokens, fallbackColor);
+          const leafStyle = mergeStyles(leafBaseStyle, leafColorStyle);
 
-      if (leafStyle === paraStyle) return leaf.text;
+          if (leafStyle === paraStyle) return leaf.text;
 
-      return tag('span', { style: leafStyle || undefined }, leaf.text);
-    })
-    .join('');
+          return tag('span', { style: leafStyle || undefined }, leaf.text);
+        })
+        .join('')
+    : '<br />';
 
   return tag('p', { style: paraStyle || undefined }, inner);
 }
