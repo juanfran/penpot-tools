@@ -16,12 +16,19 @@ export function parseStyleDecls(styleAttr: string): StyleDeclaration[] {
     .filter((d): d is StyleDeclaration => d !== null);
 }
 
-export function extractText(html: string, shapeId: string): string | null {
+export interface ExtractedText {
+  html: string;
+  plain: string;
+}
+
+export function extractText(html: string, shapeId: string): ExtractedText | null {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const el = doc.querySelector(`[data-id="${shapeId}"][data-type="text"]`);
   if (!el) return null;
-  const paragraphs = Array.from(el.querySelectorAll('p')).map((p) => p.textContent ?? '');
-  return paragraphs.join('\n');
+  const plain = Array.from(el.querySelectorAll('p'))
+    .map((p) => p.textContent ?? '')
+    .join('\n');
+  return { html: el.innerHTML, plain };
 }
 
 export function extractStyles(html: string, shapeId: string): StyleDeclaration[] {

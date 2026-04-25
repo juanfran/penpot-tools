@@ -15,7 +15,7 @@ import { INSPECTOR_MAX_WIDTH, INSPECTOR_MIN_WIDTH, useInspectorPrefs } from './p
 import { Segmented } from './segmented';
 import { shapeIcon } from './shape-icon';
 import { StyleDecl } from './style-decl';
-import { extractStyles, extractText, groupStyles } from './styles';
+import { type ExtractedText, extractStyles, extractText, groupStyles } from './styles';
 
 // Returns the top-level tree node that contains (or is) the given id
 function findRootContaining(roots: ShapeTreeNode[], id: string): ShapeTreeNode | null {
@@ -108,10 +108,33 @@ export function InspectorSidebar({
   const boxModel = extractBoxModel(rootShape.html, selectedShapeId, node.width, node.height);
   const textContent = node.type === 'text' ? extractText(rootShape.html, selectedShapeId) : null;
 
-  const handleCopy = (kind: 'css' | 'text', value: string) => {
-    void navigator.clipboard.writeText(value).then(() => {
-      setCopied(kind);
-      setTimeout(() => setCopied(null), 2000);
+  const flashCopied = (kind: 'css' | 'text') => {
+    setCopied(kind);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleCopyCss = (value: string) => {
+    void navigator.clipboard.writeText(value).then(() => flashCopied('css'));
+  };
+
+  const handleCopyText = (extracted: ExtractedText) => {
+    const writeRich = async () => {
+      if (typeof ClipboardItem === 'undefined' || !navigator.clipboard.write) return false;
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/html': new Blob([extracted.html], { type: 'text/html' }),
+            'text/plain': new Blob([extracted.plain], { type: 'text/plain' }),
+          }),
+        ]);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    void writeRich().then(async (ok) => {
+      if (!ok) await navigator.clipboard.writeText(extracted.plain);
+      flashCopied('text');
     });
   };
 
@@ -176,17 +199,22 @@ export function InspectorSidebar({
                 Text
               </span>
               <button
-                onClick={() => handleCopy('text', textContent)}
+                onClick={() => handleCopyText(textContent)}
                 className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
-                title="Copy text"
+                title="Copy text with formatting"
               >
                 {copied === 'text' ? <Check size={11} /> : <Copy size={11} />}
                 <span>{copied === 'text' ? 'Copied!' : 'Copy'}</span>
               </button>
             </div>
-            <p className="max-h-40 overflow-auto rounded-md bg-gray-50 px-3 py-2 font-mono text-xs break-words whitespace-pre-wrap text-gray-800">
-              {textContent || <span className="text-gray-400">Empty</span>}
-            </p>
+            {textContent.plain ? (
+              <div
+                className="max-h-40 overflow-auto rounded-md bg-gray-50 px-3 py-2 text-xs break-words text-gray-800 [&_p:empty]:min-h-[1em]"
+                dangerouslySetInnerHTML={{ __html: textContent.html }}
+              />
+            ) : (
+              <p className="rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-400">Empty</p>
+            )}
           </div>
         )}
 
@@ -197,7 +225,7 @@ export function InspectorSidebar({
             </span>
             {decls.length > 0 && (
               <button
-                onClick={() => handleCopy('css', cssText)}
+                onClick={() => handleCopyCss(cssText)}
                 className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
                 title="Copy all styles"
               >
