@@ -57,7 +57,7 @@ export function ShapeHitZone({
         zIndex: 1,
       }}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onShapeSelect(undefined);
+        if (e.key === 'Enter') onShapeSelect(undefined);
       }}
       onMouseMove={(e) => {
         const cx = bounds.x + e.nativeEvent.offsetX;
