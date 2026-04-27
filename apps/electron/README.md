@@ -17,7 +17,6 @@ launched with plain `node`, with no runtime dependency on Vite or pnpm.
 ```
 apps/electron/
 ├── main.cjs        # Electron main: spawns the viewer server, opens the window
-├── preload.cjs     # Renderer preload (currently empty, reserved for IPC)
 ├── package.json    # Electron + electron-builder scripts and config
 └── README.md
 ```
@@ -63,9 +62,9 @@ pnpm --filter viewer-electron start
 
 ### Configuration
 
-| Env var       | Default | Purpose                                                  |
-| ------------- | ------- | -------------------------------------------------------- |
-| `VIEWER_PORT` | `4173`  | Port that the viewer server binds to internally.         |
+| Env var       | Default | Purpose                                          |
+| ------------- | ------- | ------------------------------------------------ |
+| `VIEWER_PORT` | `4173`  | Port that the viewer server binds to internally. |
 
 ## Packaging the desktop app
 
@@ -90,10 +89,9 @@ Output ends up in `apps/electron/release/`.
 
 ### Notes on bundling
 
-- The Electron app itself has zero production dependencies — only `main.cjs`,
-  `preload.cjs` and `package.json` are packed into `app.asar`. The viewer's
-  Nitro bundle ships unpacked under `resources/viewer-output/` as
-  `extraResources`.
+- The Electron app itself has zero production dependencies — only `main.cjs`
+  and `package.json` are packed into `app.asar`. The viewer's Nitro bundle
+  ships unpacked under `resources/viewer-output/` as `extraResources`.
 - Cross-compiling between platforms is possible but recommended only when
   targeting the same OS family. Signed/notarized macOS builds need to run on
   macOS with the appropriate certificates.

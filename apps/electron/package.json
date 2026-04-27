@@ -23,7 +23,6 @@
     "asar": true,
     "files": [
       "main.cjs",
-      "preload.cjs",
       "package.json"
     ],
     "extraResources": [
@@ -36,15 +35,21 @@
       "buildResources": "build"
     },
     "linux": {
-      "target": ["AppImage"],
+      "target": [
+        "AppImage"
+      ],
       "category": "Graphics"
     },
     "mac": {
-      "target": ["dmg"],
+      "target": [
+        "dmg"
+      ],
       "category": "public.app-category.graphics-design"
     },
     "win": {
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     }
   }
 }
