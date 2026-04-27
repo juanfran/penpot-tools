@@ -11,6 +11,7 @@ The viewer writes the active selection (file / page / shape) and the Penpot acce
 | `get_current_selection`| _"What am I looking at right now?"_ — returns `{ fileId, pageId, shapeId? }`                                                                              |
 | `get_current_html`     | _"Update the html with the design I have in penpot dev mode"_ — returns the HTML for the currently selected shape, or the full open page if none picked  |
 | `get_page_html`        | _"Create the html of the page I have open"_ — always returns the full page                                                                                |
+| `get_shape_html`       | _"Give me the HTML for the Header board"_ — converts an arbitrary shape by id (e.g. one returned by `get_page_overview`); `fileId`/`pageId` default to the current selection |
 | `get_page_tokens`      | _"Generate the tokens file for this page"_ — returns the design tokens applied on the page + a `:root { … }` CSS block                                    |
 | `get_page_overview`    | _"Give me a quick overview of the page in penpot dev mode"_ — returns boards, fonts, top tokens; no HTML, just structure                                  |
 | `get_screenshot`       | Renders the selected shape (or full page) in headless Chromium and returns a PNG. Pair with `get_current_html` so the agent can both _see_ the design and read its tokens/sizes. |
