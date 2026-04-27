@@ -14,6 +14,8 @@ The viewer writes the active selection (file / page / shape) and the Penpot acce
 | `get_page_tokens`      | _"Generate the tokens file for this page"_ — returns the design tokens applied on the page + a `:root { … }` CSS block                                    |
 | `get_page_overview`    | _"Give me a quick overview of the page in penpot dev mode"_ — returns boards, fonts, top tokens; no HTML, just structure                                  |
 | `get_screenshot`       | Renders the selected shape (or full page) in headless Chromium and returns a PNG. Pair with `get_current_html` so the agent can both _see_ the design and read its tokens/sizes. |
+| `list_assets`          | _"What images does this page use?"_ — returns the unique image media on the page (image shapes, fill images, stroke images) with id, mime type, dimensions, the Penpot URL, and which shapes reference each one. |
+| `download_asset`       | _"Save image X locally"_ — fetches the bytes for one media id (auth'd) and returns them as an inline image (png/jpeg/gif/webp) or raw text (svg). Capped at 5 MB. |
 
 The HTML returned is **raw**: a `<div>` tree with inline `style="…"` attributes and Penpot-emitted `data-*` traceability attributes. The MCP `instructions` block tells the calling agent to convert that into idiomatic semantic HTML / Tailwind / JSX / Vue / etc. depending on the user's project — so prompts like _"update my React+Tailwind component"_ or _"make me a Vue page"_ Just Work.
 
@@ -140,7 +142,7 @@ cd apps/mcp
  sleep 1) | pnpm start
 ```
 
-You should see the `initialize` response (with the long `instructions` block) followed by `tools/list` advertising five tools.
+You should see the `initialize` response (with the long `instructions` block) followed by `tools/list` advertising the registered tools.
 
 ## Design notes
 
