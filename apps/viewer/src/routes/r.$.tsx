@@ -14,6 +14,7 @@ function parsePenpotHash(hash: string) {
     fileId,
     pageId,
     teamId: params.get('team-id') ?? undefined,
+    shapeId: params.get('board-id') ?? undefined,
   };
 }
 
@@ -30,7 +31,7 @@ function RedirectPage() {
     navigate({
       to: '/workspace/$fileId/$pageId',
       params: { fileId: parsed.fileId, pageId: parsed.pageId },
-      search: { teamId: parsed.teamId },
+      search: { teamId: parsed.teamId, shapeId: parsed.shapeId },
       replace: true,
     });
   }, [navigate]);

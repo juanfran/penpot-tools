@@ -9,13 +9,14 @@ import {
 } from '#/components/page-header';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { Suspense, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
 
 export const Route = createFileRoute('/workspace/$fileId/$pageId')({
   validateSearch: z.object({
     teamId: z.string().optional(),
+    shapeId: z.string().optional(),
   }).parse,
   component: RouteComponent,
   pendingComponent: PageSkeleton,
@@ -36,7 +37,7 @@ export const Route = createFileRoute('/workspace/$fileId/$pageId')({
     throw redirect({
       to: '/workspace/$fileId/$pageId',
       params: { fileId: params.fileId, pageId: firstPageId },
-      search: { teamId: search.teamId },
+      search: { teamId: search.teamId, shapeId: search.shapeId },
       replace: true,
     });
   },
@@ -139,10 +140,22 @@ function SidebarWrapper({
 
 function RouteComponent() {
   const { fileId, pageId } = Route.useParams();
-  const { teamId } = Route.useSearch();
+  const { teamId, shapeId } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const initialShapeIdRef = useRef(shapeId);
   const [selectedShapeId, setSelectedShapeId] = useState<string | undefined>(undefined);
   const renderRef = useRef<RenderHandle>(null);
   const inspectorWidth = useInspectorPrefs((s) => s.width);
+
+  useEffect(() => {
+    if (!shapeId) return;
+    navigate({
+      to: '/workspace/$fileId/$pageId',
+      params: { fileId, pageId },
+      search: { teamId },
+      replace: true,
+    });
+  }, [shapeId, navigate, fileId, pageId, teamId]);
 
   const handleGoToShape = (id: string) => {
     renderRef.current?.goToShape(id);
@@ -173,6 +186,7 @@ function RouteComponent() {
                 pageId={pageId}
                 selectedShapeId={selectedShapeId}
                 onShapeSelect={setSelectedShapeId}
+                initialShapeId={initialShapeIdRef.current}
               />
             </Suspense>
           </main>

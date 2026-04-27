@@ -2,6 +2,7 @@ import {
   useRef,
   useState,
   useEffect,
+  useLayoutEffect,
   useImperativeHandle,
   useCallback,
   useMemo,
@@ -41,12 +42,14 @@ export const Render = ({
   fileId,
   selectedShapeId,
   onShapeSelect,
+  initialShapeId,
   ref,
 }: {
   pageId: string;
   fileId: string;
   selectedShapeId?: string;
   onShapeSelect?: (id: string | undefined) => void;
+  initialShapeId?: string;
   ref?: React.Ref<RenderHandle>;
 }) => {
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
@@ -63,9 +66,11 @@ export const Render = ({
   const [hoveredShapeId, setHoveredShapeId] = useState<string | undefined>(undefined);
   const unitFormat = useInspectorPrefs((s) => s.unitFormat);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setContainerSize({ width: rect.width, height: rect.height });
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       setContainerSize({ width, height });
@@ -123,7 +128,27 @@ export const Render = ({
 
   useImperativeHandle(ref, () => ({ goToShape }), [goToShape]);
 
-  const initialTransform = useMemo(() => loadTransform(fileId, pageId), [fileId, pageId]);
+  const initialTransform = useMemo<SavedTransform | null | undefined>(() => {
+    if (!containerSize.width || !containerSize.height) return undefined;
+    if (initialShapeId) {
+      const node = findNodeById(data.tree, initialShapeId);
+      if (node && node.width && node.height) {
+        const W = containerSize.width;
+        const H = containerSize.height;
+        const margin = 0.9;
+        const scaleFit = Math.min(W / node.width, H / node.height) * margin;
+        const scale = Math.min(Math.max(scaleFit, 0.05), 2);
+        const cx = node.x + node.width / 2;
+        const cy = node.y + node.height / 2;
+        return {
+          positionX: W / 2 - scale * cx,
+          positionY: H / 2 - scale * cy,
+          scale,
+        };
+      }
+    }
+    return loadTransform(fileId, pageId);
+  }, [containerSize.width, containerSize.height, data.tree, fileId, pageId, initialShapeId]);
 
   const saveDebouncer = useMemo(
     () =>
@@ -171,6 +196,7 @@ export const Render = ({
           if (e.key === 'Escape') onShapeSelect?.(undefined);
         }}
       >
+        {initialTransform !== undefined && (
         <TransformWrapper
           key={pageId}
           ref={transformRef}
@@ -231,6 +257,7 @@ export const Render = ({
             </div>
           </TransformComponent>
         </TransformWrapper>
+        )}
       </div>
     </>
   );
