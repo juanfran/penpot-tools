@@ -200,7 +200,7 @@ export const Render = ({
           <TransformWrapper
             key={pageId}
             ref={transformRef}
-            minScale={0.05}
+            minScale={0.1}
             maxScale={10}
             limitToBounds={false}
             centerOnInit={!initialTransform}
