@@ -1,6 +1,13 @@
 import { Page } from '../penpot.types';
 
-const pages = import.meta.glob<Page>('./*.json', { eager: true, import: 'default' });
+interface ImportMetaWithGlob {
+  glob<T>(pattern: string, options: { eager: true; import: 'default' }): Record<string, T>;
+}
+
+const pages = (import.meta as unknown as ImportMetaWithGlob).glob<Page>('./*.json', {
+  eager: true,
+  import: 'default',
+});
 
 export function getPage(name: string): Page {
   const page = pages[`./${name}.json`];

@@ -387,6 +387,7 @@ describe('renderFrame', () => {
         parentId: 'parent-1' as Uuid,
         shadow: [
           {
+            id: null,
             color: { color: '#000000' as HexColor, opacity: 0.2 },
             offsetX: 0,
             offsetY: 4,
@@ -413,6 +414,7 @@ describe('renderFrame', () => {
         r4: 8,
         shadow: [
           {
+            id: null,
             color: { color: '#000000' as HexColor, opacity: 0.2 },
             offsetX: 0,
             offsetY: 4,
@@ -436,6 +438,7 @@ describe('renderFrame', () => {
         fills: [{ fillColor: '#ffffff' as HexColor }],
         shadow: [
           {
+            id: null,
             color: { color: '#000000' as HexColor, opacity: 0.2 },
             offsetX: 0,
             offsetY: 4,
@@ -457,6 +460,7 @@ describe('renderFrame', () => {
         parentId: 'parent-1' as Uuid,
         shadow: [
           {
+            id: null,
             color: { color: '#000000' as HexColor, opacity: 0.2 },
             offsetX: 0,
             offsetY: 4,

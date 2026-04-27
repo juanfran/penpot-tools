@@ -1,3 +1,4 @@
+import '@vitest/browser/matchers';
 import { describe, it, expect } from 'vitest';
 import { convertShape } from '../converter/index';
 import type { ConverterContext } from '../converter/index';
