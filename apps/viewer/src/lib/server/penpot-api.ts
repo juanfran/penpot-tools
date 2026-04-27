@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
 import { authMiddleware } from '../middlewares/auth.middleware';
+import { updateMcpSelection } from './mcp-state';
 import z from 'zod';
 import { convertPage, convertPageShapes, buildPenpotFontsCss } from '@penpot-random/converter';
 import {
@@ -268,6 +269,19 @@ interface RawFileWithComponents {
   name?: string;
   data?: { components?: Record<string, RawComponent> };
 }
+
+export const setSelectionFn = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      fileId: z.uuid(),
+      pageId: z.uuid(),
+      shapeId: z.string().optional(),
+      teamId: z.string().optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await updateMcpSelection(data);
+  });
 
 export const getLibraryComponentsFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ fileId: z.uuid() }))

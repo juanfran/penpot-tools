@@ -1,5 +1,6 @@
 import { createServerFn, createServerOnlyFn } from '@tanstack/react-start';
 import { getRequest, setCookie } from '@tanstack/react-start/server';
+import { updateMcpToken } from './server/mcp-state';
 
 const COOKIE_NAME = 'penpot_token';
 
@@ -19,6 +20,7 @@ export const saveApiKeyFn = createServerFn({ method: 'POST' })
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
+    await updateMcpToken(data.token);
   });
 
 export const isAuthenticatedFn = createServerFn({ method: 'GET' }).handler(async () => {

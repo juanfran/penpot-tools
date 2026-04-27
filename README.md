@@ -4,10 +4,11 @@ Monorepo for converting [Penpot](https://penpot.app/) design files into standalo
 
 ## Packages
 
-| Path                 | Name                       | What it does                                                               |
-| -------------------- | -------------------------- | -------------------------------------------------------------------------- |
-| `packages/converter` | `@penpot-random/converter` | Library + CLI that turns a Penpot page/shape (JSON) into HTML + inline CSS |
-| `apps/viewer`        | `viewer`                   | React app that fetches a Penpot file and renders it using the converter    |
+| Path                 | Name                       | What it does                                                                                                  |
+| -------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `packages/converter` | `@penpot-random/converter` | Library + CLI that turns a Penpot page/shape (JSON) into HTML + inline CSS                                    |
+| `apps/viewer`        | `viewer`                   | React app that fetches a Penpot file and renders it using the converter                                       |
+| `apps/mcp`           | `@penpot-random/mcp`       | MCP server exposing the viewer's current selection (page / shape) as tools for Claude Code, Cursor, etc.      |
 
 ## Setup
 
@@ -37,6 +38,7 @@ pnpm penpot-to-html ...   # shortcut to the converter CLI (see its README)
 ## Per-package docs
 
 - [`packages/converter`](packages/converter/README.md) — CLI usage, auth, preview, integration tests, dev scripts.
+- [`apps/mcp`](apps/mcp/README.md) — MCP server: tools, configuration snippets for Claude Code / Desktop / Cursor.
 
 ## How to run Ralph
 

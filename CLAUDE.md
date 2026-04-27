@@ -5,7 +5,8 @@ Monorepo for converting Penpot design files (JSON) into HTML with inline styles.
 ## Packages
 
 - `packages/converter` — `@penpot-random/converter`: library + CLI. Architecture details live in [`packages/converter/CLAUDE.md`](packages/converter/CLAUDE.md).
-- `apps/viewer` — React app that consumes the converter.
+- `apps/viewer` — React app that consumes the converter. Writes the active selection (file/page/shape) and Penpot token to `~/.config/penpot-random/state.json` so the MCP can read them.
+- `apps/mcp` — `@penpot-random/mcp`: stdio MCP server (`@modelcontextprotocol/sdk` v1) that surfaces the viewer's current selection as tools (`get_current_html`, `get_page_html`, `get_page_tokens`, `get_page_overview`, `get_current_selection`). Mono-user, file-based IPC — no HTTP between viewer and MCP. Setup snippets in [`apps/mcp/README.md`](apps/mcp/README.md).
 
 ## Where to look
 

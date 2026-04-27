@@ -6,6 +6,11 @@
   "license": "ISC",
   "author": "",
   "type": "module",
+  "exports": {
+    ".": "./src/converter/index.ts",
+    "./tokens": "./src/converter/tokens.ts",
+    "./types": "./src/penpot.types.ts"
+  },
   "scripts": {
     "test": "vitest",
     "penpot-to-html": "tsx src/penpot-to-html.ts",

@@ -1,4 +1,4 @@
-import { getPageTokensFn, type PageTokens } from '#/lib/server/penpot-api';
+import { getPageTokensFn, setSelectionFn, type PageTokens } from '#/lib/server/penpot-api';
 import { Input } from '#/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '#/components/ui/tooltip';
 import {
@@ -20,7 +20,7 @@ import { tokenToCssVarName } from '@penpot-random/converter/tokens';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { Check, Copy, Loader2, Search } from 'lucide-react';
-import { Suspense, useDeferredValue, useMemo, useState } from 'react';
+import { Suspense, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 
 const pageTokensOptions = (fileId: string, pageId: string) =>
@@ -78,6 +78,9 @@ const CATEGORY_LABEL: Record<TokenCategory, string> = {
 function RouteComponent() {
   const { fileId, pageId } = Route.useParams();
   const { teamId } = Route.useSearch();
+  useEffect(() => {
+    void setSelectionFn({ data: { fileId, pageId, teamId } });
+  }, [fileId, pageId, teamId]);
   return (
     <div className="flex h-screen flex-col bg-gray-50">
       <Suspense fallback={<PageHeaderFallback />}>

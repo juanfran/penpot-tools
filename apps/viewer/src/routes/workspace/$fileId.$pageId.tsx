@@ -7,6 +7,7 @@ import {
   PageHeaderFallback,
   getFileSummaryQueryOptions,
 } from '#/components/page-header';
+import { setSelectionFn } from '#/lib/server/penpot-api';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { Suspense, useEffect, useRef, useState } from 'react';
@@ -156,6 +157,12 @@ function RouteComponent() {
       replace: true,
     });
   }, [shapeId, navigate, fileId, pageId, teamId]);
+
+  useEffect(() => {
+    void setSelectionFn({
+      data: { fileId, pageId, shapeId: selectedShapeId, teamId },
+    });
+  }, [fileId, pageId, selectedShapeId, teamId]);
 
   const handleGoToShape = (id: string) => {
     renderRef.current?.goToShape(id);
