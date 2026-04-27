@@ -1,8 +1,9 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/converter/index.ts", "src/penpot.types.ts", "scripts/**/*.mts"],
+  "entry": ["scripts/**/*.mts"],
   "project": ["src/**/*.ts", "scripts/**/*.mts"],
-  "ignore": ["src/**/*.test.ts", "src/intengration/utils.ts"],
+  "ignore": ["src/**/*.test.ts", "src/intengration/utils.ts", "src/intengration/mount.ts"],
+  "ignoreDependencies": ["@vitest/browser"],
   "ignoreExportsUsedInFile": true,
   "vitest": false
 }
