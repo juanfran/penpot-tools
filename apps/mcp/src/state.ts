@@ -16,7 +16,10 @@ export interface McpState {
 }
 
 export function getStateFilePath(): string {
-  return process.env['PENPOT_RANDOM_STATE_FILE'] ?? join(homedir(), '.config', 'penpot-random', 'state.json');
+  return (
+    process.env['PENPOT_RANDOM_STATE_FILE'] ??
+    join(homedir(), '.config', 'penpot-random', 'state.json')
+  );
 }
 
 export async function readState(): Promise<McpState> {

@@ -43,9 +43,33 @@
       "fills": [],
       "strokes": [],
       "shadow": [
-        { "color": { "color": "#000000", "opacity": 0.05 }, "spread": 0, "offsetY": 4, "style": "drop-shadow", "blur": 4, "hidden": false, "offsetX": 0 },
-        { "color": { "color": "#000000", "opacity": 0.09 }, "spread": 0, "offsetY": 2, "style": "drop-shadow", "blur": 2, "hidden": false, "offsetX": 0 },
-        { "color": { "color": "#000000", "opacity": 0.16 }, "spread": 0, "offsetY": 1, "style": "drop-shadow", "blur": 1, "hidden": false, "offsetX": 0 }
+        {
+          "color": { "color": "#000000", "opacity": 0.05 },
+          "spread": 0,
+          "offsetY": 4,
+          "style": "drop-shadow",
+          "blur": 4,
+          "hidden": false,
+          "offsetX": 0
+        },
+        {
+          "color": { "color": "#000000", "opacity": 0.09 },
+          "spread": 0,
+          "offsetY": 2,
+          "style": "drop-shadow",
+          "blur": 2,
+          "hidden": false,
+          "offsetX": 0
+        },
+        {
+          "color": { "color": "#000000", "opacity": 0.16 },
+          "spread": 0,
+          "offsetY": 1,
+          "style": "drop-shadow",
+          "blur": 1,
+          "hidden": false,
+          "offsetX": 0
+        }
       ],
       "shapes": ["fab-base-rect", "fab-tint-rect"]
     },

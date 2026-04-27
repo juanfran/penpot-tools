@@ -226,9 +226,9 @@ describe('layoutItemMinMaxStyle', () => {
     ).toContain('max-height: 100px;');
   });
   it('skips min-height when vSizing is fix (explicit dimension wins)', () => {
-    expect(
-      layoutItemMinMaxStyle(makeShape({ layoutItemVSizing: 'fix', layoutItemMinH: 80 })),
-    ).toBe('');
+    expect(layoutItemMinMaxStyle(makeShape({ layoutItemVSizing: 'fix', layoutItemMinH: 80 }))).toBe(
+      '',
+    );
   });
   it('skips min-width when hSizing is undefined (defaults to fix)', () => {
     expect(layoutItemMinMaxStyle(makeShape({ layoutItemMinW: 80 }))).toBe('');

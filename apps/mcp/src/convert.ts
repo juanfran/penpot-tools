@@ -148,7 +148,9 @@ function buildOverview(
   const text = collectText(shape);
   if (text) node.text = text;
   if (depth < maxDepth && childIds.length > 0) {
-    const children = childIds.flatMap((cid) => buildOverview(objects, cid, depth + 1, maxDepth) ?? []);
+    const children = childIds.flatMap(
+      (cid) => buildOverview(objects, cid, depth + 1, maxDepth) ?? [],
+    );
     if (children.length > 0) node.children = children;
   }
   return node;

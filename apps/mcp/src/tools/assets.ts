@@ -66,13 +66,7 @@ export function collectPageAssets(page: Page): AssetEntry[] {
   return Array.from(byId.values());
 }
 
-const PNG_LIKE = new Set([
-  'image/png',
-  'image/jpeg',
-  'image/jpg',
-  'image/gif',
-  'image/webp',
-]);
+const PNG_LIKE = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']);
 
 async function fetchAssetBytes(
   token: string,

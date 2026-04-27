@@ -24,7 +24,12 @@ describe('buildPenpotFontsCss', () => {
       [
         { fontId: 'sourcesanspro', fontFamily: 'sourcesanspro', fontWeight: '400' },
         { fontId: 'sourcesanspro', fontFamily: 'sourcesanspro', fontWeight: '700' },
-        { fontId: 'sourcesanspro', fontFamily: 'sourcesanspro', fontWeight: '700', fontStyle: 'italic' },
+        {
+          fontId: 'sourcesanspro',
+          fontFamily: 'sourcesanspro',
+          fontWeight: '700',
+          fontStyle: 'italic',
+        },
       ],
       { fetch: fetchFn as unknown as typeof globalThis.fetch },
     );
@@ -32,7 +37,9 @@ describe('buildPenpotFontsCss', () => {
     expect(fetchFn).not.toHaveBeenCalled();
     expect(css).toContain('src: url(https://design.penpot.app/fonts/sourcesanspro-regular.woff2)');
     expect(css).toContain('src: url(https://design.penpot.app/fonts/sourcesanspro-bold.woff2)');
-    expect(css).toContain('src: url(https://design.penpot.app/fonts/sourcesanspro-bolditalic.woff2)');
+    expect(css).toContain(
+      'src: url(https://design.penpot.app/fonts/sourcesanspro-bolditalic.woff2)',
+    );
     expect(css).toContain("font-family: 'sourcesanspro'");
   });
 
@@ -83,10 +90,10 @@ describe('buildPenpotFontsCss', () => {
       ]),
     );
 
-    const css = await buildPenpotFontsCss(
-      [{ fontId: 'gfont-inter', fontFamily: 'Inter' }],
-      { baseUrl: 'https://penpot.example.com', fetch: fetchFn },
-    );
+    const css = await buildPenpotFontsCss([{ fontId: 'gfont-inter', fontFamily: 'Inter' }], {
+      baseUrl: 'https://penpot.example.com',
+      fetch: fetchFn,
+    });
 
     expect(css).toContain('https://penpot.example.com/internal/gfonts/font/inter/v1/A.woff2');
     expect(css).not.toContain('https://design.penpot.app');
@@ -119,8 +126,6 @@ describe('buildPenpotFontsCss', () => {
     );
 
     expect(css).toContain('https://design.penpot.app/fonts/sourcesanspro-regular.woff2');
-    expect(css).toContain(
-      'https://design.penpot.app/internal/gfonts/font/roboto/v51/AAAA.woff2',
-    );
+    expect(css).toContain('https://design.penpot.app/internal/gfonts/font/roboto/v51/AAAA.woff2');
   });
 });

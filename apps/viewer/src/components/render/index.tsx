@@ -197,66 +197,66 @@ export const Render = ({
         }}
       >
         {initialTransform !== undefined && (
-        <TransformWrapper
-          key={pageId}
-          ref={transformRef}
-          minScale={0.05}
-          maxScale={10}
-          limitToBounds={false}
-          centerOnInit={!initialTransform}
-          initialScale={initialTransform?.scale}
-          initialPositionX={initialTransform?.positionX}
-          initialPositionY={initialTransform?.positionY}
-          onTransform={handleTransform}
-          onPanningStart={() => setIsPanning(true)}
-          onPanningStop={() => {
-            setIsPanning(false);
-            justPannedRef.current = true;
-          }}
-          smooth={false}
-          wheel={{ step: 0.1 }}
-          panning={{ activationKeys: [' '] }}
-          doubleClick={{ disabled: true }}
-        >
-          <ZoomControls />
-          <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
-            <div
-              className="pointer-events-none relative"
-              style={{ width: containerSize.width, height: containerSize.height }}
-            >
-              {data.shapes.map((shape) => (
-                <Virtualize
-                  key={shape.id}
-                  x={shape.x}
-                  y={shape.y}
-                  width={shape.width}
-                  height={shape.height}
-                  margin={VISIBILITY_MARGIN}
-                >
-                  <ShapeNode html={shape.html} />
-                </Virtualize>
-              ))}
-              {onShapeSelect && !isSpacePressed && (
-                <ShapeHitZone
-                  tree={data.tree}
-                  selectedShapeId={selectedShapeId}
-                  hoveredShapeId={hoveredShapeId}
-                  onShapeSelect={onShapeSelect}
-                  setHoveredShapeId={setHoveredShapeId}
-                />
-              )}
-              {onShapeSelect && (
-                <SelectionHighlights
-                  tree={data.tree}
-                  selectedShapeId={selectedShapeId}
-                  hoveredShapeId={hoveredShapeId}
-                  unitFormat={unitFormat}
-                  showHover={!isSpacePressed}
-                />
-              )}
-            </div>
-          </TransformComponent>
-        </TransformWrapper>
+          <TransformWrapper
+            key={pageId}
+            ref={transformRef}
+            minScale={0.05}
+            maxScale={10}
+            limitToBounds={false}
+            centerOnInit={!initialTransform}
+            initialScale={initialTransform?.scale}
+            initialPositionX={initialTransform?.positionX}
+            initialPositionY={initialTransform?.positionY}
+            onTransform={handleTransform}
+            onPanningStart={() => setIsPanning(true)}
+            onPanningStop={() => {
+              setIsPanning(false);
+              justPannedRef.current = true;
+            }}
+            smooth={false}
+            wheel={{ step: 0.1 }}
+            panning={{ activationKeys: [' '] }}
+            doubleClick={{ disabled: true }}
+          >
+            <ZoomControls />
+            <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
+              <div
+                className="pointer-events-none relative"
+                style={{ width: containerSize.width, height: containerSize.height }}
+              >
+                {data.shapes.map((shape) => (
+                  <Virtualize
+                    key={shape.id}
+                    x={shape.x}
+                    y={shape.y}
+                    width={shape.width}
+                    height={shape.height}
+                    margin={VISIBILITY_MARGIN}
+                  >
+                    <ShapeNode html={shape.html} />
+                  </Virtualize>
+                ))}
+                {onShapeSelect && !isSpacePressed && (
+                  <ShapeHitZone
+                    tree={data.tree}
+                    selectedShapeId={selectedShapeId}
+                    hoveredShapeId={hoveredShapeId}
+                    onShapeSelect={onShapeSelect}
+                    setHoveredShapeId={setHoveredShapeId}
+                  />
+                )}
+                {onShapeSelect && (
+                  <SelectionHighlights
+                    tree={data.tree}
+                    selectedShapeId={selectedShapeId}
+                    hoveredShapeId={hoveredShapeId}
+                    unitFormat={unitFormat}
+                    showHover={!isSpacePressed}
+                  />
+                )}
+              </div>
+            </TransformComponent>
+          </TransformWrapper>
         )}
       </div>
     </>

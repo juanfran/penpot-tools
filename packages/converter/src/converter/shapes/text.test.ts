@@ -143,9 +143,7 @@ describe('textLeafColorStyle', () => {
   });
 
   it('uses fallbackColor when leaf has no fills', () => {
-    expect(textLeafColorStyle(makeLeaf(), undefined, undefined, '#f54554')).toBe(
-      'color: #f54554;',
-    );
+    expect(textLeafColorStyle(makeLeaf(), undefined, undefined, '#f54554')).toBe('color: #f54554;');
   });
 
   it('prefers leaf fill over fallbackColor when both are set', () => {

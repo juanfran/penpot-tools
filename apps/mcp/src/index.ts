@@ -86,12 +86,7 @@ const server = new McpServer(
 
 const ok = (text: string) => ({ content: [{ type: 'text' as const, text }] });
 
-const okImage = (
-  base64: string,
-  width: number,
-  height: number,
-  caption: string,
-) => ({
+const okImage = (base64: string, width: number, height: number, caption: string) => ({
   content: [
     { type: 'text' as const, text: `${caption} (${width}×${height} px)` },
     { type: 'image' as const, data: base64, mimeType: 'image/png' as const },
@@ -143,12 +138,12 @@ server.registerTool(
         .string()
         .uuid()
         .optional()
-        .describe('Override the file id; defaults to the viewer\'s current selection.'),
+        .describe("Override the file id; defaults to the viewer's current selection."),
       pageId: z
         .string()
         .uuid()
         .optional()
-        .describe('Override the page id; defaults to the viewer\'s current selection.'),
+        .describe("Override the page id; defaults to the viewer's current selection."),
     },
   },
   async ({ fileId, pageId }) => {
@@ -268,7 +263,9 @@ server.registerTool(
       shapeId: z
         .string()
         .optional()
-        .describe('Override the shape to screenshot; defaults to the viewer\'s current shape selection.'),
+        .describe(
+          "Override the shape to screenshot; defaults to the viewer's current shape selection.",
+        ),
       maxWidth: z.number().int().positive().max(4000).optional(),
       maxHeight: z.number().int().positive().max(10000).optional(),
     },
@@ -285,9 +282,10 @@ server.registerTool(
       );
     }
 
-    const bundle = wantShape && resolvedShape
-      ? await convertShapeToHtml(token, sel.fileId, sel.pageId, resolvedShape)
-      : await convertPageToHtml(token, sel.fileId, sel.pageId);
+    const bundle =
+      wantShape && resolvedShape
+        ? await convertShapeToHtml(token, sel.fileId, sel.pageId, resolvedShape)
+        : await convertPageToHtml(token, sel.fileId, sel.pageId);
 
     const shot = await renderScreenshot({
       html: bundle.html,
@@ -297,9 +295,10 @@ server.registerTool(
       maxHeight,
     });
 
-    const caption = wantShape && resolvedShape
-      ? `Penpot screenshot — shape ${resolvedShape} on page "${bundle.pageName}"`
-      : `Penpot screenshot — full page "${bundle.pageName}"`;
+    const caption =
+      wantShape && resolvedShape
+        ? `Penpot screenshot — shape ${resolvedShape} on page "${bundle.pageName}"`
+        : `Penpot screenshot — full page "${bundle.pageName}"`;
 
     return okImage(shot.base64, shot.width, shot.height, caption);
   },

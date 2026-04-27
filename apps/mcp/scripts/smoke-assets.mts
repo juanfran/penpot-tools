@@ -15,7 +15,9 @@ import { collectPageAssets } from '../src/tools/assets.ts';
 const cacheDir = resolve(import.meta.dirname, '../../../packages/converter/cache');
 const entries = (await readdir(cacheDir)).filter((f) => f.endsWith('.json')).sort();
 if (entries.length === 0) {
-  console.error(`No cached page JSON in ${cacheDir}. Run \`pnpm penpot-to-html ... --cache\` first.`);
+  console.error(
+    `No cached page JSON in ${cacheDir}. Run \`pnpm penpot-to-html ... --cache\` first.`,
+  );
   process.exit(1);
 }
 

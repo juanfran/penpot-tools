@@ -23,7 +23,10 @@ export interface McpState {
  * Override path with PENPOT_RANDOM_STATE_FILE for tests / sandboxed installs.
  */
 export function getStateFilePath(): string {
-  return process.env['PENPOT_RANDOM_STATE_FILE'] ?? join(homedir(), '.config', 'penpot-random', 'state.json');
+  return (
+    process.env['PENPOT_RANDOM_STATE_FILE'] ??
+    join(homedir(), '.config', 'penpot-random', 'state.json')
+  );
 }
 
 let cache: McpState | null = null;

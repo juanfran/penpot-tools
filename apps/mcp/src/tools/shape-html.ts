@@ -12,17 +12,19 @@ export function registerShapeHtmlTool(server: McpServer): void {
       description:
         'Returns HTML for an arbitrary shape by id, independent of what the user has selected in the viewer. Use this after `get_page_overview` to extract one of the listed boards (e.g. "give me the HTML for the Header board"). fileId/pageId default to the viewer\'s current selection.',
       inputSchema: {
-        shapeId: z.string().describe('The shape id to convert (e.g. a board id from get_page_overview).'),
+        shapeId: z
+          .string()
+          .describe('The shape id to convert (e.g. a board id from get_page_overview).'),
         fileId: z
           .string()
           .uuid()
           .optional()
-          .describe('Override the file id; defaults to the viewer\'s current selection.'),
+          .describe("Override the file id; defaults to the viewer's current selection."),
         pageId: z
           .string()
           .uuid()
           .optional()
-          .describe('Override the page id; defaults to the viewer\'s current selection.'),
+          .describe("Override the page id; defaults to the viewer's current selection."),
       },
     },
     async ({ shapeId, fileId, pageId }) => {

@@ -59,11 +59,7 @@ const electronBuilderBin = path.join(
   '.bin',
   process.platform === 'win32' ? 'electron-builder.cmd' : 'electron-builder',
 );
-const builderArgs = [
-  ...targetFlags,
-  '--config.directories.output',
-  releaseDir,
-];
+const builderArgs = [...targetFlags, '--config.directories.output', releaseDir];
 run(electronBuilderBin, builderArgs, { cwd: deployDir });
 
 console.log(`\nElectron build artifacts written to ${releaseDir}`);

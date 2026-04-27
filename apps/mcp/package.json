@@ -2,10 +2,10 @@
   "name": "@penpot-random/mcp",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "bin": {
     "penpot-random-mcp": "./bin/mcp.mjs"
   },
+  "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit"
