@@ -1,9 +1,9 @@
 {
-  "name": "@penpot-random/mcp",
+  "name": "@penpot-tools/mcp",
   "version": "0.1.0",
   "private": true,
   "bin": {
-    "penpot-random-mcp": "./bin/mcp.mjs"
+    "penpot-tools-mcp": "./bin/mcp.mjs"
   },
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.21.0",
-    "@penpot-random/converter": "workspace:*",
+    "@penpot-tools/converter": "workspace:*",
     "playwright": "^1.59.1",
     "tsx": "^4.21.0",
     "zod": "^4.3.6"

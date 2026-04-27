@@ -1,8 +1,8 @@
-# @penpot-random/mcp
+# @penpot-tools/mcp
 
-MCP server that exposes the design the user currently has open in the **penpot-random viewer** (`apps/viewer`) to any MCP-compatible client (Claude Code, Claude Desktop, Cursor, …).
+MCP server that exposes the design the user currently has open in the **penpot-tools viewer** (`apps/viewer`) to any MCP-compatible client (Claude Code, Claude Desktop, Cursor, …).
 
-The viewer writes the active selection (file / page / shape) and the Penpot access token to a small JSON file in the user's home directory. This MCP server reads from that file, calls Penpot directly, and converts the design into HTML using `@penpot-random/converter`.
+The viewer writes the active selection (file / page / shape) and the Penpot access token to a small JSON file in the user's home directory. This MCP server reads from that file, calls Penpot directly, and converts the design into HTML using `@penpot-tools/converter`.
 
 ## What it does
 
@@ -43,7 +43,7 @@ The HTML returned is **raw**: a `<div>` tree with inline `style="…"` attribute
 The viewer writes, and the MCP reads, a single JSON file:
 
 ```
-~/.config/penpot-random/state.json
+~/.config/penpot-tools/state.json
 ```
 
 ```json
@@ -75,7 +75,7 @@ pnpm install
 ### Claude Code
 
 ```bash
-claude mcp add penpot-viewer -- node /absolute/path/to/penpot-random/apps/mcp/bin/mcp.mjs
+claude mcp add penpot-viewer -- node /absolute/path/to/penpot-tools/apps/mcp/bin/mcp.mjs
 ```
 
 …or edit `~/.claude.json` directly:
@@ -85,7 +85,7 @@ claude mcp add penpot-viewer -- node /absolute/path/to/penpot-random/apps/mcp/bi
   "mcpServers": {
     "penpot-viewer": {
       "command": "node",
-      "args": ["/absolute/path/to/penpot-random/apps/mcp/bin/mcp.mjs"]
+      "args": ["/absolute/path/to/penpot-tools/apps/mcp/bin/mcp.mjs"]
     }
   }
 }
@@ -100,7 +100,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
   "mcpServers": {
     "penpot-viewer": {
       "command": "node",
-      "args": ["/absolute/path/to/penpot-random/apps/mcp/bin/mcp.mjs"]
+      "args": ["/absolute/path/to/penpot-tools/apps/mcp/bin/mcp.mjs"]
     }
   }
 }
@@ -147,7 +147,7 @@ You should see the `initialize` response (with the long `instructions` block) fo
 
 ## Design notes
 
-- **Mono-user / file-based IPC.** The viewer is a local mono-user app, so a single JSON file in `~/.config/penpot-random/` is enough to share state between the viewer (writer) and the MCP (reader). No HTTP server, no auth dance, no race conditions worth worrying about.
+- **Mono-user / file-based IPC.** The viewer is a local mono-user app, so a single JSON file in `~/.config/penpot-tools/` is enough to share state between the viewer (writer) and the MCP (reader). No HTTP server, no auth dance, no race conditions worth worrying about.
 - **No build step.** `bin/mcp.mjs` spawns `tsx` from the local `node_modules` and runs `src/index.ts` directly. Edit a `.ts` file → next MCP invocation picks it up.
-- **Conversion happens in-process.** The MCP imports `@penpot-random/converter` directly; it does not call the viewer's HTTP API. That decouples it from the viewer process: the viewer can be down and the MCP still works as long as a token + the user-supplied IDs are available.
+- **Conversion happens in-process.** The MCP imports `@penpot-tools/converter` directly; it does not call the viewer's HTTP API. That decouples it from the viewer process: the viewer can be down and the MCP still works as long as a token + the user-supplied IDs are available.
 - **Screenshot uses headless Chromium, not the running viewer.** `get_screenshot` builds a self-contained HTML doc (preflight + tokens + fonts + converter HTML) and renders it in a Chromium instance launched from this process. The browser is launched lazily on first call and reused for the lifetime of the MCP process. Same bounding-box / wait-for-fonts trick as `packages/converter/src/intengration/mount.ts`.

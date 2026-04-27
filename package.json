@@ -1,5 +1,5 @@
 {
-  "name": "penpot-random",
+  "name": "penpot-tools",
   "version": "1.0.0",
   "description": "",
   "keywords": [],
@@ -9,11 +9,11 @@
   "scripts": {
     "test": "pnpm -r --parallel test",
     "viewer-dev": "pnpm --filter viewer dev",
-    "penpot-to-html": "pnpm --filter @penpot-random/converter penpot-to-html",
+    "penpot-to-html": "pnpm --filter @penpot-tools/converter penpot-to-html",
     "lint": "oxlint .",
     "format": "oxfmt --check",
     "check": "oxlint --fix-dangerously && oxfmt",
-    "knip": "pnpm --filter @penpot-random/converter knip",
+    "knip": "pnpm --filter @penpot-tools/converter knip",
     "typecheck": "pnpm -r --parallel typecheck"
   },
   "devDependencies": {

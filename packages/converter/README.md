@@ -1,4 +1,4 @@
-# @penpot-random/converter
+# @penpot-tools/converter
 
 Converts a Penpot page or shape (JSON) into HTML with inline styles. Ships both a library API (`convertPage`, `convertShape`, `convertPageShapes`) and a CLI (`penpot-to-html`) that fetches a file from a Penpot instance and prints the HTML.
 

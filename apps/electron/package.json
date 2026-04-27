@@ -18,7 +18,7 @@
     "electron-builder": "^26.8.1"
   },
   "build": {
-    "appId": "com.penpot-random.viewer",
+    "appId": "com.penpot-tools.viewer",
     "productName": "Penpot Viewer",
     "asar": true,
     "files": [

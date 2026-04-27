@@ -18,7 +18,7 @@ optional shape — is tracked by the viewer and read here. There is no need to a
 user for IDs; they pick them by navigating the viewer UI.
 
 When you call any of the html-returning tools you receive raw HTML produced by the
-penpot-random converter. That HTML is intentionally low-level:
+penpot-tools converter. That HTML is intentionally low-level:
 
   * It is a tree of <div> elements with **inline style="..."** attributes.
   * It carries data-id / data-type / data-name attributes from Penpot — keep them when

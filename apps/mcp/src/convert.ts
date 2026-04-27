@@ -1,8 +1,8 @@
-import { convertPage, convertShape, buildPenpotFontsCss } from '@penpot-random/converter';
-import type { ConverterContext } from '@penpot-random/converter';
-import { extractTokens, extractAllTokens, tokensToCss } from '@penpot-random/converter/tokens';
-import type { TokenInfo } from '@penpot-random/converter/tokens';
-import type { Shape } from '@penpot-random/converter/types';
+import { convertPage, convertShape, buildPenpotFontsCss } from '@penpot-tools/converter';
+import type { ConverterContext } from '@penpot-tools/converter';
+import { extractTokens, extractAllTokens, tokensToCss } from '@penpot-tools/converter/tokens';
+import type { TokenInfo } from '@penpot-tools/converter/tokens';
+import type { Shape } from '@penpot-tools/converter/types';
 import { fetchPage, getPenpotBase, imageUrlFor } from './penpot-api.ts';
 
 export interface PageHtmlBundle {

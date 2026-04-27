@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import type { Page, Shape } from '@penpot-random/converter/types';
+import type { Page, Shape } from '@penpot-tools/converter/types';
 import { fetchPage, getPenpotBase, imageUrlFor } from '../penpot-api.ts';
 import { requireSelection, requireToken } from '../state.ts';
 

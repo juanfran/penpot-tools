@@ -18,7 +18,7 @@ export interface McpState {
 export function getStateFilePath(): string {
   return (
     process.env['PENPOT_RANDOM_STATE_FILE'] ??
-    join(homedir(), '.config', 'penpot-random', 'state.json')
+    join(homedir(), '.config', 'penpot-tools', 'state.json')
   );
 }
 

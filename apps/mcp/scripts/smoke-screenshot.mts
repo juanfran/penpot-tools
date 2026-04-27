@@ -9,10 +9,10 @@
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { convertPage, buildPenpotFontsCss } from '@penpot-random/converter';
-import type { ConverterContext } from '@penpot-random/converter';
-import { extractTokens, tokensToCss } from '@penpot-random/converter/tokens';
-import type { Page } from '@penpot-random/converter/types';
+import { convertPage, buildPenpotFontsCss } from '@penpot-tools/converter';
+import type { ConverterContext } from '@penpot-tools/converter';
+import { extractTokens, tokensToCss } from '@penpot-tools/converter/tokens';
+import type { Page } from '@penpot-tools/converter/types';
 import { renderScreenshot } from '../src/screenshot.ts';
 
 const fixture = resolve(

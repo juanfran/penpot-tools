@@ -9,7 +9,7 @@
  */
 import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import type { Page } from '@penpot-random/converter/types';
+import type { Page } from '@penpot-tools/converter/types';
 import { collectPageAssets } from '../src/tools/assets.ts';
 
 const cacheDir = resolve(import.meta.dirname, '../../../packages/converter/cache');

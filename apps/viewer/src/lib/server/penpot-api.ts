@@ -3,15 +3,15 @@ import { getRequest } from '@tanstack/react-start/server';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { updateMcpSelection } from './mcp-state';
 import z from 'zod';
-import { convertPage, convertPageShapes, buildPenpotFontsCss } from '@penpot-random/converter';
+import { convertPage, convertPageShapes, buildPenpotFontsCss } from '@penpot-tools/converter';
 import {
   extractTokens,
   tokensToCss,
   extractAllTokens,
   type TokenInfo,
-} from '@penpot-random/converter/tokens';
-import type { Page, Uuid } from '@penpot-random/penpot-types';
-import type { ConverterContext } from '@penpot-random/converter';
+} from '@penpot-tools/converter/tokens';
+import type { Page, Uuid } from '@penpot-tools/penpot-types';
+import type { ConverterContext } from '@penpot-tools/converter';
 import { getFileSummary, rpc } from './penpot-api-utils.server';
 
 const BASE_URL = 'https://design.penpot.app';

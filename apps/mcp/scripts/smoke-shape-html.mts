@@ -10,10 +10,10 @@
  */
 import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { convertShape } from '@penpot-random/converter';
-import type { ConverterContext } from '@penpot-random/converter';
-import { extractTokens } from '@penpot-random/converter/tokens';
-import type { Page } from '@penpot-random/converter/types';
+import { convertShape } from '@penpot-tools/converter';
+import type { ConverterContext } from '@penpot-tools/converter';
+import { extractTokens } from '@penpot-tools/converter/tokens';
+import type { Page } from '@penpot-tools/converter/types';
 
 const cacheDir = resolve(import.meta.dirname, '../../../packages/converter/cache');
 const entries = (await readdir(cacheDir)).filter((f) => f.endsWith('.json')).sort();

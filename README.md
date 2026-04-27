@@ -1,14 +1,14 @@
-# penpot-random
+# penpot-tools
 
 Monorepo for converting [Penpot](https://penpot.app/) design files into standalone HTML.
 
 ## Packages
 
-| Path                 | Name                       | What it does                                                                                             |
-| -------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `packages/converter` | `@penpot-random/converter` | Library + CLI that turns a Penpot page/shape (JSON) into HTML + inline CSS                               |
-| `apps/viewer`        | `viewer`                   | React app that fetches a Penpot file and renders it using the converter                                  |
-| `apps/mcp`           | `@penpot-random/mcp`       | MCP server exposing the viewer's current selection (page / shape) as tools for Claude Code, Cursor, etc. |
+| Path                 | Name                      | What it does                                                                                             |
+| -------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `packages/converter` | `@penpot-tools/converter` | Library + CLI that turns a Penpot page/shape (JSON) into HTML + inline CSS                               |
+| `apps/viewer`        | `viewer`                  | React app that fetches a Penpot file and renders it using the converter                                  |
+| `apps/mcp`           | `@penpot-tools/mcp`       | MCP server exposing the viewer's current selection (page / shape) as tools for Claude Code, Cursor, etc. |
 
 ## Setup
 

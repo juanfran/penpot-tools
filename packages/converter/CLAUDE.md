@@ -1,6 +1,6 @@
 # Converter architecture
 
-Deep dive for modifying `@penpot-random/converter`. For CLI usage, commands, and testing workflow see [`README.md`](README.md).
+Deep dive for modifying `@penpot-tools/converter`. For CLI usage, commands, and testing workflow see [`README.md`](README.md).
 
 ## Source layout
 

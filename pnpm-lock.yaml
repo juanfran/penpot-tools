@@ -50,7 +50,7 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.21.0
         version: 1.29.0(zod@4.3.6)
-      '@penpot-random/converter':
+      '@penpot-tools/converter':
         specifier: workspace:*
         version: link:../../packages/converter
       playwright:

@@ -1,4 +1,4 @@
-import type { Page } from '@penpot-random/converter/types';
+import type { Page } from '@penpot-tools/converter/types';
 
 const DEFAULT_BASE = 'https://design.penpot.app';
 
