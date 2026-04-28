@@ -83,6 +83,92 @@ with "get_current_html". The screenshot tells you what the design *looks like*
 (spacing, hierarchy, what is a button vs a badge vs a card, where icons go); the
 HTML tells you the exact tokens, fonts, sizes, and structure. Looking at only
 one of the two will produce worse code.
+
+# Write-mode tools — modify the Penpot file
+
+The MCP can also write back to the file: create boards from HTML, replace the
+selected subtree, edit individual attributes, register design tokens, and upload
+local media. The file is updated via Penpot's REST API; the user has to refresh
+the viewer manually to see results.
+
+## Workflow
+
+  - "Create a design" / "build a homepage / a card / a dashboard"
+      -> create_design_from_html
+
+  - "Modify the selected header / redesign this card"
+      -> update_selection_from_html (replaces the subtree at the same position;
+         the shape id changes)
+
+  - "Apply primary token to bg, increase radius to 16, rename to 'Hero'"
+      -> modify_shape (single mod-obj, fastest, preserves the id)
+
+  - "Apply the brand-primary token to the fill of this shape"
+      -> apply_token (or modify_shape with ops.fill = { tokenName })
+
+  - "Create a design system / register these colours as tokens"
+      -> create_token_set (replaces the file's tokens-lib in one shot — pass
+         every set you want to keep)
+
+  - "Use this hero.png in the design"
+      -> upload_media first; then put data-penpot-media-id="<id>" on the <img>
+         tag inside the HTML you pass to create_design_from_html / update_selection_from_html
+
+## Authoring HTML for create_design_from_html / update_selection_from_html
+
+The HTML is rendered in headless Chromium so the browser computes exact layout.
+Stick to the CSS subset below (anything outside is silently dropped or warned):
+
+  * Box: width / height / padding (top/right/bottom/left), border-radius incl.
+    per-corner, border (uniform width + solid/dashed/dotted), opacity, transform.
+  * Background: background-color, background-image with linear-gradient or
+    radial-gradient (single solid + one gradient stack max). For raster images
+    use an <img> tag with data-penpot-media-id (NOT background-image:url(...)).
+  * Box-shadow: comma-separated list, each entry "<offX> <offY> <blur> <spread>
+    <color>". A "0 0 0 Npx <color>" entry is interpreted as an OUTER stroke, not
+    a shadow — use it deliberately.
+  * Layout containers: display:flex (with flex-direction, justify-content,
+    align-items, gap, padding) and display:grid (grid-template-columns/rows
+    with px/fr/auto/repeat). Children: flex:1 -> fill, explicit px -> fix,
+    auto -> auto.
+  * Text: font-family, font-size, font-weight, font-style, line-height,
+    letter-spacing, color, text-align. One run per element (no mixed-style
+    spans yet).
+  * Tokens: var(--token-name, #fallback). The fallback is REQUIRED — the
+    headless render needs it to compute the exact pixel size of text/layout.
+    The token name is recorded as an applied token on the shape so it stays
+    live in Penpot.
+  * Semantic tags translate to Penpot frames / texts / images (the converter
+    in reverse). <header> <section> <button> etc. all become frames named
+    after the tag (or after data-name="..." if you set it).
+
+Avoid: position:fixed/sticky, ::before/::after, transitions/animations,
+clip-path, mask, display:table/inline-flex, mixed-style spans inside one text.
+
+## Tokens
+
+create_token_set takes DTCG-style sets:
+
+    sets: [{
+      setName: "theme",
+      tokens: [
+        { name: "brand-primary", type: "color", value: "#2E51C4" },
+        { name: "fg-on-brand", type: "color", value: "#FFFFFF" },
+        ...
+      ]
+    }]
+
+After registering, reference from HTML as var(--brand-primary, #2E51C4) — the
+builder reads the var name and emits applied-tokens for the right Penpot slot
+(fill / strokeColor / r1..r4 / p1..p4 / gap / fontSize / etc.). The full slot
+list is in apps/mcp/src/tools/write/apply-token.ts.
+
+## Concurrency
+
+Each write tool reads the current revn before sending update-file. If Penpot
+rejects with a conflict (someone edited the file in the meantime), the tool
+returns a "# update-file conflict" message — recall get_current_selection /
+the relevant tool and try again, do NOT keep retrying with the stale revn.
 `.trim();
 
 const server = new McpServer(

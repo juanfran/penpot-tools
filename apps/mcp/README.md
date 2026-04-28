@@ -6,6 +6,8 @@ The viewer writes the active selection (file / page / shape) and the Penpot acce
 
 ## What it does
 
+### Read-mode (inspect the design)
+
 | Tool                    | When to use it                                                                                                                                                                                                   |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `get_current_selection` | _"What am I looking at right now?"_ — returns `{ fileId, pageId, shapeId? }`                                                                                                                                     |
@@ -17,6 +19,21 @@ The viewer writes the active selection (file / page / shape) and the Penpot acce
 | `get_screenshot`        | Renders the selected shape (or full page) in headless Chromium and returns a PNG. Pair with `get_current_html` so the agent can both _see_ the design and read its tokens/sizes.                                 |
 | `list_assets`           | _"What images does this page use?"_ — returns the unique image media on the page (image shapes, fill images, stroke images) with id, mime type, dimensions, the Penpot URL, and which shapes reference each one. |
 | `download_asset`        | _"Save image X locally"_ — fetches the bytes for one media id (auth'd) and returns them as an inline image (png/jpeg/gif/webp) or raw text (svg). Capped at 5 MB.                                                |
+
+### Write-mode (modify the design)
+
+| Tool                          | When to use it                                                                                                                                                                                  |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create_design_from_html`     | _"Build a homepage / a card / a dashboard"_ — renders the HTML in headless Chromium, measures every element, and creates a new top-level board on the open page                                |
+| `update_selection_from_html`  | _"Modify the selected header / redesign this card"_ — replaces the currently-selected shape and all its descendants with a fresh subtree built from the provided HTML, anchored at the same x/y |
+| `modify_shape`                | _"Apply primary token to bg, increase radius to 16, rename to Hero"_ — single `mod-obj` change, fastest path, preserves the shape id                                                            |
+| `apply_token`                 | _"Apply the brand-primary token to the fill of this shape"_ — surgical alternative to `modify_shape` for setting `appliedTokens` slots only                                                     |
+| `create_token_set`            | _"Create a design system / register these colours as tokens"_ — replaces the file's `tokens-lib` in one shot (DTCG `$type`/`$value` via Transit JSON)                                           |
+| `upload_media`                | _"Use this hero.png in the design"_ — uploads local images and returns Penpot media ids; reference them via `data-penpot-media-id="<id>"` on `<img>` tags inside the HTML                       |
+
+The CSS subset accepted by `create_design_from_html` / `update_selection_from_html` is documented in the MCP `instructions` block (sent to the agent on connect) and in [`packages/html-to-penpot/CLAUDE.md`](../../packages/html-to-penpot/CLAUDE.md).
+
+After any write-mode call **the user has to refresh the file in Penpot** to see the change — the MCP does not push live updates.
 
 The HTML returned is **raw**: a `<div>` tree with inline `style="…"` attributes and Penpot-emitted `data-*` traceability attributes. The MCP `instructions` block tells the calling agent to convert that into idiomatic semantic HTML / Tailwind / JSX / Vue / etc. depending on the user's project — so prompts like _"update my React+Tailwind component"_ or _"make me a Vue page"_ Just Work.
 
