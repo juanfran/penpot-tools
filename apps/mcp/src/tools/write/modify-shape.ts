@@ -215,17 +215,12 @@ export function registerModifyShapeTool(server: McpServer): void {
   server.registerTool(
     'modify_shape',
     {
-      title: 'Modify a Penpot shape with a single mod-obj change',
-      description: [
-        'Surgical edit: emits one mod-obj with all the requested set operations. Fastest',
-        'way to tweak a shape (fill / stroke / radius / layout / opacity / name / visible)',
-        "without rebuilding it. Best for prompts like \"apply primary token to bg and",
-        "increase radius to 16\". For structural changes (replacing children, swapping",
-        'an entire subtree) use update_selection_from_html instead.',
-      ].join(' '),
+      title: 'Surgical mod-obj on a Penpot shape',
+      description:
+        'Emits one mod-obj with the given set ops. Fastest path for fill / stroke / radius / layout / opacity / name / visible tweaks. Use update_selection_from_html for structural changes.',
       inputSchema: {
         shapeId: z.string().uuid().optional(),
-        ops: OpsInput.describe('Bag of attributes to update; pass only the ones you want changed.'),
+        ops: OpsInput.describe('Attributes to update; pass only what changes.'),
         fileId: z.string().uuid().optional(),
         pageId: z.string().uuid().optional(),
       },

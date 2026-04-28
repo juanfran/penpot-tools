@@ -12,30 +12,15 @@ export function registerCreateFromHtmlTool(server: McpServer): void {
     'create_design_from_html',
     {
       title: 'Create a Penpot board from an HTML snippet',
-      description: [
-        'Takes an HTML+CSS document, renders it in headless Chromium to compute exact',
-        'layout/styles, and creates a new top-level board on the page the user has open.',
-        'Each visible element becomes a Penpot shape (frame, rect, or text). Use this for',
-        'prompts like "create a homepage for a store" — design the HTML the way you would',
-        "for production, then call this tool. v1 supports solid backgrounds, borders,",
-        'border-radius, and single-run text. Layouts (flex/grid), images, gradients,',
-        'shadows, and tokens land in later phases.',
-      ].join(' '),
+      description:
+        'Renders HTML in headless Chromium and creates a new top-level board with one shape per visible element. See `penpot://write-guide` for the supported CSS subset.',
       inputSchema: {
-        html: z
-          .string()
-          .min(1)
-          .describe(
-            'HTML document or fragment. Inline <style> and computed CSS are honoured. The fragment is wrapped in a positioned container during measurement.',
-          ),
-        name: z
-          .string()
-          .optional()
-          .describe('Name for the top-level board created on the page.'),
+        html: z.string().min(1).describe('HTML document or fragment.'),
+        name: z.string().optional().describe('Name for the new board.'),
         position: z
           .object({ x: z.number(), y: z.number() })
           .optional()
-          .describe('Page-absolute origin for the new board. Defaults to (0, 0).'),
+          .describe('Page-absolute origin (defaults to (0, 0)).'),
         fileId: z.string().uuid().optional(),
         pageId: z.string().uuid().optional(),
       },

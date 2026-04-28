@@ -10,6 +10,7 @@ import {
 import { describePageBundle, describeShapeBundle } from './format.ts';
 import { renderScreenshot } from './screenshot.ts';
 import { requireSelection, requireToken } from './state.ts';
+import { registerGuideResources } from './resources.ts';
 import { registerApplyTokenTool } from './tools/write/apply-token.ts';
 import { registerCreateFromHtmlTool } from './tools/write/create-from-html.ts';
 import { registerCreateTokenSetTool } from './tools/write/create-token-set.ts';
@@ -18,157 +19,24 @@ import { registerUpdateSelectionFromHtmlTool } from './tools/write/update-select
 import { registerUploadMediaTool } from './tools/write/upload-media.ts';
 
 const SERVER_INSTRUCTIONS = `
-This MCP exposes the design the user currently has open in the Penpot dev-mode viewer
-(running locally at http://localhost:3000). The "current selection" — file, page, and
-optional shape — is tracked by the viewer and read here. There is no need to ask the
-user for IDs; they pick them by navigating the viewer UI.
+Tools to read and write the Penpot file the user has open in the dev-mode viewer
+(http://localhost:3000). The current file/page/shape selection is tracked by the
+viewer — call \`get_current_selection\` if unsure; do NOT ask the user for IDs.
 
-When you call any of the html-returning tools you receive raw HTML produced by the
-penpot-tools converter. That HTML is intentionally low-level:
+Read tools (\`get_current_html\`, \`get_page_html\`, \`get_screenshot\`,
+\`get_page_overview\`, \`get_page_tokens\`) return raw inline-styled HTML +
+tokensCss + fontsCss. Convert to the user's target framework — do NOT paste
+verbatim. Pair \`get_screenshot\` with \`get_current_html\` when implementing
+or reworking: image gives hierarchy, HTML gives exact tokens/sizes.
 
-  * It is a tree of <div> elements with **inline style="..."** attributes.
-  * It carries data-id / data-type / data-name attributes from Penpot — keep them when
-    useful for traceability, drop them in production output.
-  * It uses CSS custom properties (var(--token-name, fallback)) for design tokens.
-    The matching :root { ... } block is returned in the "tokensCss" field.
-  * It references web fonts via @font-face declarations returned in "fontsCss".
+Write tools (\`create_design_from_html\`, \`update_selection_from_html\`,
+\`modify_shape\`, \`apply_token\`, \`create_token_set\`, \`upload_media\`) push
+changes via Penpot's REST API. The user must refresh the viewer to see results.
+HTML is rendered in headless Chromium; only a CSS subset is honoured.
 
-Your job is to turn that raw output into something the user can use. Do NOT just
-paste it verbatim. Always:
-
-  1. Identify the user's target framework / styling (look at the surrounding code
-     they showed you, the file extension, package.json, or ask them):
-       - .tsx / React  -> emit JSX with className
-       - .vue          -> emit <template> using class=
-       - .html / .astro / .njk / Liquid / etc. -> emit semantic HTML
-       - Tailwind project (tailwind.config, "@tailwindcss" import) -> use Tailwind
-         utility classes; only fall back to inline style when no utility exists
-         (custom transforms, exact pixel offsets the design depends on, etc.)
-       - Plain CSS project -> emit class names + a separate stylesheet
-       - shadcn / ui kit -> map common patterns (button, input, card) to the kit's
-         components when the visual matches
-
-  2. Replace the generic <div> tree with **semantic HTML**:
-       - <header>, <nav>, <main>, <section>, <article>, <aside>, <footer>
-       - <h1>..<h6> for heading-looking text shapes
-       - <p> for body text, <ul>/<li> for repeated rows
-       - <button>, <a>, <input>, <label>, <form> when the design implies it
-     Strip the wrapper divs Penpot emits when they only exist for grouping in the
-     designer (they usually have type "frame" or "group" with no styling beyond
-     layout).
-
-  3. Preserve the layout intent — flexbox / grid / spacing / sizing — but express
-     it idiomatically (e.g. Tailwind: flex items-center gap-4 px-6).
-
-  4. Keep design tokens. If the project supports CSS variables, port the
-     "tokensCss" :root block into a globals stylesheet and reference tokens via
-     var(--token-name) (or the Tailwind theme equivalent). Do not inline raw hex
-     values when a token name is available.
-
-  5. Drop unnecessary positioning. The converter emits position:absolute /
-     translate(...) for most shapes because Penpot is canvas-based. In production
-     code, prefer normal flow + flex/grid; only keep absolute positioning when a
-     visual overlap requires it.
-
-  6. For images, replace <img> "src" with the project's preferred mechanism
-     (local asset, next/image, etc.). The Penpot URL is included so you can
-     download the asset.
-
-The "get_current_selection" tool tells you what the user is looking at right now.
-Call it first if you're unsure. Then use the more specific tool that matches the
-user's intent.
-
-When implementing a design from scratch (or reworking one), pair "get_screenshot"
-with "get_current_html". The screenshot tells you what the design *looks like*
-(spacing, hierarchy, what is a button vs a badge vs a card, where icons go); the
-HTML tells you the exact tokens, fonts, sizes, and structure. Looking at only
-one of the two will produce worse code.
-
-# Write-mode tools — modify the Penpot file
-
-The MCP can also write back to the file: create boards from HTML, replace the
-selected subtree, edit individual attributes, register design tokens, and upload
-local media. The file is updated via Penpot's REST API; the user has to refresh
-the viewer manually to see results.
-
-## Workflow
-
-  - "Create a design" / "build a homepage / a card / a dashboard"
-      -> create_design_from_html
-
-  - "Modify the selected header / redesign this card"
-      -> update_selection_from_html (replaces the subtree at the same position;
-         the shape id changes)
-
-  - "Apply primary token to bg, increase radius to 16, rename to 'Hero'"
-      -> modify_shape (single mod-obj, fastest, preserves the id)
-
-  - "Apply the brand-primary token to the fill of this shape"
-      -> apply_token (or modify_shape with ops.fill = { tokenName })
-
-  - "Create a design system / register these colours as tokens"
-      -> create_token_set (replaces the file's tokens-lib in one shot — pass
-         every set you want to keep)
-
-  - "Use this hero.png in the design"
-      -> upload_media first; then put data-penpot-media-id="<id>" on the <img>
-         tag inside the HTML you pass to create_design_from_html / update_selection_from_html
-
-## Authoring HTML for create_design_from_html / update_selection_from_html
-
-The HTML is rendered in headless Chromium so the browser computes exact layout.
-Stick to the CSS subset below (anything outside is silently dropped or warned):
-
-  * Box: width / height / padding (top/right/bottom/left), border-radius incl.
-    per-corner, border (uniform width + solid/dashed/dotted), opacity, transform.
-  * Background: background-color, background-image with linear-gradient or
-    radial-gradient (single solid + one gradient stack max). For raster images
-    use an <img> tag with data-penpot-media-id (NOT background-image:url(...)).
-  * Box-shadow: comma-separated list, each entry "<offX> <offY> <blur> <spread>
-    <color>". A "0 0 0 Npx <color>" entry is interpreted as an OUTER stroke, not
-    a shadow — use it deliberately.
-  * Layout containers: display:flex (with flex-direction, justify-content,
-    align-items, gap, padding) and display:grid (grid-template-columns/rows
-    with px/fr/auto/repeat). Children: flex:1 -> fill, explicit px -> fix,
-    auto -> auto.
-  * Text: font-family, font-size, font-weight, font-style, line-height,
-    letter-spacing, color, text-align. One run per element (no mixed-style
-    spans yet).
-  * Tokens: var(--token-name, #fallback). The fallback is REQUIRED — the
-    headless render needs it to compute the exact pixel size of text/layout.
-    The token name is recorded as an applied token on the shape so it stays
-    live in Penpot.
-  * Semantic tags translate to Penpot frames / texts / images (the converter
-    in reverse). <header> <section> <button> etc. all become frames named
-    after the tag (or after data-name="..." if you set it).
-
-Avoid: position:fixed/sticky, ::before/::after, transitions/animations,
-clip-path, mask, display:table/inline-flex, mixed-style spans inside one text.
-
-## Tokens
-
-create_token_set takes DTCG-style sets:
-
-    sets: [{
-      setName: "theme",
-      tokens: [
-        { name: "brand-primary", type: "color", value: "#2E51C4" },
-        { name: "fg-on-brand", type: "color", value: "#FFFFFF" },
-        ...
-      ]
-    }]
-
-After registering, reference from HTML as var(--brand-primary, #2E51C4) — the
-builder reads the var name and emits applied-tokens for the right Penpot slot
-(fill / strokeColor / r1..r4 / p1..p4 / gap / fontSize / etc.). The full slot
-list is in apps/mcp/src/tools/write/apply-token.ts.
-
-## Concurrency
-
-Each write tool reads the current revn before sending update-file. If Penpot
-rejects with a conflict (someone edited the file in the meantime), the tool
-returns a "# update-file conflict" message — recall get_current_selection /
-the relevant tool and try again, do NOT keep retrying with the stale revn.
+For framework conversion guidance fetch \`penpot://convert-guide\`.
+For the supported CSS subset, token format, write workflow and concurrency
+notes fetch \`penpot://write-guide\`.
 `.trim();
 
 const server = new McpServer(
@@ -178,19 +46,33 @@ const server = new McpServer(
 
 const ok = (text: string) => ({ content: [{ type: 'text' as const, text }] });
 
-const okImage = (base64: string, width: number, height: number, caption: string) => ({
-  content: [
-    { type: 'text' as const, text: `${caption} (${width}×${height} px)` },
-    { type: 'image' as const, data: base64, mimeType: 'image/png' as const },
-  ],
-});
+interface ImageMeta {
+  base64: string;
+  width: number;
+  height: number;
+  fullWidth?: number;
+  fullHeight?: number;
+  trimmed?: boolean;
+}
+
+const okImage = (img: ImageMeta, caption: string) => {
+  const sizeNote =
+    img.trimmed && img.fullWidth && img.fullHeight
+      ? `${caption} (${img.width}×${img.height} px — trimmed from ${img.fullWidth}×${img.fullHeight}; pass maxWidth/maxHeight to see more)`
+      : `${caption} (${img.width}×${img.height} px)`;
+  return {
+    content: [
+      { type: 'text' as const, text: sizeNote },
+      { type: 'image' as const, data: img.base64, mimeType: 'image/png' as const },
+    ],
+  };
+};
 
 server.registerTool(
   'get_current_selection',
   {
-    title: 'Get current Penpot dev-mode selection',
-    description:
-      'Returns the file, page and optional shape the user currently has open in the Penpot viewer (http://localhost:3000). Call this first when you are unsure what "the current page / selection" refers to.',
+    title: 'Current viewer selection',
+    description: 'Returns {fileId, pageId, shapeId?, teamId} for the open viewer.',
     inputSchema: {},
   },
   async () => {
@@ -202,9 +84,9 @@ server.registerTool(
 server.registerTool(
   'get_current_html',
   {
-    title: 'Get HTML for the current Penpot dev-mode selection',
+    title: 'HTML for the current selection',
     description:
-      'Returns HTML for whatever the user is focused on in the viewer. If a shape is selected, returns just that shape; otherwise returns the full open page. Use this for prompts like "update the html with what I have in penpot dev mode".',
+      'Selected shape if any, else the full page. See `penpot://convert-guide` before pasting into framework code.',
     inputSchema: {},
   },
   async () => {
@@ -222,20 +104,11 @@ server.registerTool(
 server.registerTool(
   'get_page_html',
   {
-    title: 'Get HTML for the current page (ignores shape selection)',
-    description:
-      'Returns the full HTML of the page the user has open in the viewer, even when a shape is selected. Use this for prompts like "create the html of the page I have open".',
+    title: 'HTML for the current page',
+    description: 'Full page HTML even if a shape is selected.',
     inputSchema: {
-      fileId: z
-        .string()
-        .uuid()
-        .optional()
-        .describe("Override the file id; defaults to the viewer's current selection."),
-      pageId: z
-        .string()
-        .uuid()
-        .optional()
-        .describe("Override the page id; defaults to the viewer's current selection."),
+      fileId: z.string().uuid().optional(),
+      pageId: z.string().uuid().optional(),
     },
   },
   async ({ fileId, pageId }) => {
@@ -255,9 +128,8 @@ server.registerTool(
 server.registerTool(
   'get_page_tokens',
   {
-    title: 'Get the design tokens used on the current page',
-    description:
-      'Returns every design token applied to any shape on the open page (colors, typography, spacing, radius, etc.) along with a ready-to-paste :root { ... } CSS block. Use this for prompts like "generate the tokens file for this page".',
+    title: 'Design tokens applied on the current page',
+    description: 'Tokens (colors, typography, spacing, radius, ...) plus a ready-to-paste :root { ... } block.',
     inputSchema: {
       fileId: z.string().uuid().optional(),
       pageId: z.string().uuid().optional(),
@@ -274,19 +146,12 @@ server.registerTool(
     }
     const bundle = await getPageTokens(token, resolvedFile, resolvedPage);
     const text = [
-      `# Design tokens — page "${bundle.pageName}"`,
-      '',
-      'Port this :root block into a global stylesheet and reference tokens via var(--name).',
-      'For Tailwind v4, paste it inside an `@theme { ... }` block (renaming --foo to --color-foo etc. as appropriate).',
-      '',
-      '## CSS',
-      bundle.css ? '```css\n' + bundle.css + '\n```' : '_(no color/fill tokens)_',
-      '',
-      '## All token usages (JSON)',
-      '```json',
-      JSON.stringify(bundle.tokens, null, 2),
-      '```',
-    ].join('\n');
+      `# Tokens — page "${bundle.pageName}"`,
+      bundle.css ? '\n## CSS\n```css\n' + bundle.css + '\n```' : '',
+      '\n## Usages\n```json\n' + JSON.stringify(bundle.tokens) + '\n```',
+    ]
+      .filter(Boolean)
+      .join('\n');
     return ok(text);
   },
 );
@@ -294,15 +159,26 @@ server.registerTool(
 server.registerTool(
   'get_page_overview',
   {
-    title: 'Get a structural overview of the current page',
+    title: 'Structural overview of the current page',
     description:
-      'Returns the page name, top-level boards, shape counts, fonts, and most-used tokens. Use this for prompts like "give me a quick overview of the page in penpot dev mode" or "describe the functionality this design represents".',
+      'Page name, board count, fonts, and top tokens. Defaults to top-level boards only — pass depth>1 to recurse, or summary=true to skip the tree entirely.',
     inputSchema: {
       fileId: z.string().uuid().optional(),
       pageId: z.string().uuid().optional(),
+      depth: z
+        .number()
+        .int()
+        .min(0)
+        .max(6)
+        .optional()
+        .describe('Tree depth (default 1: top-level boards only).'),
+      summary: z
+        .boolean()
+        .optional()
+        .describe('Skip the boards tree entirely. Cheapest response.'),
     },
   },
-  async ({ fileId, pageId }) => {
+  async ({ fileId, pageId, depth, summary }) => {
     const token = await requireToken();
     let resolvedFile = fileId;
     let resolvedPage = pageId;
@@ -311,53 +187,37 @@ server.registerTool(
       resolvedFile ??= sel.fileId;
       resolvedPage ??= sel.pageId;
     }
-    const overview = await getPageOverview(token, resolvedFile, resolvedPage);
-    const text = [
-      `# Page overview — "${overview.pageName}"`,
-      '',
-      `- File: ${overview.fileId}`,
-      `- Page: ${overview.pageId}`,
-      `- Total shapes: ${overview.totalShapes}`,
-      `- Top-level boards: ${overview.topLevelBoards.length}`,
-      `- Fonts in use: ${overview.fontsUsed.join(', ') || '(none)'}`,
-      '',
-      'Use this structural data to write a short, factual description of what the',
-      'design depicts and what functionality it implies. Reference board names,',
-      'visible text labels, and recurring patterns. Do not invent UX you cannot see.',
-      '',
-      '## Boards (depth-limited tree)',
-      '```json',
-      JSON.stringify(overview.topLevelBoards, null, 2),
-      '```',
-      '',
-      '## Top tokens',
-      '```json',
-      JSON.stringify(overview.tokenSummary, null, 2),
-      '```',
-    ].join('\n');
-    return ok(text);
+    const overview = await getPageOverview(token, resolvedFile, resolvedPage, {
+      depth,
+      summary,
+    });
+    const lines = [
+      `# Page "${overview.pageName}"`,
+      `- shapes: ${overview.totalShapes}, boards: ${overview.topLevelBoards.length}`,
+      `- fonts: ${overview.fontsUsed.join(', ') || '(none)'}`,
+    ];
+    if (!summary) {
+      lines.push('', '## Boards', '```json', JSON.stringify(overview.topLevelBoards), '```');
+    }
+    if (overview.tokenSummary.length > 0) {
+      lines.push('', '## Top tokens', '```json', JSON.stringify(overview.tokenSummary), '```');
+    }
+    return ok(lines.join('\n'));
   },
 );
 
 server.registerTool(
   'get_screenshot',
   {
-    title: 'Render a screenshot of the current selection',
+    title: 'PNG of the current selection',
     description:
-      'Renders the currently selected shape (or the full open page if no shape is selected) in headless Chromium and returns a PNG. Pair this with get_current_html when implementing or reworking a design — the image tells you the visual hierarchy and what each element really is, the HTML tells you the exact tokens/sizes/structure.',
+      'Selected shape if any, else the full page. Defaults to a 1600×2000 cap; output is auto-trimmed and the caption flags it. Raise maxWidth/maxHeight only when needed.',
     inputSchema: {
       target: z
         .enum(['auto', 'page', 'shape'])
         .optional()
-        .describe(
-          'auto (default): screenshot the selected shape if any, else the full page. page: always full page. shape: requires shapeId or a current shape selection.',
-        ),
-      shapeId: z
-        .string()
-        .optional()
-        .describe(
-          "Override the shape to screenshot; defaults to the viewer's current shape selection.",
-        ),
+        .describe('auto (default) | page | shape.'),
+      shapeId: z.string().optional(),
       maxWidth: z.number().int().positive().max(4000).optional(),
       maxHeight: z.number().int().positive().max(10000).optional(),
     },
@@ -392,10 +252,11 @@ server.registerTool(
         ? `Penpot screenshot — shape ${resolvedShape} on page "${bundle.pageName}"`
         : `Penpot screenshot — full page "${bundle.pageName}"`;
 
-    return okImage(shot.base64, shot.width, shot.height, caption);
+    return okImage(shot, caption);
   },
 );
 
+registerGuideResources(server);
 registerApplyTokenTool(server);
 registerCreateFromHtmlTool(server);
 registerCreateTokenSetTool(server);

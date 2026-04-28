@@ -27,22 +27,11 @@ export function registerCreateTokenSetTool(server: McpServer): void {
   server.registerTool(
     'create_token_set',
     {
-      title: 'Create or replace a Penpot design token set',
-      description: [
-        'Builds a Penpot tokens-lib with the given set(s) and tokens. The current',
-        'tokens-lib of the file is REPLACED — pass all sets you want to keep in a',
-        'single call. Use this for "create a design system" prompts. Once created,',
-        'reference tokens from HTML via `var(--token-name, fallback)` and the',
-        'create_design_from_html / update_selection_from_html tools will detect and',
-        'apply them automatically.',
-      ].join(' '),
+      title: 'Create or replace the file tokens-lib',
+      description:
+        'Replaces the file tokens-lib with the given DTCG sets — pass every set you want to keep. Reference from HTML as `var(--name, fallback)`.',
       inputSchema: {
-        sets: z
-          .array(SetInput)
-          .min(1)
-          .describe(
-            'Token sets to register. Each set has a name and a list of {name, type, value} tokens.',
-          ),
+        sets: z.array(SetInput).min(1),
         fileId: z.string().uuid().optional(),
       },
     },

@@ -1,4 +1,25 @@
 /**
+ * Tags whose content must not become Penpot shapes. Most are `display:none`
+ * by user-agent default (`<style>`, `<script>`, `<head>`, ...), but the walker
+ * still picks them up via `getBoundingClientRect()` returning 0×0 *and*
+ * `textContent` returning their inner CSS / JS source — which then
+ * materialises as a stray text shape on the canvas.
+ *
+ * Exported so it can be unit-tested without booting Playwright.
+ */
+export const NON_RENDERABLE_TAGS = [
+  'style',
+  'script',
+  'meta',
+  'link',
+  'head',
+  'title',
+  'noscript',
+  'template',
+  'base',
+] as const;
+
+/**
  * Source of the in-page DOM walker. This file is read as a string by the
  * headless driver and injected into the page via `page.evaluate(walkSource)`.
  *
@@ -8,6 +29,7 @@
  */
 export const WALKER_SOURCE = `
 (() => {
+  const NON_RENDERABLE = ${JSON.stringify(NON_RENDERABLE_TAGS)};
   const STYLE_KEYS = [
     'display','position','transform','opacity','mixBlendMode','filter',
     'backgroundColor','backgroundImage',
@@ -81,8 +103,14 @@ export const WALKER_SOURCE = `
   function walk(el, parentIndex) {
     const tag = el.tagName ? el.tagName.toLowerCase() : 'div';
     if (!tagRe.test(tag)) return;
+    if (NON_RENDERABLE.indexOf(tag) !== -1) return;
 
     const r = el.getBoundingClientRect();
+    // Skip elements that the browser laid out as zero-area (display:none,
+    // visibility:collapse, empty inline flow, etc.). They have no visual
+    // contribution and shouldn't materialise as Penpot shapes.
+    if (r.width === 0 && r.height === 0) return;
+
     const rect = {
       x: r.left - minLeft,
       y: r.top - minTop,

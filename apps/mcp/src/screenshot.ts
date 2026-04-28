@@ -61,6 +61,14 @@ function getBrowser(): Promise<Browser> {
   return browserPromise;
 }
 
+/**
+ * Default caps in CSS px. Kept conservative because the PNG is base64-encoded
+ * into the MCP response — every extra megapixel costs the model a *lot* of
+ * input tokens. Callers that genuinely need the whole canvas can override.
+ */
+export const DEFAULT_SCREENSHOT_MAX_WIDTH = 1600;
+export const DEFAULT_SCREENSHOT_MAX_HEIGHT = 2000;
+
 export interface ScreenshotInput {
   html: string;
   fontsCss: string;
@@ -75,6 +83,10 @@ export interface ScreenshotOutput {
   base64: string;
   width: number;
   height: number;
+  /** Pixel size before clipping, when the content was larger than the cap. */
+  fullWidth: number;
+  fullHeight: number;
+  trimmed: boolean;
 }
 
 function buildDocument({ html, fontsCss, tokensCss, background }: ScreenshotInput): string {
@@ -173,10 +185,11 @@ export async function renderScreenshot(input: ScreenshotInput): Promise<Screensh
       throw new Error('Could not measure rendered content (empty bounding box).');
     }
 
-    const maxW = Math.max(1, input.maxWidth ?? 2400);
-    const maxH = Math.max(1, input.maxHeight ?? 6000);
+    const maxW = Math.max(1, input.maxWidth ?? DEFAULT_SCREENSHOT_MAX_WIDTH);
+    const maxH = Math.max(1, input.maxHeight ?? DEFAULT_SCREENSHOT_MAX_HEIGHT);
     const width = Math.min(box.width, maxW);
     const height = Math.min(box.height, maxH);
+    const trimmed = width < box.width || height < box.height;
 
     await page.setViewportSize({ width, height });
 
@@ -190,6 +203,9 @@ export async function renderScreenshot(input: ScreenshotInput): Promise<Screensh
       base64: buffer.toString('base64'),
       width,
       height,
+      fullWidth: box.width,
+      fullHeight: box.height,
+      trimmed,
     };
   } finally {
     await context.close();

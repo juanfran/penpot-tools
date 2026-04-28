@@ -60,23 +60,15 @@ export function registerApplyTokenTool(server: McpServer): void {
   server.registerTool(
     'apply_token',
     {
-      title: 'Apply a Penpot design token to one attribute of a shape',
-      description: [
-        "Sets `appliedTokens.<slot> = <tokenName>` on a shape via a single mod-obj.",
-        'Use this for prompts like "apply primary token to the bg of the selected shape".',
-        'The token must already exist in the file (call create_token_set first if not).',
-        'Multiple slots can be provided in one call to apply different tokens at once.',
-      ].join(' '),
+      title: 'Apply tokens to shape slots via mod-obj',
+      description:
+        'Sets appliedTokens.<slot> for the given (slot, tokenName) pairs. The tokens must already exist (call create_token_set first).',
       inputSchema: {
-        shapeId: z
-          .string()
-          .uuid()
-          .optional()
-          .describe('Shape to modify; defaults to the current viewer selection.'),
+        shapeId: z.string().uuid().optional(),
         applications: z
           .array(z.object({ slot: Slot, tokenName: z.string().min(1) }))
           .min(1)
-          .describe('One {slot, tokenName} entry per attribute you want to assign.'),
+          .describe('One {slot, tokenName} per attribute.'),
         fileId: z.string().uuid().optional(),
         pageId: z.string().uuid().optional(),
       },

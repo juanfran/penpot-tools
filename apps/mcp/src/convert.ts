@@ -109,7 +109,12 @@ export interface PageOverview {
   tokenSummary: { name: string; category: string; usageCount: number }[];
 }
 
-function collectText(shape: Shape): string | undefined {
+/** Truncate to N chars and append `…` so the response stays compact. */
+function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max) + '…' : text;
+}
+
+function collectText(shape: Shape, max: number): string | undefined {
   if (shape.type !== 'text') return undefined;
   const content = (shape as Shape & { content?: { children?: unknown[] } }).content;
   if (!content?.children) return undefined;
@@ -122,8 +127,11 @@ function collectText(shape: Shape): string | undefined {
   };
   walk(content);
   const joined = out.join(' ').trim();
-  return joined ? joined.slice(0, 200) : undefined;
+  return joined ? truncate(joined, max) : undefined;
 }
+
+const DEFAULT_OVERVIEW_DEPTH = 1;
+const TEXT_PREVIEW_CHARS = 80;
 
 function buildOverview(
   objects: Record<string, Shape>,
@@ -145,7 +153,7 @@ function buildOverview(
     width: Math.round(shape.selrect.width),
     height: Math.round(shape.selrect.height),
   };
-  const text = collectText(shape);
+  const text = collectText(shape, TEXT_PREVIEW_CHARS);
   if (text) node.text = text;
   if (depth < maxDepth && childIds.length > 0) {
     const children = childIds.flatMap(
@@ -156,18 +164,36 @@ function buildOverview(
   return node;
 }
 
+export interface OverviewOptions {
+  /**
+   * Tree depth for `topLevelBoards`. Defaults to 1 (only the boards themselves,
+   * no children). Use a larger value when you need to reason about nested
+   * structure.
+   */
+  depth?: number;
+  /**
+   * When true, return only counts / fonts / token summary — no `topLevelBoards`
+   * tree. Cheapest possible response for "what's on this page roughly?".
+   */
+  summary?: boolean;
+}
+
 export async function getPageOverview(
   token: string,
   fileId: string,
   pageId: string,
+  options: OverviewOptions = {},
 ): Promise<PageOverview> {
+  const depth = Math.max(0, Math.min(options.depth ?? DEFAULT_OVERVIEW_DEPTH, 6));
   const page = await fetchPage(token, fileId, pageId);
   const root = Object.values(page.objects).find((s) => s.parentId === s.id);
   const rootChildIds: string[] =
     root && 'shapes' in root && Array.isArray((root as Shape & { shapes?: unknown }).shapes)
       ? (root as Shape & { shapes: string[] }).shapes
       : [];
-  const topLevelBoards = rootChildIds.flatMap((id) => buildOverview(page.objects, id, 0, 3) ?? []);
+  const topLevelBoards = options.summary
+    ? []
+    : rootChildIds.flatMap((id) => buildOverview(page.objects, id, 0, depth) ?? []);
 
   const tokens = extractAllTokens(page.objects);
   const tokenSummary = tokens

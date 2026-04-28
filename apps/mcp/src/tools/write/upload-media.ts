@@ -9,24 +9,12 @@ export function registerUploadMediaTool(server: McpServer): void {
   server.registerTool(
     'upload_media',
     {
-      title: 'Upload local images so they can be referenced from a Penpot design',
-      description: [
-        'Uploads one or more local image files to the Penpot file the user has open and',
-        'returns a media id per upload. Pass these ids back to create_design_from_html /',
-        'update_selection_from_html via `data-penpot-media-id="<id>"` on each `<img>` (and',
-        'keep the `src` so the headless preview still renders the image). Supports png /',
-        'jpg / jpeg / gif / webp / svg. Paths can be absolute or relative to the MCP cwd.',
-      ].join(' '),
+      title: 'Upload local images and return media ids',
+      description:
+        'Uploads png/jpg/jpeg/gif/webp/svg files to the open Penpot file. Reference each id from HTML via `data-penpot-media-id="<id>"` on the `<img>`.',
       inputSchema: {
-        paths: z
-          .array(z.string().min(1))
-          .min(1)
-          .describe('Local image paths (absolute or relative to the MCP cwd).'),
-        fileId: z
-          .string()
-          .uuid()
-          .optional()
-          .describe('Override the destination file id; defaults to the viewer selection.'),
+        paths: z.array(z.string().min(1)).min(1).describe('Image paths (absolute or relative to MCP cwd).'),
+        fileId: z.string().uuid().optional(),
       },
     },
     async ({ paths, fileId }) => {

@@ -33,18 +33,12 @@ export function registerUpdateSelectionFromHtmlTool(server: McpServer): void {
   server.registerTool(
     'update_selection_from_html',
     {
-      title: 'Replace the currently-selected shape with a new HTML design',
-      description: [
-        'Replaces the shape the user has selected in the viewer (and all its descendants)',
-        'with a fresh subtree built from the provided HTML, anchored at the same on-page',
-        'position. Useful for "modify the header" / "redesign this card" prompts when the',
-        'change is structural enough that surgical mods would be brittle. The selected',
-        'shape id changes — the replacement gets a new id. For tweaks of a single',
-        'attribute (color, radius, text), use modify_shape instead (lighter, preserves id).',
-      ].join(' '),
+      title: 'Replace the selected shape with a new HTML design',
+      description:
+        'Replaces the selected shape (and descendants) with a fresh subtree at the same position. The new shape gets a new id. For single-attribute tweaks use modify_shape.',
       inputSchema: {
-        html: z.string().min(1).describe('HTML+CSS to materialize as the replacement.'),
-        name: z.string().optional().describe('Name for the new top-level shape.'),
+        html: z.string().min(1).describe('Replacement HTML+CSS.'),
+        name: z.string().optional(),
         fileId: z.string().uuid().optional(),
         pageId: z.string().uuid().optional(),
         shapeId: z.string().uuid().optional(),
