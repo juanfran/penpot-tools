@@ -10,6 +10,9 @@ import {
 import { describePageBundle, describeShapeBundle } from './format.ts';
 import { renderScreenshot } from './screenshot.ts';
 import { requireSelection, requireToken } from './state.ts';
+import { registerCreateFromHtmlTool } from './tools/write/create-from-html.ts';
+import { registerUpdateSelectionFromHtmlTool } from './tools/write/update-selection.ts';
+import { registerUploadMediaTool } from './tools/write/upload-media.ts';
 
 const SERVER_INSTRUCTIONS = `
 This MCP exposes the design the user currently has open in the Penpot dev-mode viewer
@@ -303,6 +306,10 @@ server.registerTool(
     return okImage(shot.base64, shot.width, shot.height, caption);
   },
 );
+
+registerCreateFromHtmlTool(server);
+registerUpdateSelectionFromHtmlTool(server);
+registerUploadMediaTool(server);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

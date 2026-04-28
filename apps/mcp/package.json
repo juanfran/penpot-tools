@@ -13,6 +13,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.21.0",
     "@penpot-tools/converter": "workspace:*",
+    "@penpot-tools/html-to-penpot": "workspace:*",
     "playwright": "^1.59.1",
     "tsx": "^4.21.0",
     "zod": "^4.3.6"
