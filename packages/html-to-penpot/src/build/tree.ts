@@ -15,6 +15,7 @@ import { radiusFromComputed } from '../visual/radius';
 import { flexLayoutFromComputed } from '../layout/flex';
 import { gridLayoutFromComputed } from '../layout/grid';
 import { layoutItemFromComputed } from '../layout/layout-item';
+import { tokensInInlineStyle } from '../tokens/extract';
 import { buildTextContent } from './text-content';
 import { buildSelrect, identityMatrix } from './selrect';
 import { newShapeId } from './shape-id';
@@ -34,6 +35,8 @@ export interface BuildTreeResult {
   shapes: Shape[];
   rootShapeId: Uuid;
   warnings: string[];
+  /** Distinct token names referenced via `var(--...)` across the tree. */
+  referencedTokens: string[];
 }
 
 /**
@@ -55,6 +58,7 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
   const parentBoardId = (input.parentBoardId ?? '00000000-0000-0000-0000-000000000000') as Uuid;
 
   const shapes: Shape[] = [];
+  const referencedTokens = new Set<string>();
 
   const tops = nodes.filter((n) => n.parentIndex === null);
   let minX = Infinity;
@@ -153,6 +157,11 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         ? layoutItemFromComputed(parentNode.computedStyle, node.computedStyle)
         : {};
 
+    const { appliedTokens, tokenNames } = tokensInInlineStyle(node.inlineStyle ?? '');
+    for (const t of tokenNames) referencedTokens.add(t);
+    const tokenFields =
+      Object.keys(appliedTokens).length > 0 ? { appliedTokens } : {};
+
     if (node.svgOuter) {
       warnings.push(
         `Inline <svg> is not supported in Phase 1 (node #${node.index}); skipped.`,
@@ -193,6 +202,7 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
           mtype: node.imageMediaType ?? 'image/png',
         },
         ...layoutItem,
+        ...tokenFields,
       };
       shapes.push(image);
     } else if (isContainer) {
@@ -226,6 +236,7 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         hideFillOnExport: false,
         ...radius,
         ...layoutItem,
+        ...tokenFields,
         ...flex,
         ...grid,
         shapes: childOrder(node).map((i) => shapeIdsForNode[i]!),
@@ -251,6 +262,7 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         content: buildTextContent(node.textContent!, node.computedStyle),
         proportionLock: false,
         ...layoutItem,
+        ...tokenFields,
       };
       shapes.push(text);
     } else {
@@ -275,10 +287,11 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         proportionLock: false,
         ...radius,
         ...layoutItem,
+        ...tokenFields,
       };
       shapes.push(rectShape);
     }
   }
 
-  return { shapes, rootShapeId, warnings };
+  return { shapes, rootShapeId, warnings, referencedTokens: Array.from(referencedTokens) };
 }

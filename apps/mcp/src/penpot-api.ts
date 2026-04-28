@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { basename, isAbsolute, resolve as resolvePath } from 'node:path';
 import type { FileChange, Page } from '@penpot-tools/converter/types';
+import { tk, toTransitJson, tu } from './transit.ts';
 
 const DEFAULT_BASE = 'https://design.penpot.app';
 
@@ -149,6 +150,73 @@ export async function updateFile(
     throw new Error(`Penpot update-file failed (${res.status}): ${text}`);
   }
   return (await res.json()) as UpdateFileResult;
+}
+
+/**
+ * DTCG-style token map: { setName: { tokenName: { $type, $value } } }.
+ * Penpot accepts this shape but only via Transit-JSON (regular JSON strips the
+ * `$` from keys). Higher-level helpers wrap this — callers should not have to
+ * deal with the encoding directly.
+ */
+export interface DtcgToken {
+  $type: 'color' | 'border-radius' | 'spacing' | 'sizing' | 'opacity' | 'dimension';
+  $value: string | number;
+  $description?: string;
+}
+
+export type DtcgTokensLib = Record<string, Record<string, DtcgToken>>;
+
+/**
+ * Replace the file's tokens-lib in one shot. Penpot stores tokens as a tagged
+ * `~#penpot/tokens-lib` value with `sets` / `themes` / `active-themes`, but the
+ * server accepts a flat DTCG-style map and expands it server-side.
+ */
+export async function setTokensLib(
+  token: string,
+  fileId: string,
+  revn: number,
+  vern: number,
+  tokensLib: DtcgTokensLib,
+  sessionId?: string,
+): Promise<UpdateFileResult> {
+  const body = {
+    ':id': tu(fileId),
+    ':revn': revn,
+    ':vern': vern,
+    ':session-id': tu(sessionId ?? randomUUID()),
+    ':features': PENPOT_FEATURES,
+    ':changes': [
+      {
+        ':type': tk('set-tokens-lib'),
+        ':tokens-lib': tokensLib,
+      },
+    ],
+  };
+
+  const res = await fetch(rpcUrl('update-file'), {
+    method: 'POST',
+    headers: {
+      Authorization: `Token ${token}`,
+      'Content-Type': 'application/transit+json',
+      Accept: 'application/transit+json',
+    },
+    body: toTransitJson(body),
+  });
+  if (res.status === 409) {
+    const text = await res.text().catch(() => '');
+    throw new PenpotConflictError(
+      `Penpot set-tokens-lib conflict (revn ${revn} stale). Reload and retry. ${text}`,
+    );
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Penpot set-tokens-lib failed (${res.status}): ${text}`);
+  }
+  // The Transit response carries `:revn` as the new revision; we only need
+  // the number. Parse the bracketed `["^ ", "~:revn", N, ...]` shape.
+  const text = await res.text();
+  const m = text.match(/"~:revn"\s*,\s*(\d+)/);
+  return { revn: m ? Number(m[1]) : revn + 1 };
 }
 
 export interface UploadedMedia {

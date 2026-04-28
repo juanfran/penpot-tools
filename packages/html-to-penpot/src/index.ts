@@ -31,7 +31,7 @@ export async function htmlToChanges(html: string, ctx: BuildContext): Promise<Ch
     maxHeight: ctx.maxHeight,
   });
 
-  const { shapes, rootShapeId, warnings } = buildTree({
+  const { shapes, rootShapeId, warnings, referencedTokens } = buildTree({
     nodes,
     pageId: ctx.pageId,
     rootOffset: ctx.rootPosition ?? { x: 0, y: 0 },
@@ -48,5 +48,6 @@ export async function htmlToChanges(html: string, ctx: BuildContext): Promise<Ch
     rootShapeId,
     createdShapeIds,
     warnings,
+    referencedTokens,
   };
 }

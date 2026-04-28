@@ -10,7 +10,9 @@ import {
 import { describePageBundle, describeShapeBundle } from './format.ts';
 import { renderScreenshot } from './screenshot.ts';
 import { requireSelection, requireToken } from './state.ts';
+import { registerApplyTokenTool } from './tools/write/apply-token.ts';
 import { registerCreateFromHtmlTool } from './tools/write/create-from-html.ts';
+import { registerCreateTokenSetTool } from './tools/write/create-token-set.ts';
 import { registerUpdateSelectionFromHtmlTool } from './tools/write/update-selection.ts';
 import { registerUploadMediaTool } from './tools/write/upload-media.ts';
 
@@ -307,7 +309,9 @@ server.registerTool(
   },
 );
 
+registerApplyTokenTool(server);
 registerCreateFromHtmlTool(server);
+registerCreateTokenSetTool(server);
 registerUpdateSelectionFromHtmlTool(server);
 registerUploadMediaTool(server);
 

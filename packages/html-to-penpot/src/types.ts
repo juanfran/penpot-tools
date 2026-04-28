@@ -111,6 +111,14 @@ export interface MeasuredNode {
   /** `data-*` attributes preserved verbatim. */
   dataAttrs: Record<string, string>;
 
+  /**
+   * Raw `style` attribute string (verbatim, before browser resolution). Used to
+   * detect `var(--token-name, fallback)` references — these are erased in the
+   * computed style after the browser resolves them, so we have to scan the
+   * authored values to surface token applications.
+   */
+  inlineStyle?: string;
+
   /** Set when the author already provided a stable id via `data-penpot-id`. */
   preserveId?: string;
 
@@ -161,6 +169,8 @@ export interface ChangeBundle {
   createdShapeIds: Uuid[];
   /** Warnings about CSS we couldn't translate (LLM should fix). */
   warnings: string[];
+  /** Distinct token names referenced via `var(--...)`. */
+  referencedTokens: string[];
 }
 
 export type CreatedShape = Shape;

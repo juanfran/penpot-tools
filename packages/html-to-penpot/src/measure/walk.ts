@@ -91,6 +91,7 @@ export const WALKER_SOURCE = `
     };
 
     const dataAttrs = pickDataAttrs(el);
+    const inlineStyle = el.getAttribute('style') || '';
     const node = {
       index: nodes.length,
       parentIndex,
@@ -99,6 +100,7 @@ export const WALKER_SOURCE = `
       rect,
       computedStyle: pickStyle(el),
       dataAttrs,
+      inlineStyle,
     };
 
     if (dataAttrs['data-penpot-id']) node.preserveId = dataAttrs['data-penpot-id'];
