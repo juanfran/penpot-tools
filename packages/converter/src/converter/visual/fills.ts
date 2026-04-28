@@ -122,8 +122,24 @@ export function fillsToOutput(
   // reference a color token and then override the opacity to 0 to hide the fill.
   if (fills.length === 1 && fills[0].fillOpacity === 0) return '';
 
-  if (fillTokenName && ctx.tokens?.has(fillTokenName)) {
-    return `background-color: ${tokenToCssVar(fillTokenName, ctx.tokens)};`;
+  // The actual fill is the source of truth. Penpot keeps `appliedTokens.fill` even
+  // after the user overrides the fill (with a different colour, a gradient, an image,
+  // or a non-1 opacity), so we only honour the token when the live fill still matches
+  // the token's resolved value.
+  if (fillTokenName && ctx.tokens?.has(fillTokenName) && fills.length === 1) {
+    const fill = fills[0];
+    const tokenColor = ctx.tokens.get(fillTokenName)?.toLowerCase();
+    const fillColor = fill.fillColor?.toLowerCase();
+    const opacity = fill.fillOpacity ?? 1;
+    const tokenStillApplies =
+      !fill.fillColorGradient &&
+      !fill.fillImage &&
+      !!fillColor &&
+      fillColor === tokenColor &&
+      opacity === 1;
+    if (tokenStillApplies) {
+      return `background-color: ${tokenToCssVar(fillTokenName, ctx.tokens)};`;
+    }
   }
 
   if (fills.length === 1) {

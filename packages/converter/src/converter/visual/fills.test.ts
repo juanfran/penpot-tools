@@ -298,4 +298,89 @@ describe('fillsToOutput', () => {
     };
     expect(fillsToOutput([fill], ctx, 'button.close.bg')).toBe('');
   });
+
+  it('gradient fill with a dangling token reference renders the gradient, not the token', () => {
+    // Penpot keeps `appliedTokens.fill` even after the user swaps the fill from a
+    // solid colour to a gradient. The gradient is the actual fill — the token
+    // reference would otherwise silently swallow it.
+    const oceanGradient: Fill = {
+      fillColorGradient: {
+        type: 'linear',
+        startX: 0,
+        startY: 0,
+        endX: 0,
+        endY: 1,
+        width: 1,
+        stops: [
+          { color: '#0a2540' as HexColor, opacity: 1, offset: 0 },
+          { color: '#021018' as HexColor, opacity: 1, offset: 0.7 },
+        ],
+      },
+    };
+    const ctx: ConverterContext = {
+      ...makeCtx(),
+      tokens: new Map([['surface.deep', '#0a2540']]),
+    };
+    const result = fillsToOutput([oceanGradient], ctx, 'surface.deep');
+    expect(result).toContain('linear-gradient(');
+    expect(result).toContain('#0a2540 0%');
+    expect(result).toContain('#021018 70%');
+    expect(result).not.toContain('var(--surface-deep');
+  });
+
+  it('image fill with a dangling token reference renders the image, not the token', () => {
+    const ctx: ConverterContext = {
+      ...makeCtx(),
+      tokens: new Map([['surface.deep', '#0a2540']]),
+    };
+    const result = fillsToOutput([imageFill], ctx, 'surface.deep');
+    expect(result).toContain("url('https://assets.example.com/img-1')");
+    expect(result).not.toContain('var(--surface-deep');
+  });
+
+  it('solid fill with applied token still emits the token (unchanged)', () => {
+    const ctx: ConverterContext = {
+      ...makeCtx(),
+      tokens: new Map([['surface.deep', '#ff0000']]),
+    };
+    const result = fillsToOutput([solidRed], ctx, 'surface.deep');
+    expect(result).toBe('background-color: var(--surface-deep, #ff0000);');
+  });
+
+  it('solid fill whose colour was overridden away from the token resolves to the actual hex', () => {
+    // The user applied `surface.deep` (resolves to #0a2540), then later changed the
+    // shape's fill to a different colour. Penpot kept the dangling token reference,
+    // but the rendered colour must follow the live fill — not the token.
+    const overriddenFill: Fill = { fillColor: '#7c3aed' as HexColor };
+    const ctx: ConverterContext = {
+      ...makeCtx(),
+      tokens: new Map([['surface.deep', '#0a2540']]),
+    };
+    const result = fillsToOutput([overriddenFill], ctx, 'surface.deep');
+    expect(result).toBe('background-color: #7c3aed;');
+    expect(result).not.toContain('var(--surface-deep');
+  });
+
+  it('solid fill whose opacity was overridden away from 1 ignores the token', () => {
+    // Same idea as the colour override, but the user knocked the opacity below 1.
+    // The token represents only the solid hex, so we must emit the rgba directly.
+    const fadedFill: Fill = { fillColor: '#0a2540' as HexColor, fillOpacity: 0.4 };
+    const ctx: ConverterContext = {
+      ...makeCtx(),
+      tokens: new Map([['surface.deep', '#0a2540']]),
+    };
+    const result = fillsToOutput([fadedFill], ctx, 'surface.deep');
+    expect(result).toBe('background-color: rgba(10, 37, 64, 0.4);');
+    expect(result).not.toContain('var(--surface-deep');
+  });
+
+  it('solid fill matching the token colour but written in different case still emits the token', () => {
+    const upperFill: Fill = { fillColor: '#0A2540' as HexColor };
+    const ctx: ConverterContext = {
+      ...makeCtx(),
+      tokens: new Map([['surface.deep', '#0a2540']]),
+    };
+    const result = fillsToOutput([upperFill], ctx, 'surface.deep');
+    expect(result).toBe('background-color: var(--surface-deep, #0a2540);');
+  });
 });
