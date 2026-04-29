@@ -4,6 +4,13 @@ MCP server that exposes the design the user currently has open in the **penpot-t
 
 The viewer writes the active selection (file / page / shape) and the Penpot access token to a small JSON file in the user's home directory. This MCP server reads from that file, calls Penpot directly, and converts the design into HTML using `@penpot-tools/converter`.
 
+The server can run in two modes:
+
+- **`read-write`** (default) — read tools + write tools. The agent can both inspect the design and modify it.
+- **`read-only`** — read tools only. Write tools are not registered at all, so the agent literally cannot modify the file even if it tries. Recommended for frontend work where you only want to mirror the design into code, never the other way around.
+
+Set the mode with the `PENPOT_MCP_MODE` env var. See [Read-only vs read-write](#read-only-vs-read-write) for setup snippets.
+
 ## What it does
 
 ### Read-mode (inspect the design)
@@ -129,11 +136,73 @@ Same shape — `command: "node"`, `args: ["…/apps/mcp/bin/mcp.mjs"]`. The bin 
 
 ### Optional environment variables
 
-| Var                        | Purpose                                                           |
-| -------------------------- | ----------------------------------------------------------------- |
-| `PENPOT_TOKEN`             | Use this token instead of the one written by the viewer           |
-| `PENPOT_BASE_URL`          | Self-hosted Penpot instance (default `https://design.penpot.app`) |
-| `PENPOT_RANDOM_STATE_FILE` | Override the JSON state file location                             |
+| Var                        | Purpose                                                                          |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| `PENPOT_MCP_MODE`          | `read-write` (default) or `read-only`. See [Read-only vs read-write](#read-only-vs-read-write). |
+| `PENPOT_TOKEN`             | Use this token instead of the one written by the viewer                          |
+| `PENPOT_BASE_URL`          | Self-hosted Penpot instance (default `https://design.penpot.app`)                |
+| `PENPOT_RANDOM_STATE_FILE` | Override the JSON state file location                                            |
+
+## Read-only vs read-write
+
+By default the MCP registers **all** tools — read and write. If you only use it to mirror designs into code (e.g. you're a frontend dev rewriting components from Penpot) you probably never want the agent to push changes back. Switch to read-only and the write tools are not registered at all — the agent can't call them even if it asks.
+
+| Mode         | Tools available                                                                                                                                                              |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `read-write` (default) | All tools: `get_*`, `list_assets`, `download_asset`, `create_design_from_html`, `update_selection_from_html`, `modify_shape`, `apply_token`, `create_token_set`, `upload_media` |
+| `read-only`  | Read tools only: `get_current_selection`, `get_current_html`, `get_page_html`, `get_page_tokens`, `get_page_overview`, `get_screenshot`                                       |
+
+The instructions block sent to the agent on connect also changes — in `read-only` mode it explicitly tells the agent the server cannot modify the design, so it won't offer to.
+
+### Pick the mode
+
+The mode is controlled by the `PENPOT_MCP_MODE` env var on the **MCP server process** (not your shell). You set it where the MCP client launches the server. Restart the client after changing it.
+
+#### Claude Code
+
+```bash
+# read-only (frontend-only setup, no write tools registered)
+claude mcp add penpot-viewer --env PENPOT_MCP_MODE=read-only -- node /absolute/path/to/penpot-tools/apps/mcp/bin/mcp.mjs
+
+# read-write (default — same as omitting the var)
+claude mcp add penpot-viewer -- node /absolute/path/to/penpot-tools/apps/mcp/bin/mcp.mjs
+```
+
+…or edit `~/.claude.json` directly:
+
+```json
+{
+  "mcpServers": {
+    "penpot-viewer": {
+      "command": "node",
+      "args": ["/absolute/path/to/penpot-tools/apps/mcp/bin/mcp.mjs"],
+      "env": {
+        "PENPOT_MCP_MODE": "read-only"
+      }
+    }
+  }
+}
+```
+
+#### Claude Desktop / Cursor / generic MCP client
+
+Same shape — add an `env` block alongside `command` and `args`:
+
+```json
+{
+  "mcpServers": {
+    "penpot-viewer": {
+      "command": "node",
+      "args": ["/absolute/path/to/penpot-tools/apps/mcp/bin/mcp.mjs"],
+      "env": {
+        "PENPOT_MCP_MODE": "read-only"
+      }
+    }
+  }
+}
+```
+
+Invalid values (anything other than `read-only` or `read-write`) make the server exit on startup with a clear error — useful to catch typos early.
 
 ## Example session
 

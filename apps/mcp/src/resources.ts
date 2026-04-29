@@ -130,7 +130,10 @@ rejects with a conflict, the tool returns "# update-file conflict" — recall
 revn.
 `;
 
-export function registerGuideResources(server: McpServer): void {
+export function registerGuideResources(
+  server: McpServer,
+  options: { writable: boolean },
+): void {
   server.registerResource(
     'convert-guide',
     'penpot://convert-guide',
@@ -150,6 +153,8 @@ export function registerGuideResources(server: McpServer): void {
       ],
     }),
   );
+
+  if (!options.writable) return;
 
   server.registerResource(
     'write-guide',

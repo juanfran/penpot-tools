@@ -18,7 +18,37 @@ import { registerModifyShapeTool } from './tools/write/modify-shape.ts';
 import { registerUpdateSelectionFromHtmlTool } from './tools/write/update-selection.ts';
 import { registerUploadMediaTool } from './tools/write/upload-media.ts';
 
-const SERVER_INSTRUCTIONS = `
+type Mode = 'read-only' | 'read-write';
+
+function resolveMode(): Mode {
+  const raw = process.env['PENPOT_MCP_MODE']?.trim().toLowerCase();
+  if (!raw || raw === 'read-write') return 'read-write';
+  if (raw === 'read-only') return 'read-only';
+  throw new Error(
+    `Invalid PENPOT_MCP_MODE="${process.env['PENPOT_MCP_MODE']}". Expected "read-only" or "read-write".`,
+  );
+}
+
+const MODE: Mode = resolveMode();
+const WRITABLE = MODE === 'read-write';
+
+const READ_ONLY_INSTRUCTIONS = `
+Tools to READ the Penpot file the user has open in the dev-mode viewer
+(http://localhost:3000). This server is running in READ-ONLY mode — there are
+NO write tools registered, so do not offer to modify the design. The current
+file/page/shape selection is tracked by the viewer — call
+\`get_current_selection\` if unsure; do NOT ask the user for IDs.
+
+Read tools (\`get_current_html\`, \`get_page_html\`, \`get_screenshot\`,
+\`get_page_overview\`, \`get_page_tokens\`) return raw inline-styled HTML +
+tokensCss + fontsCss. Convert to the user's target framework — do NOT paste
+verbatim. Pair \`get_screenshot\` with \`get_current_html\` when implementing
+or reworking: image gives hierarchy, HTML gives exact tokens/sizes.
+
+For framework conversion guidance fetch \`penpot://convert-guide\`.
+`.trim();
+
+const READ_WRITE_INSTRUCTIONS = `
 Tools to read and write the Penpot file the user has open in the dev-mode viewer
 (http://localhost:3000). The current file/page/shape selection is tracked by the
 viewer — call \`get_current_selection\` if unsure; do NOT ask the user for IDs.
@@ -38,6 +68,8 @@ For framework conversion guidance fetch \`penpot://convert-guide\`.
 For the supported CSS subset, token format, write workflow and concurrency
 notes fetch \`penpot://write-guide\`.
 `.trim();
+
+const SERVER_INSTRUCTIONS = WRITABLE ? READ_WRITE_INSTRUCTIONS : READ_ONLY_INSTRUCTIONS;
 
 const server = new McpServer(
   { name: 'penpot-viewer', version: '0.1.0' },
@@ -256,13 +288,16 @@ server.registerTool(
   },
 );
 
-registerGuideResources(server);
-registerApplyTokenTool(server);
-registerCreateFromHtmlTool(server);
-registerCreateTokenSetTool(server);
-registerModifyShapeTool(server);
-registerUpdateSelectionFromHtmlTool(server);
-registerUploadMediaTool(server);
+registerGuideResources(server, { writable: WRITABLE });
+
+if (WRITABLE) {
+  registerApplyTokenTool(server);
+  registerCreateFromHtmlTool(server);
+  registerCreateTokenSetTool(server);
+  registerModifyShapeTool(server);
+  registerUpdateSelectionFromHtmlTool(server);
+  registerUploadMediaTool(server);
+}
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
