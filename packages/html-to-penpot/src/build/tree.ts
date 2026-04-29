@@ -19,6 +19,7 @@ import { tokensInInlineStyle } from '../tokens/extract';
 import { buildTextContent } from './text-content';
 import { buildSelrect, identityMatrix } from './selrect';
 import { newShapeId } from './shape-id';
+import { parseCssTransform } from './transform';
 
 export interface BuildTreeInput {
   nodes: MeasuredNode[];
@@ -135,12 +136,34 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
     const id = shapeIdsForNode[node.index]!;
     const parent =
       node.parentIndex === null ? rootShapeId : shapeIdsForNode[node.parentIndex]!;
+
+    // CSS `transform` produces an axis-aligned bounding box larger than the
+    // element's own box. Penpot stores the unrotated rect plus a separate
+    // `rotation` field — recover the unrotated dimensions from
+    // `offsetWidth/Height` and centre them on the bbox centre. This assumes
+    // CSS `transform-origin: 50% 50%` (the default).
+    const parsedTransform = parseCssTransform(node.computedStyle.transform);
+    const hasRotation = parsedTransform !== null && parsedTransform.rotationDeg !== 0;
+    const useUnrotatedBox = hasRotation;
+    const bboxCenterX = node.rect.x + node.rect.width / 2;
+    const bboxCenterY = node.rect.y + node.rect.height / 2;
+    const localWidth = useUnrotatedBox ? node.offsetWidth : node.rect.width;
+    const localHeight = useUnrotatedBox ? node.offsetHeight : node.rect.height;
+    const localX = useUnrotatedBox ? bboxCenterX - localWidth / 2 : node.rect.x;
+    const localY = useUnrotatedBox ? bboxCenterY - localHeight / 2 : node.rect.y;
+    if (parsedTransform?.hasUnsupportedComponent) {
+      warnings.push(
+        `Node #${node.index} has a non-rotation transform (scale/skew); only rotation is honoured.`,
+      );
+    }
+
     // Page-absolute coordinates for every shape, offset by the board origin.
-    const x = rootOffset.x + node.rect.x - minX;
-    const y = rootOffset.y + node.rect.y - minY;
-    const w = Math.max(0, node.rect.width);
-    const h = Math.max(0, node.rect.height);
-    const rect = buildSelrect({ x, y, width: w, height: h });
+    const x = rootOffset.x + localX - minX;
+    const y = rootOffset.y + localY - minY;
+    const w = Math.max(0, localWidth);
+    const h = Math.max(0, localHeight);
+    const rotation = parsedTransform?.rotationDeg ?? 0;
+    const rect = buildSelrect({ x, y, width: w, height: h }, rotation);
 
     const fills = fillsFromComputed(node.computedStyle);
     const strokeResult = strokesFromComputed(node.computedStyle);
@@ -193,7 +216,7 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         points: rect.points,
         transform: identityMatrix(),
         transformInverse: identityMatrix(),
-        rotation: 0,
+        rotation,
         proportionLock: false,
         metadata: {
           id: node.imageMediaId as Uuid,
@@ -227,7 +250,7 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         points: rect.points,
         transform: identityMatrix(),
         transformInverse: identityMatrix(),
-        rotation: 0,
+        rotation,
         fills,
         strokes,
         ...(shadow ? { shadow } : {}),
@@ -257,9 +280,17 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         points: rect.points,
         transform: identityMatrix(),
         transformInverse: identityMatrix(),
-        rotation: 0,
+        rotation,
         growType: 'fixed',
         content: buildTextContent(node.textContent!, node.computedStyle),
+        // Text shapes can carry shape-level fills/strokes/shadow/radius — used
+        // for "chip" patterns (text with a background pill, padding, border).
+        // Without these, a `<div style="background:#fff">label</div>` would
+        // silently lose its pill background.
+        fills,
+        strokes,
+        ...(shadow ? { shadow } : {}),
+        ...radius,
         proportionLock: false,
         ...layoutItem,
         ...tokenFields,
@@ -280,7 +311,7 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         points: rect.points,
         transform: identityMatrix(),
         transformInverse: identityMatrix(),
-        rotation: 0,
+        rotation,
         fills,
         strokes,
         ...(shadow ? { shadow } : {}),

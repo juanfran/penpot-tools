@@ -126,6 +126,8 @@ export const WALKER_SOURCE = `
       childIndices: [],
       semanticTag: tag,
       rect,
+      offsetWidth: el.offsetWidth || r.width,
+      offsetHeight: el.offsetHeight || r.height,
       computedStyle: pickStyle(el),
       dataAttrs,
       inlineStyle,

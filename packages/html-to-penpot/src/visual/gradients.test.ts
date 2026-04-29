@@ -35,6 +35,16 @@ describe('gradientFillFromBackgroundImage', () => {
     expect(g.stops[1].offset).toBe(1);
   });
 
+  it('preserves per-stop alpha through rgba()', () => {
+    const fill = gradientFillFromBackgroundImage(
+      'linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.35) 100%)',
+    );
+    const g = fill!.fillColorGradient!;
+    expect(g.stops).toHaveLength(2);
+    expect(g.stops[0].opacity).toBe(0);
+    expect(g.stops[1].opacity).toBeCloseTo(0.35, 3);
+  });
+
   it('parses a `to right` keyword as 90deg', () => {
     const fill = gradientFillFromBackgroundImage('linear-gradient(to right, rgb(0,0,0), rgb(255,255,255))');
     const g = fill!.fillColorGradient!;

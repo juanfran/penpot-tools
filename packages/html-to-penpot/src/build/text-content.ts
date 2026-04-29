@@ -22,6 +22,21 @@ function lineHeightOf(style: PickedComputedStyle): string {
   return style.lineHeight && style.lineHeight !== 'normal' ? style.lineHeight : '1.2';
 }
 
+/**
+ * Penpot stores `letterSpacing` as a unitless number string and the converter
+ * appends `px` on output. The browser serialises computed letter-spacing as
+ * `"<n>px"`, so we strip the unit before storing — otherwise the round-trip
+ * yields `"-6pxpx"`.
+ */
+function letterSpacingOf(style: PickedComputedStyle): string {
+  const raw = style.letterSpacing;
+  if (!raw || raw === 'normal') return '0';
+  const px = parsePx(raw);
+  if (px !== null) return String(px);
+  // Already unitless (or some other form) — leave as-is.
+  return raw;
+}
+
 function leafFills(style: PickedComputedStyle): Fill[] {
   const c = parseColor(style.color);
   if (!c) return [{ fillColor: '#000000' as HexColor, fillOpacity: 1 }];
@@ -43,7 +58,7 @@ export function buildTextContent(text: string, style: PickedComputedStyle): Text
     fontWeight: style.fontWeight || '400',
     fontStyle: style.fontStyle || 'normal',
     lineHeight: lineHeightOf(style),
-    letterSpacing: style.letterSpacing && style.letterSpacing !== 'normal' ? style.letterSpacing : '0',
+    letterSpacing: letterSpacingOf(style),
     textAlign: style.textAlign || 'left',
     textDecoration: 'none',
     textTransform: 'none',

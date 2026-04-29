@@ -53,101 +53,119 @@ button vs a badge vs a card, where icons go); the HTML tells you the exact
 tokens, fonts, sizes, structure.
 `;
 
-const WRITE_GUIDE = `# Authoring HTML for create_design_from_html / update_selection_from_html
+const WRITE_GUIDE = `# Authoring HTML for the write-mode tools
 
-The HTML you pass is rendered in headless Chromium so the browser computes
-exact layout. Stick to the CSS subset below — anything outside is silently
-dropped or warned.
+The HTML is rendered in headless Chromium and snapshotted: whatever the
+browser computes (geometry, fills, fonts) becomes Penpot shapes. Anything
+outside the subset below is dropped silently — there is no fallback render.
 
-## Workflow
+## Pick the right tool
 
-- "Create a design / build X"        -> create_design_from_html
-- "Modify the selected header"       -> update_selection_from_html
-   (replaces the subtree at the same position; the shape id changes)
-- "Apply token / increase radius"    -> modify_shape (single mod-obj, fastest,
-   preserves the id)
-- "Apply token to fill"              -> apply_token (or modify_shape with
-   ops.fill = { tokenName })
-- "Register a design system"         -> create_token_set (replaces tokens-lib;
-   pass every set you want to keep)
-- "Use this hero.png"                -> upload_media first, then put
-   data-penpot-media-id="<id>" on the <img> tag
-
-## Supported CSS
-
-- Box: width / height / padding (per-side), border-radius incl. per-corner,
-  border (uniform width + solid/dashed/dotted), opacity, transform.
-- Background: background-color, background-image with linear-gradient or
-  radial-gradient (one solid + one gradient stack max). Raster images go
-  through <img data-penpot-media-id>, NOT background-image:url(...).
-- Box-shadow: comma list, each "<offX> <offY> <blur> <spread> <color>". A
-  "0 0 0 Npx <color>" entry is interpreted as an OUTER stroke (use it
-  deliberately).
-- Layout containers: display:flex (with flex-direction, justify-content,
-  align-items, gap, padding) and display:grid (grid-template-columns/rows
-  with px/fr/auto/repeat). Children: flex:1 -> fill, explicit px -> fix,
-  auto -> auto.
-- Text: font-family, font-size, font-weight, font-style, line-height,
-  letter-spacing, color, text-align. One run per element (no mixed-style
-  spans yet).
-- Tokens: var(--token-name, #fallback). Fallback is REQUIRED — the headless
-  render needs it to compute the exact pixel size. The token name is
-  recorded as an applied token on the shape so it stays live in Penpot.
-- Semantic tags become Penpot frames / texts / images (the converter in
-  reverse). <header> <section> <button> etc. become frames named after the
-  tag (or after data-name="..." if you set it).
+| User intent                       | Tool                          |
+| --------------------------------- | ----------------------------- |
+| "Create / build / design X"       | create_design_from_html       |
+| "Modify the selected header"      | update_selection_from_html    |
+| "Apply token / change radius"     | modify_shape                  |
+| "Apply this color token"          | apply_token                   |
+| "Register a design system"        | create_token_set              |
+| "Use hero.png"                    | upload_media → <img data-penpot-media-id="…"> |
 
 ## Layer names — ALWAYS set data-name
 
-Each element becomes a Penpot layer. Without \`data-name\`, the layer falls
-back to the tag name, so a design built from <div>s ends up with dozens of
-layers literally named "div" / "section" / "p" — useless in Penpot's outline.
+Every element becomes a Penpot layer. Without \`data-name\`, the layer is
+named after the tag (\`div\`, \`section\`, …), which is useless in the outline.
+Set \`data-name="Hero title"\`, \`data-name="CTA"\`, etc. on every element.
 
-Add \`data-name="Hero"\`, \`data-name="Card title"\`, \`data-name="CTA button"\`
-etc. on EVERY element you create — containers, text leaves, images, the lot.
-Use the role the element plays in the design, not its tag. \`data-name\` does
-not affect layout or styling; it only renames the layer.
+## Composition
 
-    GOOD:
-    <section data-name="Hero" style="...">
-      <h1 data-name="Hero title" style="...">Welcome</h1>
-      <button data-name="CTA" style="...">Sign up</button>
-    </section>
+- **Stacked content (vertical sections, button rows):** use \`display:flex\`
+  with \`flex-direction\`, \`gap\`, \`padding\`, \`justify-content\`, \`align-items\`.
+  Or \`display:grid\` with \`grid-template-columns/rows\` (px/fr/auto/repeat).
+- **Editorial / overlapping layouts:** wrap in a \`position:relative\` parent
+  and place children with \`position:absolute; left:Npx; top:Npx;\`. Browser
+  computes exact pixels, Penpot stores them — no further care needed.
+- **Z-order = DOM order.** Later siblings paint on top. Move a chip or badge
+  later in the markup if you want it in front.
+- **Rotation:** only \`transform: rotate(<deg>)\` is honoured (around the
+  element's centre). Scale, skew, 3D, and \`transform-origin\` are dropped.
+- **Avoid:** \`position:fixed/sticky\`, \`::before/::after\`, transitions,
+  \`clip-path\`, \`mask\`, mixed-style spans in one text element.
 
-    BAD (layers will be "section", "h1", "button"):
-    <section style="..."><h1 style="...">Welcome</h1><button>...</button></section>
+## Style cheatsheet
 
-## Avoid
+| Works                                                       | Don't bother                          |
+| ----------------------------------------------------------- | ------------------------------------- |
+| width / height / padding (per side)                         | margin (compose with flex gap)        |
+| border-radius incl. per-corner                              | outline                               |
+| border: Npx <solid|dashed|dotted> color (uniform)           | per-side border-color/style           |
+| opacity, color (any \`rgb\`/\`rgba\`/\`#hex\`)                 | currentColor                          |
+| background-color                                            | background-clip, background-origin    |
+| background-image: linear-gradient / radial-gradient         | conic-gradient, multiple bgs > 1+1    |
+| rgba alpha **inside** gradient stops                        | —                                     |
+| box-shadow list (\`offX offY blur spread color\`)             | inset shadows                         |
+| \`box-shadow: 0 0 0 Npx color\` ⇒ outer stroke               | —                                     |
+| font-family / size / weight / style / line-height           | font-variant, font-feature-settings   |
+| letter-spacing (any unit), text-align                       | text-decoration colour                |
+| transform: rotate(Ndeg)                                     | scale, skew, matrix(), 3D             |
+| display: flex / grid                                        | display: table, inline-flex           |
 
-- position:fixed/sticky, ::before/::after, transitions/animations,
-  clip-path, mask, display:table/inline-flex, mixed-style spans inside one
-  text element.
-- Top-level <style>/<script>/<head>/<title>/<meta>/<link> tags are filtered
-  by the walker (they used to leak as 0×0 text shapes — they no longer do)
-  but it's still cheaper to skip them.
+## Recipes
+
+**Chip / pill (text with background + padding)**
+\`\`\`html
+<div data-name="Chip" style="display:inline-block; padding:6px 14px;
+     border-radius:99px; background:#1A1A1A; color:#FFF;
+     font-size:12px; font-weight:600;">NEW</div>
+\`\`\`
+The text shape carries the background fill — no wrapper needed.
+
+**Badge that sits over an image**
+Place the image first, then the badge later in the DOM (so it paints on top):
+\`\`\`html
+<div style="position:relative; width:420px; height:340px;">
+  <img data-name="Hero" src="…" data-penpot-media-id="…" style="width:100%; height:100%;">
+  <div data-name="New badge" style="position:absolute; right:-16px; top:-16px;
+       width:72px; height:72px; border-radius:50%; background:#C8553D;
+       color:#FFF; display:flex; align-items:center; justify-content:center;">NEW</div>
+</div>
+\`\`\`
+
+**Rotated stamp**
+\`\`\`html
+<div data-name="Sold tag" style="position:absolute; left:24px; top:120px;
+     transform:rotate(-6deg); padding:6px 12px; background:#F5F1EA;
+     font-size:11px; font-weight:700; letter-spacing:3px;">SOLD</div>
+\`\`\`
+
+**Photo darken-overlay (gradient with alpha)**
+\`\`\`html
+<div data-name="Photo shade" style="position:absolute; left:0; bottom:0;
+     width:100%; height:40%;
+     background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%);"></div>
+\`\`\`
+Alpha is preserved per stop. 0.35 is barely visible — use ≥0.5 for a useful shadow.
 
 ## Tokens
 
-\`create_token_set\` takes DTCG-style sets:
-
-    sets: [{
-      setName: "theme",
-      tokens: [
-        { name: "brand-primary", type: "color", value: "#2E51C4" },
-        { name: "fg-on-brand",   type: "color", value: "#FFFFFF" },
-      ],
-    }]
-
-After registering, reference from HTML as \`var(--brand-primary, #2E51C4)\` —
-the builder reads the var name and emits applied-tokens for the right Penpot
-slot (fill / strokeColor / r1..r4 / p1..p4 / gap / fontSize / etc.).
+\`create_token_set\` takes DTCG sets:
+\`\`\`js
+sets: [{
+  setName: "theme",
+  tokens: [
+    { name: "brand-primary", type: "color", value: "#2E51C4" },
+    { name: "fg-on-brand",   type: "color", value: "#FFFFFF" },
+  ],
+}]
+\`\`\`
+Reference in HTML as \`var(--brand-primary, #2E51C4)\`. The fallback is
+REQUIRED — the headless render needs it to compute exact pixels. The token
+name is recorded as an applied token on the shape so it stays live.
 
 ## Concurrency
 
-Each write tool reads the current revn before sending update-file. If Penpot
-rejects with a conflict, the tool returns "# update-file conflict" — recall
-\`get_current_selection\` and try again, do NOT keep retrying with the stale
-revn.
+Each write tool reads the current \`revn\` before sending. On conflict the
+tool returns \`# update-file conflict\` — recall \`get_current_selection\` and
+retry with the fresh revn, never with the stale one.
 `;
 
 export function registerGuideResources(

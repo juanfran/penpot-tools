@@ -71,6 +71,8 @@ function node(input: NodeInput): MeasuredNode {
     childIndices: input.childIndices ?? [],
     semanticTag: input.semanticTag,
     rect: { x: input.index * 10, y: 0, width: 100, height: 50 },
+    offsetWidth: 100,
+    offsetHeight: 50,
     computedStyle: style(),
     dataAttrs: input.dataAttrs ?? {},
     textContent: input.textContent,
@@ -165,5 +167,85 @@ describe('buildTree — layer naming via data-name', () => {
     expect(frame?.name).toBe('section');
     const text = shapes.find((s) => s.type === 'text');
     expect(text?.name).toBe('p');
+  });
+});
+
+describe('buildTree — CSS rotation', () => {
+  it('extracts rotation from a 2D matrix and uses unrotated dims', () => {
+    // CSS rotate(-4deg) ⇒ matrix(cos -sin sin cos 0 0) → Penpot rotation +4
+    const cos = Math.cos((-4 * Math.PI) / 180);
+    const sin = Math.sin((-4 * Math.PI) / 180);
+    const transform = `matrix(${cos}, ${sin}, ${-sin}, ${cos}, 0, 0)`;
+    const nodes: MeasuredNode[] = [
+      {
+        index: 0,
+        parentIndex: null,
+        childIndices: [],
+        semanticTag: 'div',
+        // bbox of a 100×30 box rotated 4° is slightly larger; fake it small.
+        rect: { x: 0, y: 0, width: 102, height: 36 },
+        offsetWidth: 100,
+        offsetHeight: 30,
+        computedStyle: style({ transform }),
+        dataAttrs: { 'data-name': 'Tag' },
+        textContent: 'OCEAN VIEW',
+      },
+    ];
+    const { shapes } = buildTree({
+      nodes,
+      pageId: PAGE_ID,
+      rootOffset: { x: 0, y: 0 },
+      rootName: 'Board',
+    });
+    const text = shapes.find((s) => s.type === 'text')!;
+    expect(text.rotation).toBeCloseTo(4, 3);
+    expect(text.width).toBe(100);
+    expect(text.height).toBe(30);
+    // Unrotated rect centred on the bbox centre (51, 18).
+    expect(text.x).toBe(1);
+    expect(text.y).toBe(3);
+  });
+
+  it('keeps rotation 0 and bbox dims when transform is "none"', () => {
+    const nodes = [
+      node({ index: 0, parentIndex: null, semanticTag: 'div', textContent: 'plain' }),
+    ];
+    const { shapes } = buildTree({
+      nodes,
+      pageId: PAGE_ID,
+      rootOffset: { x: 0, y: 0 },
+      rootName: 'Board',
+    });
+    const text = shapes.find((s) => s.type === 'text')!;
+    expect(text.rotation).toBe(0);
+    expect(text.width).toBe(100);
+    expect(text.height).toBe(50);
+  });
+});
+
+describe('buildTree — text shape carries fills (chip pattern)', () => {
+  it('puts background-color on a text element onto the text shape fills', () => {
+    const nodes = [
+      {
+        index: 0,
+        parentIndex: null as number | null,
+        childIndices: [] as number[],
+        semanticTag: 'div',
+        rect: { x: 0, y: 0, width: 80, height: 24 },
+        offsetWidth: 80,
+        offsetHeight: 24,
+        computedStyle: style({ backgroundColor: 'rgb(245, 241, 234)' }),
+        dataAttrs: { 'data-name': 'Chip' },
+        textContent: 'OCEAN VIEW',
+      } satisfies MeasuredNode,
+    ];
+    const { shapes } = buildTree({
+      nodes,
+      pageId: PAGE_ID,
+      rootOffset: { x: 0, y: 0 },
+      rootName: 'Board',
+    });
+    const text = shapes.find((s) => s.type === 'text')!;
+    expect(text.fills).toEqual([{ fillColor: '#F5F1EA', fillOpacity: 1 }]);
   });
 });

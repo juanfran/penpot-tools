@@ -103,6 +103,14 @@ export interface MeasuredNode {
   semanticTag: SemanticTag;
   /** Bounding rect, already shifted so the root sits at (0, 0). */
   rect: MeasuredRect;
+  /**
+   * Untransformed dimensions (`offsetWidth`/`offsetHeight`). When the element
+   * has a CSS `transform`, `rect` is the axis-aligned bounding box of the
+   * rendered (rotated/scaled) shape — `offsetWidth/Height` give the element's
+   * natural size before the transform was applied.
+   */
+  offsetWidth: number;
+  offsetHeight: number;
   computedStyle: PickedComputedStyle;
 
   /** Text content if this element has only a single text node child (no element children). */
