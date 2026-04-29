@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseColor, parseNumber, parsePx } from './css';
+import { extractInlinePx, parseColor, parseNumber, parsePx } from './css';
 
 describe('parsePx', () => {
   it('parses integer px', () => {
@@ -77,5 +77,31 @@ describe('parseColor', () => {
 
   it('returns null for empty string', () => {
     expect(parseColor('')).toBeNull();
+  });
+});
+
+describe('extractInlinePx', () => {
+  it('reads a px value at the start of the declaration', () => {
+    expect(extractInlinePx('width:1px;height:36px', 'width')).toBe(1);
+  });
+
+  it('reads a px value after another declaration', () => {
+    expect(extractInlinePx('display:flex; width:24px; gap:8px', 'width')).toBe(24);
+  });
+
+  it('reads fractional px', () => {
+    expect(extractInlinePx('width:1.5px', 'width')).toBe(1.5);
+  });
+
+  it('does not match a sub-property (e.g. min-width when asking for width)', () => {
+    expect(extractInlinePx('min-width:100px', 'width')).toBeNull();
+  });
+
+  it('returns null when the property is missing', () => {
+    expect(extractInlinePx('height:10px', 'width')).toBeNull();
+  });
+
+  it('returns null for non-px values', () => {
+    expect(extractInlinePx('width:50%', 'width')).toBeNull();
   });
 });

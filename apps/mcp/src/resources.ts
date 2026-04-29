@@ -55,92 +55,88 @@ tokens, fonts, sizes, structure.
 
 const WRITE_GUIDE = `# Authoring HTML for the write-mode tools
 
-The HTML is rendered in headless Chromium; resulting geometry, fills, fonts,
+HTML is rendered in headless Chromium; the resulting geometry, fills, fonts,
 and shadows become Penpot shapes. Anything outside the subset below is
-dropped silently — there is no fallback render.
+dropped — but every drop is reported in the tool response under
+\`## Warnings\`. **Read the warnings list before declaring the design done**;
+that's how you catch silent degradations (filters, blend modes, unparseable
+shadows, missing media ids, transforms with scale/skew, …).
 
 ## Pick the right tool
 
-| User intent                       | Tool                          |
-| --------------------------------- | ----------------------------- |
-| "Create / build / design X"       | create_design_from_html       |
-| "Modify the selected header"      | update_selection_from_html    |
-| "Apply token / change radius"     | modify_shape                  |
-| "Apply this color token"          | apply_token                   |
-| "Register a design system"        | create_token_set              |
-| "Use hero.png"                    | upload_media → <img data-penpot-media-id="…"> |
+| Intent                            | Tool                                              |
+| --------------------------------- | ------------------------------------------------- |
+| "Create / build / design X"       | create_design_from_html                           |
+| "Modify the selected header"      | update_selection_from_html                        |
+| "Apply token / change radius"     | modify_shape                                      |
+| "Apply this color token"          | apply_token                                       |
+| "Register a design system"        | create_token_set                                  |
+| "Use hero.png"                    | upload_media → \`<img data-penpot-media-id="…">\` |
 
-## Layer names — set \`data-name\` on every element
+## What you send
 
-Every element becomes a Penpot layer. Without \`data-name\`, the layer is
-named after the tag (\`div\`, \`section\`, …), useless in the outline.
+Send a fragment, not a full document — \`<!DOCTYPE>\`, \`<html>\`, \`<body>\` are
+auto-stripped. Your single root element becomes the board contents directly,
+no extra wrapper layer.
+
+Set \`data-name="…"\` on every element. Without it, layers are named after
+the tag (\`div\`, \`section\`, …) and the outline becomes unusable.
 
 ## Composition
 
-- **Stacked rows / columns:** \`display:flex\` (with \`flex-direction\`,
-  \`gap\`, \`padding\`, \`justify-content\`, \`align-items\`) or \`display:grid\`
-  (with \`grid-template-columns/rows\`; px / fr / auto / repeat all work).
-- **Editorial / overlapping:** wrap in \`position:relative\` and place
-  children with \`position:absolute; left:Npx; top:Npx;\`.
-- **Z-order = DOM order.** Later siblings paint on top — move a chip or
-  badge later in the markup if you want it in front.
-- **Rotation:** \`transform: rotate(<deg>)\` is honoured (around the centre).
-  Scale, skew, 3D, and \`transform-origin\` are dropped.
+- **Stacked rows / columns:** \`display:flex\` (\`flex-direction\`, \`gap\`,
+  \`padding\`, \`justify-content\`, \`align-items\`) or \`display:grid\`
+  (\`grid-template-columns/rows\`: px / fr / auto / repeat).
+- **Editorial / overlapping:** \`position:relative\` parent + \`position:absolute;
+  left:Npx; top:Npx;\` children.
+- **Z-order = DOM order.** Later siblings paint on top.
+- **Rotation:** \`transform: rotate(<deg>)\` rotates around the centre.
 
 ## What works, what's dropped
 
-| Property                                                  | Status                              |
-| --------------------------------------------------------- | ----------------------------------- |
-| width / height / padding (per side)                       | ✓                                   |
-| margin                                                    | drop — use flex \`gap\`               |
-| border-radius (incl. per-corner)                          | ✓                                   |
-| \`border: Npx <solid\\|dashed\\|dotted> color\` (uniform)     | ✓                                   |
-| per-side border colour / style                            | only the top side wins              |
-| opacity, color (any rgb/rgba/#hex)                        | ✓                                   |
-| \`currentColor\`                                            | drop                                |
-| background-color                                          | ✓                                   |
-| \`background-image\`: linear-gradient, radial-gradient      | ✓ (rgba alpha in stops works)       |
-| conic-gradient, image \`url()\`, multiple bgs               | drop                                |
-| \`box-shadow\` list (\`offX offY blur spread color\`)         | ✓                                   |
-| \`box-shadow: 0 0 0 Npx color\`                             | ✓ — outer stroke                    |
-| inset shadows                                             | drop                                |
-| font-family / size / weight / style / line-height         | ✓                                   |
-| letter-spacing, text-align                                | ✓                                   |
-| text-decoration colour                                    | drop (default colour only)          |
-| \`transform: rotate(Ndeg)\`                                 | ✓                                   |
-| scale / skew / matrix() / 3D / transform-origin           | drop                                |
-| display: flex / grid / inline-flex / inline-grid          | ✓                                   |
-| display: table, contents                                  | drop                                |
-| \`position: fixed\` / \`sticky\`                              | drop (rendered as static)           |
-| \`::before\`, \`::after\`, transitions, animations            | drop                                |
-| \`clip-path\`, \`mask\`, \`outline\`                            | drop                                |
+| Property                                            | Status                          |
+| --------------------------------------------------- | ------------------------------- |
+| width / height / padding (per-side)                 | ✓                               |
+| margin                                              | drop — use flex \`gap\`           |
+| border-radius (incl. per-corner)                    | ✓                               |
+| \`border: Npx <solid\\|dashed\\|dotted> color\`         | uniform only — top side wins    |
+| opacity, color (rgb / rgba / #hex)                  | ✓                               |
+| background: solid / linear-gradient / radial-gradient | ✓ (alpha in stops works)      |
+| conic-gradient, image \`url()\`, multiple bgs         | drop                            |
+| box-shadow (drop, inset, negative spread, multi)    | ✓                               |
+| box-shadow \`0 0 0 Npx color\`                        | ✓ — emitted as outer stroke    |
+| font: family / size / weight / style / line-height  | ✓                               |
+| letter-spacing, text-align                          | ✓                               |
+| transform: rotate                                   | ✓                               |
+| scale / skew / matrix / 3D / transform-origin       | drop                            |
+| display: flex / grid (incl. inline variants)        | ✓                               |
+| position: fixed / sticky                            | drop (rendered as static)       |
+| filter, mix-blend-mode, clip-path, mask, outline    | drop                            |
+| \`::before\` / \`::after\`, transitions, animations    | drop                            |
+| currentColor, text-decoration colour                | drop                            |
 
 ## Recipes
 
-**Pill / chip / button** — text in a coloured box
+**Chip / pill / button** — text in a coloured box. Leaf with text + any box
+visual (\`background\`, \`border\`, \`box-shadow\`) auto-splits into frame + text:
 
 \`\`\`html
 <div data-name="Chip" style="padding:6px 14px; border-radius:99px;
      background:#1A1A1A; color:#FFF; font-size:12px; font-weight:600;">NEW</div>
 \`\`\`
 
-A leaf element with text + any of \`background-color\` / \`background-image\` /
-\`border\` / \`box-shadow\` is automatically split into a Penpot frame (carrying
-the box visuals) plus an inner text shape (with padding preserved). Plain
-\`<div>\`, \`<button>\`, \`<a>\` all work — no \`display:inline-block\` trick needed.
-
-**Badge over an image** — paint order = DOM order
+**Badge over an image** — paint order = DOM order:
 
 \`\`\`html
 <div style="position:relative; width:420px; height:340px;">
-  <img data-name="Hero" src="…" data-penpot-media-id="…" style="width:100%; height:100%;">
+  <img data-name="Hero" data-penpot-media-id="…" style="width:100%; height:100%;">
   <div data-name="New badge" style="position:absolute; right:-16px; top:-16px;
        width:72px; height:72px; border-radius:50%; background:#C8553D;
        color:#FFF; display:flex; align-items:center; justify-content:center;">NEW</div>
 </div>
 \`\`\`
 
-**Rotated stamp**
+**Rotated stamp:**
 
 \`\`\`html
 <div data-name="Sold tag" style="position:absolute; left:24px; top:120px;
@@ -148,26 +144,36 @@ the box visuals) plus an inner text shape (with padding preserved). Plain
      font-size:11px; font-weight:700; letter-spacing:3px;">SOLD</div>
 \`\`\`
 
-**Photo darken overlay** — alpha lives in the gradient stops
+**Soft floating shadow** (negative spread keeps it contained):
 
 \`\`\`html
-<div data-name="Photo shade" style="position:absolute; left:0; bottom:0;
+<div data-name="Card" style="…; box-shadow:0 30px 60px -20px rgba(0,0,0,0.35);">
+\`\`\`
+
+**Photo darken overlay** — alpha in gradient stops; ≥0.5 for noticeable:
+
+\`\`\`html
+<div data-name="Shade" style="position:absolute; left:0; bottom:0;
      width:100%; height:40%;
      background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%);"></div>
 \`\`\`
 
-Use ≥ 0.5 alpha for a noticeable darken — 0.35 is barely visible.
-
 ## Gotchas
 
-- **Mixed text + element children loses the prose.** \`<p>Hello <span>x</span></p>\`
-  drops "Hello ". Wrap each text run in its own element (\`<span>\` is fine).
-- **Padding alone is invisible.** Padding only shows when there's a
-  background, border, or shadow on the same element. Otherwise use flex \`gap\`.
+- **Mixed text + element children loses prose.** \`<p>Hello <span>x</span></p>\`
+  drops "Hello ". Wrap every text run in its own element (\`<span>\` is fine).
+  Reported as a warning when it happens.
+- **Padding only shows when the element has a background, border, or shadow.**
+  Otherwise the gap is invisible — use flex \`gap\` instead.
 - **Per-side borders collapse to the top side.** For a single-side rule,
   build it as a 1-px rect.
-- **Multi-paragraph text** (\`<br>\`, multiple \`<p>\`) is not yet supported —
-  use one element per paragraph instead.
+- **Multi-paragraph text** (\`<br>\`, multiple \`<p>\`) is not supported. One
+  element per line.
+- **Sizing in tight flex rows.** When a row's natural content overflows the
+  container, Chrome's flex shrinks every child including thin separators
+  (\`width:1px\`). Authored \`width:Npx\` on a leaf is restored if flex shrunk
+  it below N — but if you want a column to keep its intrinsic width, leave
+  more room or set \`flex-shrink:0\`.
 
 ## Tokens
 
@@ -183,14 +189,14 @@ sets: [{
 }]
 \`\`\`
 
-Reference in HTML as \`var(--brand-primary, #2E51C4)\`. **The fallback is
-required** — the headless render needs it to compute exact pixels. The
+Reference in HTML as \`var(--brand-primary, #2E51C4)\`. The fallback is
+**required** — the headless render uses it to compute exact pixels. The
 token name is recorded as an applied token on the shape so it stays live.
 
 ## Concurrency
 
 Each write tool reads the current \`revn\` before sending. On conflict the
-tool returns \`# update-file conflict\` — recall \`get_current_selection\` and
+tool returns \`# update-file conflict\` — call \`get_current_selection\` and
 retry with the fresh revn, never the stale one.
 `;
 

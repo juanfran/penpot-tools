@@ -21,6 +21,7 @@ import { buildSelrect, identityMatrix } from './selrect';
 import { newShapeId } from './shape-id';
 import { parseCssTransform } from './transform';
 import { splitChipPatterns } from './chip-split';
+import { extractInlinePx } from './css';
 
 export interface BuildTreeInput {
   nodes: MeasuredNode[];
@@ -54,6 +55,12 @@ export interface BuildTreeResult {
  * are deferred to the next phases — the tree builder records a warning when
  * it encounters them.
  */
+/** Human label for a node — `data-name` if present, otherwise `<tag>`. */
+function nodeLabel(node: MeasuredNode): string {
+  const name = node.dataAttrs['data-name'];
+  return name ? `"${name}"` : `<${node.semanticTag}>`;
+}
+
 export function buildTree(input: BuildTreeInput): BuildTreeResult {
   const warnings: string[] = [];
   // Chip pattern: a leaf element with text content + box visuals (background,
@@ -155,13 +162,39 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
     const useUnrotatedBox = hasRotation;
     const bboxCenterX = node.rect.x + node.rect.width / 2;
     const bboxCenterY = node.rect.y + node.rect.height / 2;
-    const localWidth = useUnrotatedBox ? node.offsetWidth : node.rect.width;
-    const localHeight = useUnrotatedBox ? node.offsetHeight : node.rect.height;
-    const localX = useUnrotatedBox ? bboxCenterX - localWidth / 2 : node.rect.x;
-    const localY = useUnrotatedBox ? bboxCenterY - localHeight / 2 : node.rect.y;
+    let localWidth = useUnrotatedBox ? node.offsetWidth : node.rect.width;
+    let localHeight = useUnrotatedBox ? node.offsetHeight : node.rect.height;
+    let localX = useUnrotatedBox ? bboxCenterX - localWidth / 2 : node.rect.x;
+    let localY = useUnrotatedBox ? bboxCenterY - localHeight / 2 : node.rect.y;
+
+    // Flex shrink can crush a leaf with explicit `width:Npx` below N (a 1px
+    // separator inside an over-constrained flex row gets shrunk to 0). The
+    // authored `width:Npx` is the design intent — recover it when the measured
+    // box is smaller than what the inline style asked for. We only do this for
+    // leaves (no element children) so we don't fight `auto` containers.
+    if (node.childIndices.length === 0 && !node.imageMediaId && !node.svgOuter) {
+      const inlineW = extractInlinePx(node.inlineStyle ?? '', 'width');
+      const inlineH = extractInlinePx(node.inlineStyle ?? '', 'height');
+      if (inlineW !== null && inlineW > localWidth) {
+        localX -= (inlineW - localWidth) / 2;
+        localWidth = inlineW;
+      }
+      if (inlineH !== null && inlineH > localHeight) {
+        localY -= (inlineH - localHeight) / 2;
+        localHeight = inlineH;
+      }
+    }
     if (parsedTransform?.hasUnsupportedComponent) {
       warnings.push(
-        `Node #${node.index} has a non-rotation transform (scale/skew); only rotation is honoured.`,
+        `${nodeLabel(node)}: only rotate() is supported; scale/skew/3D were dropped.`,
+      );
+    }
+    if (node.computedStyle.filter && node.computedStyle.filter !== 'none') {
+      warnings.push(`${nodeLabel(node)}: CSS filter is not supported and was dropped.`);
+    }
+    if (node.computedStyle.mixBlendMode && node.computedStyle.mixBlendMode !== 'normal') {
+      warnings.push(
+        `${nodeLabel(node)}: mix-blend-mode is not supported and was dropped.`,
       );
     }
 
@@ -179,6 +212,15 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
     const shadowEntries = splitBoxShadowList(node.computedStyle.boxShadow);
     const shadowList = shadowsFromBoxShadowList(shadowEntries, strokeResult.consumedShadowIndices);
     const shadow = shadowList.length ? shadowList : undefined;
+    // The author wrote `box-shadow: …` but nothing survived parsing or stroke
+    // extraction. Warn explicitly — silent drops here cost designers
+    // depth/elevation cues.
+    const expectedShadows = shadowEntries.length - strokeResult.consumedShadowIndices.size;
+    if (expectedShadows > 0 && shadowList.length === 0) {
+      warnings.push(
+        `${nodeLabel(node)}: box-shadow could not be parsed and was dropped.`,
+      );
+    }
     const radius = radiusFromComputed(node.computedStyle);
 
     // Layout-item fields if the parent is a flex container.
@@ -194,16 +236,14 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
       Object.keys(appliedTokens).length > 0 ? { appliedTokens } : {};
 
     if (node.svgOuter) {
-      warnings.push(
-        `Inline <svg> is not supported in Phase 1 (node #${node.index}); skipped.`,
-      );
+      warnings.push(`${nodeLabel(node)}: inline <svg> is not supported and was skipped.`);
       continue;
     }
 
     const isImage = !!node.imageMediaId;
     if (node.imageSrc && !node.imageMediaId) {
       warnings.push(
-        `<img> at node #${node.index} has no data-penpot-media-id — call upload_media first and add the id to the tag. Falling back to a plain rect.`,
+        `${nodeLabel(node)}: <img src="…"> needs data-penpot-media-id (call upload_media first). Falling back to a plain rect.`,
       );
     }
     const isText = node.textContent !== undefined && node.childIndices.length === 0;

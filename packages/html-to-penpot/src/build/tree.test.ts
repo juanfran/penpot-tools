@@ -225,6 +225,67 @@ describe('buildTree — CSS rotation', () => {
   });
 });
 
+describe('buildTree — flex shrink rescue for thin leaves', () => {
+  it('restores width from inline style when flex shrunk a leaf below it', () => {
+    // 1px-wide separator inside a flex row: container is over-constrained, so
+    // Chrome shrinks it to 0px. The authored width:1px is the design intent.
+    const nodes: MeasuredNode[] = [
+      {
+        index: 0,
+        parentIndex: null,
+        childIndices: [],
+        semanticTag: 'div',
+        rect: { x: 50, y: 10, width: 0, height: 36 },
+        offsetWidth: 0,
+        offsetHeight: 36,
+        computedStyle: style({
+          backgroundColor: 'rgb(213, 205, 190)',
+          width: '1px',
+          height: '36px',
+        }),
+        dataAttrs: { 'data-name': 'Sep' },
+        inlineStyle: 'width:1px; height:36px; background:#D5CDBE;',
+      },
+    ];
+    const { shapes } = buildTree({
+      nodes,
+      pageId: PAGE_ID,
+      rootOffset: { x: 0, y: 0 },
+      rootName: 'Board',
+    });
+    const sep = shapes.find((s) => s.type === 'rect' && s.name === 'Sep');
+    expect(sep).toBeDefined();
+    expect(sep!.width).toBe(1);
+    expect(sep!.height).toBe(36);
+  });
+
+  it('does not enlarge a leaf when measured width is already correct', () => {
+    const nodes: MeasuredNode[] = [
+      {
+        index: 0,
+        parentIndex: null,
+        childIndices: [],
+        semanticTag: 'div',
+        rect: { x: 0, y: 0, width: 200, height: 100 },
+        offsetWidth: 200,
+        offsetHeight: 100,
+        computedStyle: style({ backgroundColor: 'rgb(0, 0, 0)' }),
+        dataAttrs: {},
+        inlineStyle: 'width:1px; height:36px;',
+      },
+    ];
+    const { shapes } = buildTree({
+      nodes,
+      pageId: PAGE_ID,
+      rootOffset: { x: 0, y: 0 },
+      rootName: 'Board',
+    });
+    const rect = shapes.find((s) => s.type === 'rect');
+    expect(rect!.width).toBe(200);
+    expect(rect!.height).toBe(100);
+  });
+});
+
 describe('buildTree — chip pattern is split into frame + text', () => {
   it('renders a `div` with bg+padding+text as a frame containing a text shape', () => {
     const nodes = [

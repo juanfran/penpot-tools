@@ -22,6 +22,22 @@ export function parseNumber(value: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
+/**
+ * Pull a single CSS declaration's px value from an inline `style` attribute
+ * string, e.g. `extractInlinePx('width:1px;height:36px', 'width') === 1`.
+ *
+ * Used to recover authorial intent when flex layout has shrunk a thin element
+ * below its specified size. Returns `null` if the property isn't present, isn't
+ * a px value, or appears inside a `var(...)` reference.
+ */
+export function extractInlinePx(inlineStyle: string, prop: string): number | null {
+  if (!inlineStyle) return null;
+  const escaped = prop.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const re = new RegExp(`(?:^|;)\\s*${escaped}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)px\\b`, 'i');
+  const m = inlineStyle.match(re);
+  return m ? Number(m[1]) : null;
+}
+
 export interface ParsedColor {
   hex: HexColor;
   opacity: number;

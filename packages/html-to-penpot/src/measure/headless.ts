@@ -74,8 +74,28 @@ export interface MeasureOutput {
   warnings: string[];
 }
 
+/**
+ * Unwrap a full HTML document into just its body contents. The LLM frequently
+ * wraps a single root element in `<!DOCTYPE><html><body>…` even though the
+ * tool only consumes a fragment — left as-is, the browser parser hoists those
+ * tags out of `#penpot-inner` and we end up with stray nodes (or a
+ * same-size duplicate frame). Strip the wrappers so the LLM's authored
+ * fragment is the one and only top-level node.
+ */
+export function unwrapDocument(html: string): string {
+  let s = html.replace(/<!DOCTYPE[^>]*>/i, '').trim();
+  // Pull <body>...</body> if present.
+  const body = s.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (body) return body[1]!.trim();
+  // Pull <html>...</html> if no <body>.
+  const htmlTag = s.match(/<html[^>]*>([\s\S]*?)<\/html>/i);
+  if (htmlTag) return htmlTag[1]!.trim();
+  return s;
+}
+
 function buildDocument({ html, tokensCss, fontsCss, background }: MeasureInput): string {
   const bg = background ?? '#ffffff';
+  const inner = unwrapDocument(html);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -91,7 +111,7 @@ ${fontsCss ? `<style data-penpot-fonts>${fontsCss}</style>` : ''}
 </head>
 <body>
 <div id="penpot-root">
-  <div id="penpot-inner">${html}</div>
+  <div id="penpot-inner">${inner}</div>
 </div>
 </body>
 </html>`;

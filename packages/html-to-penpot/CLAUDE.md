@@ -102,8 +102,34 @@ free for downstream uses.
 | `background-color` / `background-image`        | solid fill / gradient fill (stacked)           |
 | `border: Npx solid color` (uniform)            | stroke `inner`                                 |
 | `box-shadow: 0 0 0 Npx color`                  | stroke `outer`                                 |
-| `box-shadow` (otherwise)                       | shadow                                         |
+| `box-shadow` (otherwise, incl. inset / -spread)| shadow                                         |
 | `border-radius` incl. per-corner               | `r1..r4`                                       |
+
+## Box-shadow parsing
+
+Chrome's computed `box-shadow` puts the color at the START
+(`rgba(0,0,0,0.4) 0px 4px 12px 0px`) — authored CSS usually puts it at the
+END. `visual/shadows.ts` accepts both. Negative `spread` is preserved
+(common pattern: `0 30px 60px -20px rgba(...)` for a soft contained shadow).
+Inset shadows survive as Penpot `inner-shadow`. Outer-stroke detection
+(`0 0 0 Npx color`) runs first in `visual/strokes.ts` and consumes those
+entries before they reach the shadow parser.
+
+## Document unwrapping
+
+The headless driver auto-strips `<!DOCTYPE>` / `<html>` / `<body>` wrappers
+before mounting the user HTML inside `#penpot-inner` (see `unwrapDocument`
+in `measure/headless.ts`). LLMs often wrap fragments in those tags by
+habit; without unwrapping we'd end up with stray nodes or a same-size
+duplicate frame.
+
+## Flex shrink rescue for thin leaves
+
+Chrome's flex algorithm shrinks every child (including a `width:1px`
+separator) when the row's natural content overflows the container. The
+authored width is the design intent — `build/tree.ts` reads
+`width:Npx` / `height:Npx` from the inline style and restores the larger
+of measured-vs-authored on leaves only (so we don't fight `auto` containers).
 
 ## Token extraction
 

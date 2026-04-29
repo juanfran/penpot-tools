@@ -6,12 +6,13 @@ import { parseColor } from '../build/css';
  *
  *   [inset?] <offset-x> <offset-y> [<blur> [<spread>]] [<color>]
  *
- * Browsers normalize the order so the color always sits at the END (for
- * computed style) regardless of where the author wrote it. We also see lengths
- * arrive as `12px`, never bare numbers.
+ * Chrome's computed style serializes the color at the START (e.g. `rgba(0,0,0,
+ * 0.4) 0px 4px 12px 0px`). Authored CSS usually puts it at the END. We accept
+ * both — `strokes.ts` does the same for outer-stroke detection. Lengths arrive
+ * with a `px` suffix and may be negative (negative `spread` is the common
+ * "soft contained shadow" pattern: `0 30px 60px -20px rgba(...)`).
  *
- * Returns null when the entry cannot be parsed (or it's the 0/0/0/spread form
- * which `strokes.ts` already consumed as an outer stroke).
+ * Returns null when the entry can't be parsed.
  */
 export function parseSingleBoxShadow(entry: string): Shadow | null {
   if (!entry) return null;
@@ -22,15 +23,24 @@ export function parseSingleBoxShadow(entry: string): Shadow | null {
     s = s.slice('inset '.length).trim();
   }
 
-  // Pull the color off the end. We expect a single color token — either rgb/rgba(...) or
-  // a hex / named color. Browsers always serialize as rgb/rgba, but be defensive.
-  const colorMatch = s.match(/(rgba?\([^)]*\)|#[0-9a-fA-F]{3,8})\s*$/);
-  if (!colorMatch) return null;
-  const colorStr = colorMatch[0];
+  const COLOR_RE = /(rgba?\([^)]*\)|#[0-9a-fA-F]{3,8})/;
+  let lengthsPart: string;
+  let colorStr: string;
+  let m = s.match(new RegExp(`^${COLOR_RE.source}\\s+(.+)$`));
+  if (m) {
+    colorStr = m[1]!;
+    lengthsPart = m[2]!;
+  } else {
+    m = s.match(new RegExp(`^(.+?)\\s+${COLOR_RE.source}\\s*$`));
+    if (!m) return null;
+    lengthsPart = m[1]!;
+    colorStr = m[2]!;
+  }
+
   const color = parseColor(colorStr);
   if (!color) return null;
 
-  const lengths = s.slice(0, s.length - colorStr.length).trim().split(/\s+/);
+  const lengths = lengthsPart.trim().split(/\s+/);
   if (lengths.length < 2) return null;
 
   const px = (v: string | undefined): number | null => {
