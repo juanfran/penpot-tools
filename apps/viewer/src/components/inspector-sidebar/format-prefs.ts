@@ -1,7 +1,7 @@
-export type ColorFormat = 'hex' | 'rgb' | 'hsl';
+export type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'oklch';
 export type UnitFormat = 'px' | 'rem' | 'em';
 
-export const COLOR_FORMATS = ['hex', 'rgb', 'hsl'] as const;
+export const COLOR_FORMATS = ['hex', 'rgb', 'hsl', 'oklch'] as const;
 export const UNIT_FORMATS = ['px', 'rem', 'em'] as const;
 const BASE_FONT_PX = 16;
 
@@ -111,10 +111,75 @@ function parseHslColor(s: string): RGBA | null {
   return { r, g, b, a: parseAlpha(parts[3]) };
 }
 
+function srgbToLinear(c: number): number {
+  const x = c / 255;
+  return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+}
+
+function linearToSrgb(c: number): number {
+  const x = c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+  return x * 255;
+}
+
+function rgbToOklch(r: number, g: number, b: number): { l: number; c: number; h: number } {
+  const lr = srgbToLinear(r);
+  const lg = srgbToLinear(g);
+  const lb = srgbToLinear(b);
+  const l = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
+  const m = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
+  const s = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
+  const l_ = Math.cbrt(l);
+  const m_ = Math.cbrt(m);
+  const s_ = Math.cbrt(s);
+  const L = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_;
+  const A = 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_;
+  const B = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_;
+  const c2 = Math.sqrt(A * A + B * B);
+  let h = (Math.atan2(B, A) * 180) / Math.PI;
+  if (h < 0) h += 360;
+  return { l: L, c: c2, h };
+}
+
+function oklchToRgb(L: number, C: number, h: number): { r: number; g: number; b: number } {
+  const hr = (h * Math.PI) / 180;
+  const A = C * Math.cos(hr);
+  const B = C * Math.sin(hr);
+  const l_ = L + 0.3963377774 * A + 0.2158037573 * B;
+  const m_ = L - 0.1055613458 * A - 0.0638541728 * B;
+  const s_ = L - 0.0894841775 * A - 1.291485548 * B;
+  const l = l_ * l_ * l_;
+  const m = m_ * m_ * m_;
+  const s = s_ * s_ * s_;
+  const lr = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const lg = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const lb = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
+  return { r: linearToSrgb(lr), g: linearToSrgb(lg), b: linearToSrgb(lb) };
+}
+
+function parseOklchPart(raw: string, scale: number): number {
+  return raw.endsWith('%') ? (parseFloat(raw) / 100) * scale : parseFloat(raw);
+}
+
+function parseOklchColor(s: string): RGBA | null {
+  const m = /^oklch\(([^)]+)\)$/i.exec(s);
+  if (!m) return null;
+  const parts = m[1]
+    .replace(/\//g, ',')
+    .split(/[\s,]+/)
+    .filter(Boolean);
+  if (parts.length < 3 || parts.length > 4) return null;
+  const L = parseOklchPart(parts[0], 1);
+  const C = parseOklchPart(parts[1], 0.4);
+  const h = parseFloat(parts[2]);
+  const { r, g, b } = oklchToRgb(L, C, h);
+  return { r, g, b, a: parseAlpha(parts[3]) };
+}
+
 function parseColor(s: string): RGBA | null {
   if (s.startsWith('#')) return parseHexColor(s);
   if (/^rgba?\(/i.test(s)) return parseRgbColor(s);
   if (/^hsla?\(/i.test(s)) return parseHslColor(s);
+  if (/^oklch\(/i.test(s)) return parseOklchColor(s);
   return null;
 }
 
@@ -150,6 +215,15 @@ function formatHslColor(c: RGBA): string {
   return `hsl(${hh}, ${ss}%, ${ll}%)`;
 }
 
+function formatOklchColor(c: RGBA): string {
+  const { l, c: chroma, h } = rgbToOklch(c.r, c.g, c.b);
+  const ll = +(l * 100).toFixed(2);
+  const cc = +chroma.toFixed(4);
+  const hh = chroma < 1e-4 ? 0 : +h.toFixed(2);
+  if (c.a < 1) return `oklch(${ll}% ${cc} ${hh} / ${+c.a.toFixed(3)})`;
+  return `oklch(${ll}% ${cc} ${hh})`;
+}
+
 function formatColor(c: RGBA, format: ColorFormat): string {
   switch (format) {
     case 'hex':
@@ -158,10 +232,13 @@ function formatColor(c: RGBA, format: ColorFormat): string {
       return formatRgbColor(c);
     case 'hsl':
       return formatHslColor(c);
+    case 'oklch':
+      return formatOklchColor(c);
   }
 }
 
-export const COLOR_REGEX = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)/gi;
+export const COLOR_REGEX =
+  /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)|oklch\([^)]*\)/gi;
 const PX_REGEX = /(-?\d*\.?\d+)px\b/g;
 
 function trimTrailingZeros(n: number): string {

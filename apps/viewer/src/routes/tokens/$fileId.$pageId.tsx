@@ -6,13 +6,9 @@ import {
   PageHeaderFallback,
   getFileSummaryQueryOptions,
 } from '#/components/page-header';
-import {
-  COLOR_FORMATS,
-  UNIT_FORMATS,
-  transformValue,
-} from '#/components/inspector-sidebar/format-prefs';
+import { transformValue } from '#/components/inspector-sidebar/format-prefs';
+import { FormatPrefsPopover } from '#/components/inspector-sidebar/format-prefs-popover';
 import { useInspectorPrefs } from '#/components/inspector-sidebar/prefs-store';
-import { Segmented } from '#/components/inspector-sidebar/segmented';
 import { StyleDecl } from '#/components/inspector-sidebar/style-decl';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs';
 import type { TokenCategory, TokenInfo } from '@penpot-tools/converter/tokens';
@@ -138,9 +134,7 @@ function TokensBody({ fileId, pageId }: { fileId: string; pageId: string }) {
   const [tab, setTab] = useState<'preview' | 'css'>('preview');
 
   const colorFormat = useInspectorPrefs((s) => s.colorFormat);
-  const setColorFormat = useInspectorPrefs((s) => s.setColorFormat);
   const unitFormat = useInspectorPrefs((s) => s.unitFormat);
-  const setUnitFormat = useInspectorPrefs((s) => s.setUnitFormat);
 
   const displayTokens = useMemo<DisplayToken[]>(() => {
     const map = new Map<string, DisplayToken>();
@@ -209,18 +203,7 @@ function TokensBody({ fileId, pageId }: { fileId: string; pageId: string }) {
                   className="pl-8"
                 />
               </div>
-              <Segmented
-                label="Color"
-                value={colorFormat}
-                onChange={setColorFormat}
-                options={COLOR_FORMATS}
-              />
-              <Segmented
-                label="Unit"
-                value={unitFormat}
-                onChange={setUnitFormat}
-                options={UNIT_FORMATS}
-              />
+              <FormatPrefsPopover />
               <span className="text-xs whitespace-nowrap text-gray-500">
                 {visibleCount} / {totalCount} tokens
               </span>
@@ -249,10 +232,6 @@ function TokensBody({ fileId, pageId }: { fileId: string; pageId: string }) {
 
 function CssView({ groups }: { groups: TokenGroup[] }) {
   const [copied, setCopied] = useState(false);
-  const colorFormat = useInspectorPrefs((s) => s.colorFormat);
-  const setColorFormat = useInspectorPrefs((s) => s.setColorFormat);
-  const unitFormat = useInspectorPrefs((s) => s.unitFormat);
-  const setUnitFormat = useInspectorPrefs((s) => s.setUnitFormat);
 
   const cssText = useMemo(() => {
     const lines: string[] = [':root {'];
@@ -279,18 +258,7 @@ function CssView({ groups }: { groups: TokenGroup[] }) {
       <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-3">
         <h2 className="text-sm font-semibold text-gray-900">CSS Custom Properties</h2>
         <div className="ml-auto flex flex-wrap items-center gap-3">
-          <Segmented
-            label="Color"
-            value={colorFormat}
-            onChange={setColorFormat}
-            options={COLOR_FORMATS}
-          />
-          <Segmented
-            label="Unit"
-            value={unitFormat}
-            onChange={setUnitFormat}
-            options={UNIT_FORMATS}
-          />
+          <FormatPrefsPopover />
           <button
             type="button"
             onClick={handleCopy}

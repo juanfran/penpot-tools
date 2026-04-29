@@ -10,9 +10,9 @@ import { type Asset, buildNodeIndex, collectAssetsFromDom } from './assets';
 import { EMPTY_MARGINS, type Margins, computeMargins, extractBoxModel } from './box-model';
 import { BoxModelViz } from './box-model-viz';
 import { ComponentSection, type ComponentRef } from './component-section';
-import { COLOR_FORMATS, UNIT_FORMATS, transformValue } from './format-prefs';
+import { transformValue } from './format-prefs';
+import { FormatPrefsPopover } from './format-prefs-popover';
 import { INSPECTOR_MAX_WIDTH, INSPECTOR_MIN_WIDTH, useInspectorPrefs } from './prefs-store';
-import { Segmented } from './segmented';
 import { shapeIcon } from './shape-icon';
 import { StyleDecl } from './style-decl';
 import { type ExtractedText, extractStyles, extractText, groupStyles } from './styles';
@@ -57,9 +57,7 @@ export function InspectorSidebar({
   const [copied, setCopied] = useState<'css' | 'text' | null>(null);
   const [margins, setMargins] = useState<Margins>(EMPTY_MARGINS);
   const colorFormat = useInspectorPrefs((s) => s.colorFormat);
-  const setColorFormat = useInspectorPrefs((s) => s.setColorFormat);
   const unitFormat = useInspectorPrefs((s) => s.unitFormat);
-  const setUnitFormat = useInspectorPrefs((s) => s.setUnitFormat);
   const width = useInspectorPrefs((s) => s.width);
   const setWidth = useInspectorPrefs((s) => s.setWidth);
   const asideRef = useRef<HTMLElement>(null);
@@ -219,35 +217,23 @@ export function InspectorSidebar({
         )}
 
         <div className="border-t border-gray-100">
-          <div className="flex items-center justify-between px-4 pt-3 pb-2">
+          <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
             <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
               Styles
             </span>
-            {decls.length > 0 && (
-              <button
-                onClick={() => handleCopyCss(cssText)}
-                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
-                title="Copy all styles"
-              >
-                {copied === 'css' ? <Check size={11} /> : <Copy size={11} />}
-                <span>{copied === 'css' ? 'Copied!' : 'Copy'}</span>
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 pb-2">
-            <Segmented
-              label="Color"
-              value={colorFormat}
-              onChange={setColorFormat}
-              options={COLOR_FORMATS}
-            />
-            <Segmented
-              label="Unit"
-              value={unitFormat}
-              onChange={setUnitFormat}
-              options={UNIT_FORMATS}
-            />
+            <div className="flex items-center gap-1">
+              <FormatPrefsPopover />
+              {decls.length > 0 && (
+                <button
+                  onClick={() => handleCopyCss(cssText)}
+                  className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                  title="Copy all styles"
+                >
+                  {copied === 'css' ? <Check size={11} /> : <Copy size={11} />}
+                  <span>{copied === 'css' ? 'Copied!' : 'Copy'}</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {decls.length === 0 ? (
