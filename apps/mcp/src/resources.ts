@@ -55,9 +55,9 @@ tokens, fonts, sizes, structure.
 
 const WRITE_GUIDE = `# Authoring HTML for the write-mode tools
 
-The HTML is rendered in headless Chromium and snapshotted: whatever the
-browser computes (geometry, fills, fonts) becomes Penpot shapes. Anything
-outside the subset below is dropped silently — there is no fallback render.
+The HTML is rendered in headless Chromium; resulting geometry, fills, fonts,
+and shadows become Penpot shapes. Anything outside the subset below is
+dropped silently — there is no fallback render.
 
 ## Pick the right tool
 
@@ -70,57 +70,67 @@ outside the subset below is dropped silently — there is no fallback render.
 | "Register a design system"        | create_token_set              |
 | "Use hero.png"                    | upload_media → <img data-penpot-media-id="…"> |
 
-## Layer names — ALWAYS set data-name
+## Layer names — set \`data-name\` on every element
 
 Every element becomes a Penpot layer. Without \`data-name\`, the layer is
-named after the tag (\`div\`, \`section\`, …), which is useless in the outline.
-Set \`data-name="Hero title"\`, \`data-name="CTA"\`, etc. on every element.
+named after the tag (\`div\`, \`section\`, …), useless in the outline.
 
 ## Composition
 
-- **Stacked content (vertical sections, button rows):** use \`display:flex\`
-  with \`flex-direction\`, \`gap\`, \`padding\`, \`justify-content\`, \`align-items\`.
-  Or \`display:grid\` with \`grid-template-columns/rows\` (px/fr/auto/repeat).
-- **Editorial / overlapping layouts:** wrap in a \`position:relative\` parent
-  and place children with \`position:absolute; left:Npx; top:Npx;\`. Browser
-  computes exact pixels, Penpot stores them — no further care needed.
-- **Z-order = DOM order.** Later siblings paint on top. Move a chip or badge
-  later in the markup if you want it in front.
-- **Rotation:** only \`transform: rotate(<deg>)\` is honoured (around the
-  element's centre). Scale, skew, 3D, and \`transform-origin\` are dropped.
-- **Avoid:** \`position:fixed/sticky\`, \`::before/::after\`, transitions,
-  \`clip-path\`, \`mask\`, mixed-style spans in one text element.
+- **Stacked rows / columns:** \`display:flex\` (with \`flex-direction\`,
+  \`gap\`, \`padding\`, \`justify-content\`, \`align-items\`) or \`display:grid\`
+  (with \`grid-template-columns/rows\`; px / fr / auto / repeat all work).
+- **Editorial / overlapping:** wrap in \`position:relative\` and place
+  children with \`position:absolute; left:Npx; top:Npx;\`.
+- **Z-order = DOM order.** Later siblings paint on top — move a chip or
+  badge later in the markup if you want it in front.
+- **Rotation:** \`transform: rotate(<deg>)\` is honoured (around the centre).
+  Scale, skew, 3D, and \`transform-origin\` are dropped.
 
-## Style cheatsheet
+## What works, what's dropped
 
-| Works                                                       | Don't bother                          |
-| ----------------------------------------------------------- | ------------------------------------- |
-| width / height / padding (per side)                         | margin (compose with flex gap)        |
-| border-radius incl. per-corner                              | outline                               |
-| border: Npx <solid|dashed|dotted> color (uniform)           | per-side border-color/style           |
-| opacity, color (any \`rgb\`/\`rgba\`/\`#hex\`)                 | currentColor                          |
-| background-color                                            | background-clip, background-origin    |
-| background-image: linear-gradient / radial-gradient         | conic-gradient, multiple bgs > 1+1    |
-| rgba alpha **inside** gradient stops                        | —                                     |
-| box-shadow list (\`offX offY blur spread color\`)             | inset shadows                         |
-| \`box-shadow: 0 0 0 Npx color\` ⇒ outer stroke               | —                                     |
-| font-family / size / weight / style / line-height           | font-variant, font-feature-settings   |
-| letter-spacing (any unit), text-align                       | text-decoration colour                |
-| transform: rotate(Ndeg)                                     | scale, skew, matrix(), 3D             |
-| display: flex / grid                                        | display: table, inline-flex           |
+| Property                                                  | Status                              |
+| --------------------------------------------------------- | ----------------------------------- |
+| width / height / padding (per side)                       | ✓                                   |
+| margin                                                    | drop — use flex \`gap\`               |
+| border-radius (incl. per-corner)                          | ✓                                   |
+| \`border: Npx <solid\\|dashed\\|dotted> color\` (uniform)     | ✓                                   |
+| per-side border colour / style                            | only the top side wins              |
+| opacity, color (any rgb/rgba/#hex)                        | ✓                                   |
+| \`currentColor\`                                            | drop                                |
+| background-color                                          | ✓                                   |
+| \`background-image\`: linear-gradient, radial-gradient      | ✓ (rgba alpha in stops works)       |
+| conic-gradient, image \`url()\`, multiple bgs               | drop                                |
+| \`box-shadow\` list (\`offX offY blur spread color\`)         | ✓                                   |
+| \`box-shadow: 0 0 0 Npx color\`                             | ✓ — outer stroke                    |
+| inset shadows                                             | drop                                |
+| font-family / size / weight / style / line-height         | ✓                                   |
+| letter-spacing, text-align                                | ✓                                   |
+| text-decoration colour                                    | drop (default colour only)          |
+| \`transform: rotate(Ndeg)\`                                 | ✓                                   |
+| scale / skew / matrix() / 3D / transform-origin           | drop                                |
+| display: flex / grid / inline-flex / inline-grid          | ✓                                   |
+| display: table, contents                                  | drop                                |
+| \`position: fixed\` / \`sticky\`                              | drop (rendered as static)           |
+| \`::before\`, \`::after\`, transitions, animations            | drop                                |
+| \`clip-path\`, \`mask\`, \`outline\`                            | drop                                |
 
 ## Recipes
 
-**Chip / pill (text with background + padding)**
-\`\`\`html
-<div data-name="Chip" style="display:inline-block; padding:6px 14px;
-     border-radius:99px; background:#1A1A1A; color:#FFF;
-     font-size:12px; font-weight:600;">NEW</div>
-\`\`\`
-The text shape carries the background fill — no wrapper needed.
+**Pill / chip / button** — text in a coloured box
 
-**Badge that sits over an image**
-Place the image first, then the badge later in the DOM (so it paints on top):
+\`\`\`html
+<div data-name="Chip" style="padding:6px 14px; border-radius:99px;
+     background:#1A1A1A; color:#FFF; font-size:12px; font-weight:600;">NEW</div>
+\`\`\`
+
+A leaf element with text + any of \`background-color\` / \`background-image\` /
+\`border\` / \`box-shadow\` is automatically split into a Penpot frame (carrying
+the box visuals) plus an inner text shape (with padding preserved). Plain
+\`<div>\`, \`<button>\`, \`<a>\` all work — no \`display:inline-block\` trick needed.
+
+**Badge over an image** — paint order = DOM order
+
 \`\`\`html
 <div style="position:relative; width:420px; height:340px;">
   <img data-name="Hero" src="…" data-penpot-media-id="…" style="width:100%; height:100%;">
@@ -131,23 +141,38 @@ Place the image first, then the badge later in the DOM (so it paints on top):
 \`\`\`
 
 **Rotated stamp**
+
 \`\`\`html
 <div data-name="Sold tag" style="position:absolute; left:24px; top:120px;
      transform:rotate(-6deg); padding:6px 12px; background:#F5F1EA;
      font-size:11px; font-weight:700; letter-spacing:3px;">SOLD</div>
 \`\`\`
 
-**Photo darken-overlay (gradient with alpha)**
+**Photo darken overlay** — alpha lives in the gradient stops
+
 \`\`\`html
 <div data-name="Photo shade" style="position:absolute; left:0; bottom:0;
      width:100%; height:40%;
      background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%);"></div>
 \`\`\`
-Alpha is preserved per stop. 0.35 is barely visible — use ≥0.5 for a useful shadow.
+
+Use ≥ 0.5 alpha for a noticeable darken — 0.35 is barely visible.
+
+## Gotchas
+
+- **Mixed text + element children loses the prose.** \`<p>Hello <span>x</span></p>\`
+  drops "Hello ". Wrap each text run in its own element (\`<span>\` is fine).
+- **Padding alone is invisible.** Padding only shows when there's a
+  background, border, or shadow on the same element. Otherwise use flex \`gap\`.
+- **Per-side borders collapse to the top side.** For a single-side rule,
+  build it as a 1-px rect.
+- **Multi-paragraph text** (\`<br>\`, multiple \`<p>\`) is not yet supported —
+  use one element per paragraph instead.
 
 ## Tokens
 
 \`create_token_set\` takes DTCG sets:
+
 \`\`\`js
 sets: [{
   setName: "theme",
@@ -157,15 +182,16 @@ sets: [{
   ],
 }]
 \`\`\`
-Reference in HTML as \`var(--brand-primary, #2E51C4)\`. The fallback is
-REQUIRED — the headless render needs it to compute exact pixels. The token
-name is recorded as an applied token on the shape so it stays live.
+
+Reference in HTML as \`var(--brand-primary, #2E51C4)\`. **The fallback is
+required** — the headless render needs it to compute exact pixels. The
+token name is recorded as an applied token on the shape so it stays live.
 
 ## Concurrency
 
 Each write tool reads the current \`revn\` before sending. On conflict the
 tool returns \`# update-file conflict\` — recall \`get_current_selection\` and
-retry with the fresh revn, never with the stale one.
+retry with the fresh revn, never the stale one.
 `;
 
 export function registerGuideResources(

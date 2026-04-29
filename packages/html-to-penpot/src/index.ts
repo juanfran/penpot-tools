@@ -22,7 +22,7 @@ export { buildTree } from './build/tree';
  * those are handled separately by `upload_media`.
  */
 export async function htmlToChanges(html: string, ctx: BuildContext): Promise<ChangeBundle> {
-  const { nodes } = await measureHtml({
+  const { nodes, warnings: walkerWarnings } = await measureHtml({
     html,
     tokensCss: ctx.tokensCss,
     fontsCss: ctx.fontsCss,
@@ -31,7 +31,7 @@ export async function htmlToChanges(html: string, ctx: BuildContext): Promise<Ch
     maxHeight: ctx.maxHeight,
   });
 
-  const { shapes, rootShapeId, warnings, referencedTokens } = buildTree({
+  const { shapes, rootShapeId, warnings: buildWarnings, referencedTokens } = buildTree({
     nodes,
     pageId: ctx.pageId,
     rootOffset: ctx.rootPosition ?? { x: 0, y: 0 },
@@ -47,7 +47,7 @@ export async function htmlToChanges(html: string, ctx: BuildContext): Promise<Ch
     changes: [...addChanges, regChange],
     rootShapeId,
     createdShapeIds,
-    warnings,
+    warnings: [...walkerWarnings, ...buildWarnings],
     referencedTokens,
   };
 }

@@ -70,6 +70,8 @@ export interface MeasureInput {
 
 export interface MeasureOutput {
   nodes: MeasuredNode[];
+  /** In-page warnings: silent drops the walker spotted (orphan text, ...). */
+  warnings: string[];
 }
 
 function buildDocument({ html, tokensCss, fontsCss, background }: MeasureInput): string {
@@ -136,6 +138,7 @@ export async function measureHtml(input: MeasureInput): Promise<MeasureOutput> {
 
     const result = (await page.evaluate(WALKER_SOURCE)) as {
       nodes: MeasuredNode[];
+      warnings?: string[];
       origin: { x: number; y: number };
     } | null;
 
@@ -143,7 +146,7 @@ export async function measureHtml(input: MeasureInput): Promise<MeasureOutput> {
       throw new Error('measureHtml: walker returned no nodes — empty or invalid HTML?');
     }
 
-    return { nodes: result.nodes };
+    return { nodes: result.nodes, warnings: result.warnings ?? [] };
   } finally {
     await context.close();
   }

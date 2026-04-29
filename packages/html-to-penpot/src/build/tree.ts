@@ -20,6 +20,7 @@ import { buildTextContent } from './text-content';
 import { buildSelrect, identityMatrix } from './selrect';
 import { newShapeId } from './shape-id';
 import { parseCssTransform } from './transform';
+import { splitChipPatterns } from './chip-split';
 
 export interface BuildTreeInput {
   nodes: MeasuredNode[];
@@ -55,7 +56,14 @@ export interface BuildTreeResult {
  */
 export function buildTree(input: BuildTreeInput): BuildTreeResult {
   const warnings: string[] = [];
-  const { nodes, rootOffset, rootName } = input;
+  // Chip pattern: a leaf element with text content + box visuals (background,
+  // border, shadow) maps poorly to a Penpot text shape — text shapes don't
+  // render shape-level fills/strokes when the read-mode converter produces
+  // HTML, so the pill background is silently lost. Split the leaf into a
+  // frame (carrying the box visuals) plus a child text shape positioned at
+  // the inner content-box so padding survives the round-trip.
+  const nodes = splitChipPatterns(input.nodes);
+  const { rootOffset, rootName } = input;
   const parentBoardId = (input.parentBoardId ?? '00000000-0000-0000-0000-000000000000') as Uuid;
 
   const shapes: Shape[] = [];
@@ -266,6 +274,13 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
       };
       shapes.push(frame);
     } else if (isText) {
+      // Penpot's text engine and headless Chromium disagree on glyph metrics
+      // by a fraction of a pixel (font-shaping, sub-pixel rounding, trailing
+      // letter-spacing). A width measured tight to the headless render
+      // sometimes wraps to a second line in Penpot. A small slack absorbs the
+      // delta without visibly affecting layout — the text shape is anchored
+      // top-left, so 2 extra px on the right is invisible.
+      const textWidth = Math.ceil(w) + 2;
       const text: TextShape = {
         id,
         name: node.dataAttrs['data-name'] ?? node.semanticTag,
@@ -274,7 +289,7 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         frameId: parent,
         x,
         y,
-        width: w,
+        width: textWidth,
         height: h,
         selrect: rect.selrect,
         points: rect.points,
@@ -283,10 +298,10 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         rotation,
         growType: 'fixed',
         content: buildTextContent(node.textContent!, node.computedStyle),
-        // Text shapes can carry shape-level fills/strokes/shadow/radius — used
-        // for "chip" patterns (text with a background pill, padding, border).
-        // Without these, a `<div style="background:#fff">label</div>` would
-        // silently lose its pill background.
+        // `fills` / `strokes` / `shadow` / `radius` are kept as a defensive
+        // belt — chip-pattern leaves are split into frame+text by
+        // `splitChipPatterns()` before reaching here, so a text shape arriving
+        // with a background fill is unusual but harmless.
         fills,
         strokes,
         ...(shadow ? { shadow } : {}),

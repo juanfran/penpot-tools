@@ -199,7 +199,8 @@ describe('buildTree — CSS rotation', () => {
     });
     const text = shapes.find((s) => s.type === 'text')!;
     expect(text.rotation).toBeCloseTo(4, 3);
-    expect(text.width).toBe(100);
+    // Width carries +2px slack to absorb font-shaping deltas (see tree.ts).
+    expect(text.width).toBe(102);
     expect(text.height).toBe(30);
     // Unrotated rect centred on the bbox centre (51, 18).
     expect(text.x).toBe(1);
@@ -218,13 +219,14 @@ describe('buildTree — CSS rotation', () => {
     });
     const text = shapes.find((s) => s.type === 'text')!;
     expect(text.rotation).toBe(0);
-    expect(text.width).toBe(100);
+    // +2px slack on text widths (see tree.ts).
+    expect(text.width).toBe(102);
     expect(text.height).toBe(50);
   });
 });
 
-describe('buildTree — text shape carries fills (chip pattern)', () => {
-  it('puts background-color on a text element onto the text shape fills', () => {
+describe('buildTree — chip pattern is split into frame + text', () => {
+  it('renders a `div` with bg+padding+text as a frame containing a text shape', () => {
     const nodes = [
       {
         index: 0,
@@ -234,7 +236,17 @@ describe('buildTree — text shape carries fills (chip pattern)', () => {
         rect: { x: 0, y: 0, width: 80, height: 24 },
         offsetWidth: 80,
         offsetHeight: 24,
-        computedStyle: style({ backgroundColor: 'rgb(245, 241, 234)' }),
+        computedStyle: style({
+          backgroundColor: 'rgb(245, 241, 234)',
+          paddingTop: '4px',
+          paddingRight: '8px',
+          paddingBottom: '4px',
+          paddingLeft: '8px',
+          borderTopLeftRadius: '99px',
+          borderTopRightRadius: '99px',
+          borderBottomRightRadius: '99px',
+          borderBottomLeftRadius: '99px',
+        }),
         dataAttrs: { 'data-name': 'Chip' },
         textContent: 'OCEAN VIEW',
       } satisfies MeasuredNode,
@@ -245,7 +257,23 @@ describe('buildTree — text shape carries fills (chip pattern)', () => {
       rootOffset: { x: 0, y: 0 },
       rootName: 'Board',
     });
-    const text = shapes.find((s) => s.type === 'text')!;
-    expect(text.fills).toEqual([{ fillColor: '#F5F1EA', fillOpacity: 1 }]);
+    // Board + chip frame + chip text = 3 shapes.
+    expect(shapes.length).toBe(3);
+
+    const frame = shapes.find((s) => s.type === 'frame' && s.name === 'Chip');
+    expect(frame).toBeDefined();
+    // Frame carries the box visuals: background, radius.
+    expect(frame!.fills).toEqual([{ fillColor: '#F5F1EA', fillOpacity: 1 }]);
+    expect(frame!.r1).toBe(99);
+
+    const text = shapes.find((s) => s.type === 'text');
+    expect(text).toBeDefined();
+    // Text is positioned at the inner content-box.
+    expect(text!.x).toBe(8);
+    expect(text!.y).toBe(4);
+    // Width = inner box width + 2px slack.
+    expect(text!.width).toBe(66); // (80 - 8 - 8) + 2
+    // Text inherits the chip's data-name with a "text" suffix.
+    expect(text!.name).toBe('Chip text');
   });
 });

@@ -47,7 +47,7 @@ export const WALKER_SOURCE = `
   ];
 
   const inner = document.getElementById('penpot-inner');
-  if (!inner) return { nodes: [], origin: { x: 0, y: 0 } };
+  if (!inner) return { nodes: [], warnings: [], origin: { x: 0, y: 0 } };
 
   // Compute the bounding rect across all visible descendants and use it as origin.
   const all = Array.from(inner.querySelectorAll('*'));
@@ -65,6 +65,7 @@ export const WALKER_SOURCE = `
   }
 
   const nodes = [];
+  const warnings = [];
   const tagRe = /^[a-zA-Z][a-zA-Z0-9-]*$/;
 
   function isElementOnly(el) {
@@ -72,6 +73,25 @@ export const WALKER_SOURCE = `
       if (child.nodeType === Node.ELEMENT_NODE) return false;
     }
     return true;
+  }
+
+  // Detects "orphan text": a non-whitespace text node living alongside element
+  // children (e.g. <p>Hello <span>world</span></p> — "Hello " is dropped because
+  // the walker only captures text on pure leaves). Returns the dropped runs so
+  // we can show them in the warning.
+  function orphanTextRuns(el) {
+    let hasElementChild = false;
+    for (const c of Array.from(el.childNodes)) {
+      if (c.nodeType === Node.ELEMENT_NODE) { hasElementChild = true; break; }
+    }
+    if (!hasElementChild) return null;
+    const runs = [];
+    for (const c of Array.from(el.childNodes)) {
+      if (c.nodeType !== Node.TEXT_NODE) continue;
+      const t = c.textContent;
+      if (t && t.trim().length > 0) runs.push(t.trim());
+    }
+    return runs.length ? runs : null;
   }
 
   function pickStyle(el) {
@@ -157,12 +177,22 @@ export const WALKER_SOURCE = `
 
     // Recurse only when this element has element children. <svg>/<img> are leaves.
     if (tag !== 'svg' && tag !== 'img' && !isElementOnly(el)) {
+      const orphans = orphanTextRuns(el);
+      if (orphans) {
+        const label = dataAttrs['data-name']
+          ? \`"\${dataAttrs['data-name']}" (<\${tag}>)\`
+          : \`<\${tag}>\`;
+        const preview = orphans.map((s) => s.length > 32 ? s.slice(0, 29) + '…' : s).join(' / ');
+        warnings.push(
+          \`Text dropped from \${label}: "\${preview}". Wrap the text in its own element (e.g. <span>) so it isn't lost between sibling tags.\`,
+        );
+      }
       for (const child of Array.from(el.children)) walk(child, myIndex);
     }
   }
 
   for (const child of Array.from(inner.children)) walk(child, null);
 
-  return { nodes, origin: { x: minLeft, y: minTop } };
+  return { nodes, warnings, origin: { x: minLeft, y: minTop } };
 })();
 `.trim();
