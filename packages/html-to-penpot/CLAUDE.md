@@ -79,6 +79,16 @@ HTML+CSS ──▶ headless Chromium ──▶ MeasuredNode[] ──▶ buildTre
    `frameId`). A final `reg-objects` makes Penpot recompute the synthetic
    board's bounding box.
 
+## Layer naming
+
+Every shape's `name` is taken from `data-name="..."` if present, otherwise it
+falls back to `node.semanticTag` (so a `<div>` becomes a layer literally named
+"div", a `<section>` becomes "section", etc.). Image shapes fall back to
+`"Image"` instead of the tag. The mapping happens in `build/tree.ts` for all
+four shape branches (frame / image / text / rect). The walker preserves every
+`data-*` attribute verbatim — no whitelist — so additional `data-*` fields are
+free for downstream uses.
+
 ## Visual subset
 
 | HTML / CSS                                     | Penpot                                         |

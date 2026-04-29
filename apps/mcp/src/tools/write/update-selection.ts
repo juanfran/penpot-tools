@@ -35,7 +35,7 @@ export function registerUpdateSelectionFromHtmlTool(server: McpServer): void {
     {
       title: 'Replace the selected shape with a new HTML design',
       description:
-        'Replaces the selected shape (and descendants) with a fresh subtree at the same position. The new shape gets a new id. For single-attribute tweaks use modify_shape.',
+        'Replaces the selected shape (and descendants) with a fresh subtree at the same position. The new shape gets a new id. Set `data-name="..."` on every element so the new Penpot layers have meaningful names — without it they default to the tag (e.g. "div", "section"). For single-attribute tweaks use modify_shape.',
       inputSchema: {
         html: z.string().min(1).describe('Replacement HTML+CSS.'),
         name: z.string().optional(),

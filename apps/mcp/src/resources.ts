@@ -97,6 +97,26 @@ dropped or warned.
   reverse). <header> <section> <button> etc. become frames named after the
   tag (or after data-name="..." if you set it).
 
+## Layer names — ALWAYS set data-name
+
+Each element becomes a Penpot layer. Without \`data-name\`, the layer falls
+back to the tag name, so a design built from <div>s ends up with dozens of
+layers literally named "div" / "section" / "p" — useless in Penpot's outline.
+
+Add \`data-name="Hero"\`, \`data-name="Card title"\`, \`data-name="CTA button"\`
+etc. on EVERY element you create — containers, text leaves, images, the lot.
+Use the role the element plays in the design, not its tag. \`data-name\` does
+not affect layout or styling; it only renames the layer.
+
+    GOOD:
+    <section data-name="Hero" style="...">
+      <h1 data-name="Hero title" style="...">Welcome</h1>
+      <button data-name="CTA" style="...">Sign up</button>
+    </section>
+
+    BAD (layers will be "section", "h1", "button"):
+    <section style="..."><h1 style="...">Welcome</h1><button>...</button></section>
+
 ## Avoid
 
 - position:fixed/sticky, ::before/::after, transitions/animations,

@@ -13,7 +13,7 @@ export function registerCreateFromHtmlTool(server: McpServer): void {
     {
       title: 'Create a Penpot board from an HTML snippet',
       description:
-        'Renders HTML in headless Chromium and creates a new top-level board with one shape per visible element. See `penpot://write-guide` for the supported CSS subset.',
+        'Renders HTML in headless Chromium and creates a new top-level board with one shape per visible element. Set `data-name="..."` on every element so the resulting Penpot layers have meaningful names — without it they default to the tag (e.g. "div", "section"). See `penpot://write-guide` for the supported CSS subset.',
       inputSchema: {
         html: z.string().min(1).describe('HTML document or fragment.'),
         name: z.string().optional().describe('Name for the new board.'),
