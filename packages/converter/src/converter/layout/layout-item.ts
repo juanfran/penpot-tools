@@ -2,7 +2,11 @@ import type { ShapeCommon, FrameShape, LayoutItemAlignSelf } from '../../penpot.
 import { px } from '../utils/css';
 import { mergeStyles } from '../utils/style';
 
-export function layoutItemSizingStyle(shape: ShapeCommon, parent: FrameShape): string {
+export function layoutItemSizingStyle(
+  shape: ShapeCommon,
+  parent: FrameShape,
+  parentWraps = false,
+): string {
   const isRowDir =
     parent.layoutFlexDir === 'row' ||
     parent.layoutFlexDir === 'row-reverse' ||
@@ -31,7 +35,14 @@ export function layoutItemSizingStyle(shape: ShapeCommon, parent: FrameShape): s
   }
 
   if (vSizing === 'fill') {
-    parts.push(isRowDir ? 'height: 100%;' : 'flex: 1;');
+    // Cross axis on a wrapping row needs explicit px: `height: 100%` resolves
+    // to the parent's inner height, not the per-line height, so the child
+    // would inflate well beyond the wrapped row Penpot laid it on.
+    if (isRowDir) {
+      parts.push(parentWraps ? `height: ${px(h)};` : 'height: 100%;');
+    } else {
+      parts.push('flex: 1;');
+    }
   } else if (vSizing !== 'auto') {
     parts.push(`height: ${px(h)};`);
     vIsExplicit = true;

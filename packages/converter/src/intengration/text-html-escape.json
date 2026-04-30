@@ -1,0 +1,180 @@
+{
+  "id": "text-html-escape",
+  "name": "Text HTML Escape",
+  "objects": {
+    "00000000-0000-0000-0000-000000000000": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "frame",
+      "name": "Root Frame",
+      "x": 0,
+      "y": 0,
+      "width": 480,
+      "height": 220,
+      "shapes": ["snippet-card"],
+      "fills": [{ "fillColor": "#11141A", "fillOpacity": 1 }],
+      "strokes": []
+    },
+    "snippet-card": {
+      "id": "snippet-card",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "frame",
+      "name": "Snippet card",
+      "x": 40,
+      "y": 30,
+      "width": 400,
+      "height": 160,
+      "layout": "flex",
+      "layoutType": "flex",
+      "layoutFlexDir": "column",
+      "layoutAlignItems": "stretch",
+      "layoutJustifyContent": "start",
+      "layoutWrapType": "nowrap",
+      "layoutRowGap": 6,
+      "layoutColumnGap": 0,
+      "layoutPadding": { "p1": 16, "p2": 18, "p3": 16, "p4": 18 },
+      "layoutPaddingType": "multiple",
+      "fills": [{ "fillColor": "#1B1F27", "fillOpacity": 1 }],
+      "strokes": [],
+      "shapes": ["line-3", "line-2", "line-1"],
+      "clipContent": true
+    },
+    "line-1": {
+      "id": "line-1",
+      "parentId": "snippet-card",
+      "frameId": "snippet-card",
+      "type": "text",
+      "name": "Line 1",
+      "x": 58,
+      "y": 46,
+      "width": 364,
+      "height": 20,
+      "layoutItemHSizing": "fix",
+      "layoutItemVSizing": "fix",
+      "growType": "fixed",
+      "fills": [],
+      "strokes": [],
+      "content": {
+        "type": "root",
+        "verticalAlign": "top",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "fontFamily": "monospace",
+                "fontSize": "14",
+                "fontWeight": "400",
+                "lineHeight": "20px",
+                "textAlign": "start",
+                "children": [
+                  {
+                    "fontFamily": "monospace",
+                    "fontSize": "14",
+                    "fontWeight": "400",
+                    "lineHeight": "20px",
+                    "fills": [{ "fillColor": "#FF7A59", "fillOpacity": 1 }],
+                    "text": "<section data-tag=\"hero\">"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "line-2": {
+      "id": "line-2",
+      "parentId": "snippet-card",
+      "frameId": "snippet-card",
+      "type": "text",
+      "name": "Line 2",
+      "x": 58,
+      "y": 72,
+      "width": 364,
+      "height": 20,
+      "layoutItemHSizing": "fix",
+      "layoutItemVSizing": "fix",
+      "growType": "fixed",
+      "fills": [],
+      "strokes": [],
+      "content": {
+        "type": "root",
+        "verticalAlign": "top",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "fontFamily": "monospace",
+                "fontSize": "14",
+                "fontWeight": "400",
+                "lineHeight": "20px",
+                "textAlign": "start",
+                "children": [
+                  {
+                    "fontFamily": "monospace",
+                    "fontSize": "14",
+                    "fontWeight": "400",
+                    "lineHeight": "20px",
+                    "fills": [{ "fillColor": "#A4A4B0", "fillOpacity": 1 }],
+                    "text": "  margin: 8px & padding: 12px"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "line-3": {
+      "id": "line-3",
+      "parentId": "snippet-card",
+      "frameId": "snippet-card",
+      "type": "text",
+      "name": "Line 3",
+      "x": 58,
+      "y": 98,
+      "width": 364,
+      "height": 20,
+      "layoutItemHSizing": "fix",
+      "layoutItemVSizing": "fix",
+      "growType": "fixed",
+      "fills": [],
+      "strokes": [],
+      "content": {
+        "type": "root",
+        "verticalAlign": "top",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "fontFamily": "monospace",
+                "fontSize": "14",
+                "fontWeight": "400",
+                "lineHeight": "20px",
+                "textAlign": "start",
+                "children": [
+                  {
+                    "fontFamily": "monospace",
+                    "fontSize": "14",
+                    "fontWeight": "400",
+                    "lineHeight": "20px",
+                    "fills": [{ "fillColor": "#FF7A59", "fillOpacity": 1 }],
+                    "text": "</section>"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

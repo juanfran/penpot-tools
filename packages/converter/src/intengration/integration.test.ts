@@ -203,6 +203,39 @@ describe('integration', () => {
     await expect(el).toMatchScreenshot('flex-group-absolute-children');
   });
 
+  it('flex row flagged nowrap whose children are stored across rows wraps in CSS', async () => {
+    // Penpot's data sometimes keeps layoutWrapType:"nowrap" while its canvas
+    // laid the children across multiple rows; the converter should trust the
+    // stored child positions and emit flex-wrap: wrap so the rendered output
+    // matches the design.
+    const page = getPage('flex-wrap-from-positions');
+    const shape = page.objects['chip-bar'];
+    const { html, fonts } = await convertShape(shape, page.objects, ctx);
+    expect(html).toContain('flex-wrap: wrap;');
+    // Children with vSizing: fill on a wrapping row must not get height: 100%
+    // (which resolves to the parent's full inner height — 60px here — instead
+    // of the wrapped row line, leaving each chip dramatically too tall).
+    expect(html).toContain('height: 24px;');
+    expect(html).not.toContain('height: 100%;');
+    const el = await mount({ html, fonts });
+    await expect(el).toMatchScreenshot('flex-wrap-from-positions');
+  });
+
+  it('text leaves with HTML special chars escape, so a code snippet renders as text on separate lines', async () => {
+    // Repro: a code preview with literal `<section…>`, `&`, `</section>`. If
+    // the renderer leaves the angle brackets unescaped, the browser parses
+    // them as real tags, swallows the surrounding markup, and collapses the
+    // sibling lines into a single line.
+    const page = getPage('text-html-escape');
+    const shape = page.objects['snippet-card'];
+    const { html, fonts } = await convertShape(shape, page.objects, ctx);
+    expect(html).toContain('&lt;section');
+    expect(html).toContain('&amp;');
+    expect(html).not.toMatch(/<section[^>]*data-tag/);
+    const el = await mount({ html, fonts });
+    await expect(el).toMatchScreenshot('text-html-escape');
+  });
+
   it('fillOpacity:0 overrides appliedTokens.fill and emits no background', async () => {
     const page = getPage('transparent-fill-token');
     const rootShape = page.objects['root-frame'];

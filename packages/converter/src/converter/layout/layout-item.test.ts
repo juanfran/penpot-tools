@@ -64,6 +64,16 @@ describe('layoutItemSizingStyle', () => {
     expect(result).toContain('height: 100%;');
   });
 
+  it('returns explicit height for fill VSizing when row parent wraps (cross axis is per-row, not full container)', () => {
+    const result = layoutItemSizingStyle(
+      makeShape({ layoutItemVSizing: 'fill', height: 23 }),
+      makeRowParent(),
+      true,
+    );
+    expect(result).toContain('height: 23px;');
+    expect(result).not.toContain('height: 100%;');
+  });
+
   it('returns flex: 1 for fill VSizing in column parent (main axis)', () => {
     const result = layoutItemSizingStyle(makeShape({ layoutItemVSizing: 'fill' }), makeColParent());
     expect(result).toContain('flex: 1;');

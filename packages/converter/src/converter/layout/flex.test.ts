@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { flexContainerStyle, flexSpacingStyle } from './flex';
-import type { FrameShape, Uuid } from '../../penpot.types';
+import type { FrameShape, RectShape, Shape, Uuid } from '../../penpot.types';
 
 const makeFrame = (overrides: Partial<FrameShape> = {}): FrameShape => ({
   id: 'frame-1' as Uuid,
@@ -20,6 +20,30 @@ const makeFrame = (overrides: Partial<FrameShape> = {}): FrameShape => ({
   layoutType: 'flex',
   ...overrides,
 });
+
+const makeRect = (overrides: Partial<RectShape>): Shape =>
+  ({
+    id: 'r' as Uuid,
+    name: 'Rect',
+    type: 'rect',
+    x: 0,
+    y: 0,
+    width: 50,
+    height: 20,
+    rotation: 0,
+    selrect: { x: 0, y: 0, width: 50, height: 20 },
+    points: [],
+    transform: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+    transformInverse: { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+    parentId: 'frame-1' as Uuid,
+    frameId: 'frame-1' as Uuid,
+    flipX: null,
+    flipY: null,
+    proportionLock: false,
+    fills: [],
+    strokes: [],
+    ...overrides,
+  }) as Shape;
 
 describe('flexContainerStyle', () => {
   it('always includes display: flex', () => {
@@ -114,10 +138,70 @@ describe('flexContainerStyle', () => {
     expect(flexContainerStyle(makeFrame({ layoutWrapType: 'wrap' }))).toContain('flex-wrap: wrap;');
   });
 
-  it('maps no-wrap to flex-wrap: nowrap', () => {
-    expect(flexContainerStyle(makeFrame({ layoutWrapType: 'no-wrap' }))).toContain(
-      'flex-wrap: nowrap;',
-    );
+  it('omits flex-wrap when wrap type is no-wrap (CSS default is nowrap)', () => {
+    const result = flexContainerStyle(makeFrame({ layoutWrapType: 'no-wrap' }));
+    expect(result).not.toContain('flex-wrap');
+  });
+
+  it('omits flex-wrap when wrap type is nowrap (Penpot canonical form)', () => {
+    const result = flexContainerStyle(makeFrame({ layoutWrapType: 'nowrap' }));
+    expect(result).not.toContain('flex-wrap');
+  });
+
+  it('emits flex-wrap: wrap when row children fall on multiple rows despite nowrap flag', () => {
+    // Anonymized repro of the Read tools / Write tools pattern: flex row
+    // flagged nowrap, but Penpot stored child positions span two rows.
+    const frame = makeFrame({
+      layoutFlexDir: 'row',
+      layoutWrapType: 'nowrap',
+      layoutRowGap: 6,
+      layoutColumnGap: 6,
+    });
+    const children: Shape[] = [
+      makeRect({ id: 'a' as Uuid, x: 0, y: 0, width: 100, height: 24 }),
+      makeRect({ id: 'b' as Uuid, x: 106, y: 0, width: 100, height: 24 }),
+      makeRect({ id: 'c' as Uuid, x: 212, y: 0, width: 100, height: 24 }),
+      makeRect({ id: 'd' as Uuid, x: 318, y: 0, width: 100, height: 24 }),
+      makeRect({ id: 'e' as Uuid, x: 0, y: 30, width: 100, height: 24 }),
+    ];
+    expect(flexContainerStyle(frame, children)).toContain('flex-wrap: wrap;');
+  });
+
+  it('keeps single-row align variations (mixed heights, align-items center) without wrapping', () => {
+    // Anonymized repro of the Brand / Hero CTAs pattern: row of children of
+    // different heights centered vertically — Y coords differ but children
+    // belong to a single line.
+    const frame = makeFrame({
+      layoutFlexDir: 'row',
+      layoutAlignItems: 'center',
+      layoutWrapType: 'nowrap',
+    });
+    const children: Shape[] = [
+      makeRect({ id: 'a' as Uuid, x: 0, y: 6, width: 60, height: 48 }),
+      makeRect({ id: 'b' as Uuid, x: 70, y: 18, width: 60, height: 24 }),
+    ];
+    expect(flexContainerStyle(frame, children)).not.toContain('flex-wrap');
+  });
+
+  it('emits flex-wrap: wrap when column children fall on multiple columns', () => {
+    const frame = makeFrame({
+      layoutFlexDir: 'column',
+      layoutWrapType: 'nowrap',
+    });
+    const children: Shape[] = [
+      makeRect({ id: 'a' as Uuid, x: 0, y: 0, width: 60, height: 30 }),
+      makeRect({ id: 'b' as Uuid, x: 0, y: 36, width: 60, height: 30 }),
+      makeRect({ id: 'c' as Uuid, x: 70, y: 0, width: 60, height: 30 }),
+    ];
+    expect(flexContainerStyle(frame, children)).toContain('flex-wrap: wrap;');
+  });
+
+  it('does not wrap a single child', () => {
+    const frame = makeFrame({ layoutFlexDir: 'row', layoutWrapType: 'nowrap' });
+    const children: Shape[] = [
+      makeRect({ id: 'a' as Uuid, x: 0, y: 0, width: 100, height: 24 }),
+    ];
+    expect(flexContainerStyle(frame, children)).not.toContain('flex-wrap');
   });
 
   it('combines multiple layout properties', () => {

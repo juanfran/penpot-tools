@@ -209,6 +209,32 @@ describe('renderParagraph', () => {
     expect(html).not.toContain('<br />');
     expect(html).toContain('A');
   });
+
+  it('escapes HTML special characters in leaf text so source code renders as text, not real tags', () => {
+    // Repro: a code-preview line whose text contains literal angle brackets
+    // and double quotes. Without escaping, the browser parses `<div ...>` as a
+    // real opening tag, swallows surrounding markup, and collapses subsequent
+    // sibling lines into a single line.
+    const html = renderParagraph(
+      makeParagraph({ children: [makeLeaf({ text: '<div data-name="Hero">' })] }),
+    );
+    expect(html).toContain('&lt;div data-name=&quot;Hero&quot;&gt;');
+    expect(html).not.toContain('<div data-name=');
+  });
+
+  it('escapes ampersands so &amp; in source survives round-tripping', () => {
+    const html = renderParagraph(makeParagraph({ children: [makeLeaf({ text: 'A & B' })] }));
+    expect(html).toContain('A &amp; B');
+  });
+
+  it('escapes special characters in same-style leaves emitted without span wrapper', () => {
+    // When a leaf's resolved style matches the paragraph's, the renderer
+    // emits the raw text instead of wrapping it in a <span>; that path needs
+    // escaping too.
+    const html = renderParagraph(makeParagraph({ children: [makeLeaf({ text: '</span>' })] }));
+    expect(html).not.toContain('</span>');
+    expect(html).toContain('&lt;/span&gt;');
+  });
 });
 
 const makeTextShape = (overrides: Partial<TextShape> = {}): TextShape => ({

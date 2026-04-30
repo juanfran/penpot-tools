@@ -7,7 +7,7 @@ import { baseStyles } from '../visual/base';
 import { fillsToOutput } from '../visual/fills';
 import { solidStrokeToStyle } from '../visual/strokes';
 import { resolvePositionOutput } from '../visual/position';
-import { flexContainerStyle, flexSpacingStyle } from '../layout/flex';
+import { flexContainerStyle, flexSpacingStyle, frameWillWrap } from '../layout/flex';
 import {
   layoutItemSizingStyle,
   layoutItemMarginStyle,
@@ -72,7 +72,7 @@ export function renderFrame(
 
   let layoutStyle = '';
   if (isFlex) {
-    layoutStyle = mergeStyles(flexContainerStyle(shape), flexSpacingStyle(shape));
+    layoutStyle = mergeStyles(flexContainerStyle(shape, children), flexSpacingStyle(shape));
   } else if (isGrid) {
     const spacing = flexSpacingStyle(shape);
     const colStyle = gridTracksToStyle(shape.layoutGridColumns ?? [], 'columns');
@@ -130,6 +130,7 @@ export function renderFrame(
     const frameOffsetX = shape.x ?? 0;
     const frameOffsetY = shape.y ?? 0;
     const orderedChildren = isReverseDir ? [...children] : [...children].reverse();
+    const parentWraps = frameWillWrap(shape, children);
     inner = orderedChildren
       .map((child) => {
         // Absolute flex items are removed from flex flow; `flex: 1` / `height: 100%`
@@ -139,7 +140,7 @@ export function renderFrame(
           .layoutItemAbsolute;
         const autoW = isAbsolute || child.layoutItemHSizing === 'auto';
         const autoH = isAbsolute || child.layoutItemVSizing === 'auto';
-        const sizingStyle = isAbsolute ? '' : layoutItemSizingStyle(child, shape);
+        const sizingStyle = isAbsolute ? '' : layoutItemSizingStyle(child, shape, parentWraps);
         const itemStyle = mergeStyles(
           sizingStyle,
           layoutItemMarginStyle(child),

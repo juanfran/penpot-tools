@@ -1,6 +1,6 @@
 import type { TextLeaf, ParagraphNode, TextShape, Typography } from '../../penpot.types';
 import type { ConverterContext, FontInfo } from '../types';
-import { tag } from '../utils/html';
+import { tag, escapeHtml } from '../utils/html';
 import { px } from '../utils/css';
 import { mergeStyles } from '../utils/style';
 import { hexOpacityToCss } from '../utils/color';
@@ -78,10 +78,11 @@ export function renderParagraph(
           const leafBaseStyle = textLeafToStyles(leaf);
           const leafColorStyle = textLeafColorStyle(leaf, fillTokenName, tokens, fallbackColor);
           const leafStyle = mergeStyles(leafBaseStyle, leafColorStyle);
+          const escapedText = escapeHtml(leaf.text);
 
-          if (leafStyle === paraStyle) return leaf.text;
+          if (leafStyle === paraStyle) return escapedText;
 
-          return tag('span', { style: leafStyle || undefined }, leaf.text);
+          return tag('span', { style: leafStyle || undefined }, escapedText);
         })
         .join('')
     : '<br />';

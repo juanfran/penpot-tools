@@ -1,4 +1,4 @@
-import type { FrameShape, FlexAlign, FlexDirection } from '../../penpot.types';
+import type { FrameShape, FlexAlign, FlexDirection, Shape } from '../../penpot.types';
 import { px } from '../utils/css';
 
 const FLEX_DIR_VALUE: Record<FlexDirection, string> = {
@@ -31,7 +31,42 @@ const JUSTIFY_CONTENT_VALUE: Partial<Record<FlexAlign, string>> = {
   'space-evenly': 'space-evenly',
 };
 
-export function flexContainerStyle(shape: FrameShape): string {
+// Detect wrap from stored child positions when the row/column they fall on
+// can't be explained by single-line align variations. Penpot occasionally
+// keeps `layoutWrapType: 'nowrap'` while its canvas lays children out across
+// multiple rows/columns, so the data alone can't be trusted.
+export function frameWillWrap(shape: FrameShape, children: Shape[]): boolean {
+  if (shape.layoutWrapType === 'wrap') return true;
+  return childrenIndicateWrap(shape, children);
+}
+
+function childrenIndicateWrap(shape: FrameShape, children: Shape[]): boolean {
+  const dir = shape.layoutFlexDir;
+  const isRow = dir === 'row' || dir === 'row-reverse' || dir === undefined;
+  const isCol = dir === 'column' || dir === 'column-reverse';
+  if (!isRow && !isCol) return false;
+
+  // `layoutItemAbsolute` children are pulled out of the flex flow; their
+  // stored x/y is independent of the layout and would skew the heuristic.
+  const flowChildren = children.filter(
+    (c) => !(c as unknown as { layoutItemAbsolute?: boolean }).layoutItemAbsolute,
+  );
+  if (flowChildren.length < 2) return false;
+
+  const dims = flowChildren.map((c) => ({
+    pos: isRow ? (c.y ?? c.selrect?.y ?? 0) : (c.x ?? c.selrect?.x ?? 0),
+    size: isRow ? (c.height ?? c.selrect?.height ?? 0) : (c.width ?? c.selrect?.width ?? 0),
+  }));
+  const maxSize = Math.max(...dims.map((d) => d.size));
+  if (maxSize <= 0) return false;
+  const range = Math.max(...dims.map((d) => d.pos)) - Math.min(...dims.map((d) => d.pos));
+  // Within a single line, mixed-height align variations spread positions by
+  // at most (max - min) child size. Crossing into a new row/column requires
+  // an offset of at least the tallest/widest child.
+  return range >= maxSize;
+}
+
+export function flexContainerStyle(shape: FrameShape, children: Shape[] = []): string {
   const parts: string[] = ['display: flex;'];
 
   if (shape.layoutFlexDir) {
@@ -45,8 +80,12 @@ export function flexContainerStyle(shape: FrameShape): string {
     : undefined;
   if (justifyValue) parts.push(`justify-content: ${justifyValue};`);
 
-  if (shape.layoutWrapType === 'wrap') parts.push('flex-wrap: wrap;');
-  else if (shape.layoutWrapType === 'no-wrap') parts.push('flex-wrap: nowrap;');
+  // Penpot's data sometimes keeps `layoutWrapType: 'nowrap'` even when its
+  // canvas laid the children across multiple rows/columns, so trust the
+  // stored positions over the flag.
+  if (frameWillWrap(shape, children)) {
+    parts.push('flex-wrap: wrap;');
+  }
 
   return parts.join(' ');
 }

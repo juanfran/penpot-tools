@@ -394,7 +394,7 @@ export type FlexAlign =
   | 'space-between'
   | 'space-around'
   | 'space-evenly';
-export type FlexWrap = 'wrap' | 'no-wrap';
+export type FlexWrap = 'wrap' | 'no-wrap' | 'nowrap';
 export type LayoutPaddingType = 'simple' | 'multiple';
 export type LayoutType = 'flex' | 'grid';
 
