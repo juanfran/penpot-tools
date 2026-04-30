@@ -344,7 +344,9 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         transformInverse: identityMatrix(),
         rotation,
         growType: 'fixed',
-        content: buildTextContent(node.textContent!, node.computedStyle),
+        content: buildTextContent(node.textContent!, node.computedStyle, {
+          verticalAlign: node.textVerticalAlign,
+        }),
         // `fills` / `strokes` / `shadow` / `radius` are kept as a defensive
         // belt — chip-pattern leaves are split into frame+text by
         // `splitChipPatterns()` before reaching here, so a text shape arriving

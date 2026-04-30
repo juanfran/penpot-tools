@@ -128,13 +128,19 @@ authored element but two layers in Penpot:
 \`\`\`
 
 **Circular icon button** — \`border-radius:50%\` resolves to half the smaller
-side. The chip auto-split applies as well:
+side. The chip auto-split applies; the glyph is centred when the parent uses
+\`display:flex\` with \`align-items:center\` and \`justify-content:center\`
+(the centring is read off the parent and written onto the synthesized text
+shape — no need to set \`text-align:center\` yourself):
 
 \`\`\`html
 <div data-name="Save" style="width:46px; height:46px; border-radius:50%;
      background:#000; color:#FFF; font-size:20px;
      display:flex; align-items:center; justify-content:center;">+</div>
 \`\`\`
+
+Same recipe for **avatars** (\`JF\`), **counter badges** (\`12\`) and
+**single-character action buttons** (\`+\`, \`×\`).
 
 **Badge over an image** — paint order = DOM order, so the badge follows the
 image:

@@ -192,6 +192,64 @@ describe('integration — chip auto-split with circular radius', () => {
     expect(frame!.r1).toBe(23);
     expect(text).toBeDefined();
   }, 20_000);
+
+  it('centres the glyph inside a flex-centred icon button (avatar pattern)', async () => {
+    // The avatar / icon-button regression: a `display:flex; align-items:center;
+    // justify-content:center` div with text content is split into frame + text,
+    // but pre-fix the synthesized text inherited the parent's computed
+    // `text-align: start` and the default `verticalAlign: 'top'`, so the glyph
+    // sat at the top-left of the circle instead of the middle.
+    //
+    // After the fix, chip-split reads the parent's flex centring and writes
+    // it onto the synthesized child as `textAlign: 'center'` plus
+    // `verticalAlign: 'center'` on the rich-text root.
+    const html = `<div data-name="Frame" style="width:200px; height:200px;">
+      <div data-name="Avatar" style="width:44px; height:44px; border-radius:50%; background:#1E2128; color:#B6F09C; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center;">JF</div>
+    </div>`;
+
+    const { changes, warnings } = await htmlToChanges(html, { pageId: PAGE_ID });
+    expect(warnings).toEqual([]);
+
+    const text = changes
+      .filter((c) => (c as { type: string }).type === 'add-obj')
+      .map((c) => (c as unknown as { obj: unknown }).obj as {
+        name?: string;
+        type?: string;
+        content?: { verticalAlign?: string; children?: { children?: { children?: { textAlign?: string }[] }[] }[] };
+      })
+      .find((s) => s.name === 'Avatar text' && s.type === 'text');
+
+    expect(text).toBeDefined();
+    expect(text!.content?.verticalAlign).toBe('center');
+    // Drill down to the leaf textAlign — paragraph-set → paragraph → leaf.
+    const leaf = text!.content?.children?.[0]?.children?.[0]?.children?.[0];
+    expect(leaf?.textAlign).toBe('center');
+  }, 20_000);
+
+  it('keeps a non-flex chip with text-align:right anchored to the right', async () => {
+    // Negative-control: the new flexCentering branch should not stomp on
+    // chips that aren't flex containers. A pill with explicit text-align:right
+    // must keep that alignment.
+    const html = `<div data-name="Frame" style="width:300px; height:60px;">
+      <div data-name="Pill" style="width:200px; height:40px; padding:0 16px; background:#000; color:#fff; text-align:right;">trailing</div>
+    </div>`;
+
+    const { changes } = await htmlToChanges(html, { pageId: PAGE_ID });
+
+    const text = changes
+      .filter((c) => (c as { type: string }).type === 'add-obj')
+      .map((c) => (c as unknown as { obj: unknown }).obj as {
+        name?: string;
+        type?: string;
+        content?: { verticalAlign?: string; children?: { children?: { children?: { textAlign?: string }[] }[] }[] };
+      })
+      .find((s) => s.name === 'Pill text');
+
+    expect(text).toBeDefined();
+    expect(text!.content?.verticalAlign).toBe('top');
+    const leaf = text!.content?.children?.[0]?.children?.[0]?.children?.[0];
+    expect(leaf?.textAlign).toBe('right');
+  }, 20_000);
 });
 
 describe('integration — editorial overlapping composition', () => {

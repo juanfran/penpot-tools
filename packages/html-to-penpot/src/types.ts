@@ -141,6 +141,18 @@ export interface MeasuredNode {
 
   /** Inline `<svg>` outer HTML, preserved as-is for svg-raw shapes. */
   svgOuter?: string;
+
+  /**
+   * Vertical alignment override for the text content tree.
+   *
+   * Set by `chip-split` when the synthesized text child sits inside a flex
+   * parent that uses `align-items: center / flex-end` (or `justify-content`
+   * with `flex-direction: column`). CSS `text-align` only covers the
+   * horizontal axis; vertical centring inside a fixed-size text shape needs
+   * Penpot's `TextContent.verticalAlign`. Without this, an icon-button glyph
+   * sits at the top-left of its 44×44 frame instead of the centre.
+   */
+  textVerticalAlign?: 'top' | 'center' | 'bottom';
 }
 
 /**

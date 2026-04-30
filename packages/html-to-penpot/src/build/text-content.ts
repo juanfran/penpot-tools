@@ -47,8 +47,16 @@ function leafFills(style: PickedComputedStyle): Fill[] {
  * Build a Penpot text `content` tree from a single text element. v1 emits a
  * single leaf inheriting the element's computed font styles. Multi-run text
  * (mixed `<span>` styling, `<br>` paragraph breaks) lands in Phase 2.
+ *
+ * `verticalAlign` is set by the chip-split pipeline when the synthesized text
+ * sits inside a flex parent that asks for vertical centring (icon buttons,
+ * avatar circles). Defaults to `'top'` so plain text leaves are unchanged.
  */
-export function buildTextContent(text: string, style: PickedComputedStyle): TextContent {
+export function buildTextContent(
+  text: string,
+  style: PickedComputedStyle,
+  opts: { verticalAlign?: 'top' | 'center' | 'bottom' } = {},
+): TextContent {
   const fontSizePx = parsePx(style.fontSize) ?? 14;
 
   const leaf: TextLeaf = {
@@ -78,5 +86,5 @@ export function buildTextContent(text: string, style: PickedComputedStyle): Text
   };
 
   const paragraphSet: ParagraphSetNode = { type: 'paragraph-set', children: [paragraph] };
-  return { type: 'root', verticalAlign: 'top', children: [paragraphSet] };
+  return { type: 'root', verticalAlign: opts.verticalAlign ?? 'top', children: [paragraphSet] };
 }

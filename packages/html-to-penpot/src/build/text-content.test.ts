@@ -58,6 +58,23 @@ function leafOf(style: PickedComputedStyle) {
   return content.children[0]!.children[0]!.children[0];
 }
 
+describe('buildTextContent verticalAlign', () => {
+  it('defaults the root vertical-align to top', () => {
+    const content = buildTextContent('hi', makeStyle());
+    expect(content.verticalAlign).toBe('top');
+  });
+
+  it('honours an explicit verticalAlign override (chip-split centring)', () => {
+    const content = buildTextContent('hi', makeStyle(), { verticalAlign: 'center' });
+    expect(content.verticalAlign).toBe('center');
+  });
+
+  it('passes through `bottom` for align-items: flex-end chips', () => {
+    const content = buildTextContent('hi', makeStyle(), { verticalAlign: 'bottom' });
+    expect(content.verticalAlign).toBe('bottom');
+  });
+});
+
 describe('buildTextContent letterSpacing', () => {
   it('strips px from computed letter-spacing — Penpot stores it unitless', () => {
     const leaf = leafOf(makeStyle({ letterSpacing: '-6px' }));

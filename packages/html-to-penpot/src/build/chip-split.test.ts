@@ -217,6 +217,76 @@ describe('splitChipPatterns', () => {
     expect(out[0]!.textContent).toBe('Just text');
   });
 
+  it('inherits flex centring as text-align: center + verticalAlign: center', () => {
+    // Icon-button pattern: a 44×44 div with bg + radius + flex centring + text.
+    // The flex centring of an anonymous text run does not show up as
+    // text-align:center in computed style (it stays at `start`). The synthesized
+    // text child must be told explicitly that it should centre, otherwise the
+    // glyph sits at the top-left of the circle.
+    const chip = leaf({
+      index: 0,
+      rect: { x: 0, y: 0, width: 44, height: 44 },
+      text: 'JF',
+      cs: {
+        backgroundColor: 'rgb(30, 33, 40)',
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'start',
+      },
+    });
+    const out = splitChipPatterns([chip]);
+
+    const child = out[1]!;
+    expect(child.computedStyle.textAlign).toBe('center');
+    expect(child.textVerticalAlign).toBe('center');
+  });
+
+  it('respects flex-direction: column when mapping centring axes', () => {
+    // With column direction, justify-content drives the vertical (main) axis
+    // and align-items drives the horizontal (cross) axis. A column-flex chip
+    // with `justify-content: flex-end; align-items: center` should land as
+    // bottom-centre on the synthesized text.
+    const chip = leaf({
+      index: 0,
+      rect: { x: 0, y: 0, width: 100, height: 60 },
+      text: 'BOTTOM',
+      cs: {
+        backgroundColor: 'rgb(30, 33, 40)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        textAlign: 'start',
+      },
+    });
+    const out = splitChipPatterns([chip]);
+
+    const child = out[1]!;
+    expect(child.computedStyle.textAlign).toBe('center');
+    expect(child.textVerticalAlign).toBe('bottom');
+  });
+
+  it('does NOT override an explicit text-align on a non-flex chip', () => {
+    // A plain pill with `text-align: right` should keep its right alignment.
+    const chip = leaf({
+      index: 0,
+      rect: { x: 0, y: 0, width: 200, height: 30 },
+      text: 'TRAILING',
+      cs: {
+        backgroundColor: 'rgb(243, 238, 229)',
+        display: 'block',
+        textAlign: 'right',
+      },
+    });
+    const out = splitChipPatterns([chip]);
+
+    const child = out[1]!;
+    expect(child.computedStyle.textAlign).toBe('right');
+    expect(child.textVerticalAlign).toBeUndefined();
+  });
+
   it('does NOT split a container that already has element children', () => {
     // A frame with explicit children is not a chip leaf — leave the user's
     // layout intact even if the parent has a background.

@@ -67,6 +67,40 @@ export function hasChipVisuals(cs: PickedComputedStyle): boolean {
   return false;
 }
 
+/**
+ * Map a flex parent's `align-items` / `justify-content` onto the text
+ * alignment of the synthesized child. CSS flex centring of an anonymous text
+ * run does NOT show up as `text-align: center` in computed style — `text-align`
+ * stays at its default `start`. Without this, a `display:flex; align-items:center;
+ * justify-content:center` icon-button renders its glyph at top-left.
+ *
+ * `text-align` covers the horizontal axis; the vertical axis lands on
+ * Penpot's `TextContent.verticalAlign`.
+ */
+function flexCentering(cs: PickedComputedStyle): {
+  textAlign?: string;
+  verticalAlign?: 'top' | 'center' | 'bottom';
+} {
+  if (cs.display !== 'flex' && cs.display !== 'inline-flex') return {};
+
+  const isColumn =
+    cs.flexDirection === 'column' || cs.flexDirection === 'column-reverse';
+  // For row direction: justify-content is the main (horizontal) axis,
+  // align-items is the cross (vertical) axis. For column: it's swapped.
+  const horizontalProp = isColumn ? cs.alignItems : cs.justifyContent;
+  const verticalProp = isColumn ? cs.justifyContent : cs.alignItems;
+
+  const result: { textAlign?: string; verticalAlign?: 'top' | 'center' | 'bottom' } = {};
+
+  if (horizontalProp === 'center') result.textAlign = 'center';
+  else if (horizontalProp === 'flex-end' || horizontalProp === 'end') result.textAlign = 'right';
+
+  if (verticalProp === 'center') result.verticalAlign = 'center';
+  else if (verticalProp === 'flex-end' || verticalProp === 'end') result.verticalAlign = 'bottom';
+
+  return result;
+}
+
 function synthesizeTextChild(parent: MeasuredNode, childIndex: number): MeasuredNode {
   const cs = parent.computedStyle;
   const padTop = parsePxOr0(cs.paddingTop);
@@ -101,6 +135,8 @@ function synthesizeTextChild(parent: MeasuredNode, childIndex: number): Measured
     height: innerH,
   };
 
+  const centering = flexCentering(cs);
+
   // Inherit typography (font, color, line-height, letter-spacing, ...) but
   // strip every property that the parent frame is now responsible for.
   const childStyle: PickedComputedStyle = {
@@ -121,6 +157,9 @@ function synthesizeTextChild(parent: MeasuredNode, childIndex: number): Measured
     paddingBottom: '0px',
     paddingLeft: '0px',
     transform: 'none',
+    // Override text-align only when the parent's flex centring requested it.
+    // Otherwise honour the inherited value (e.g. an explicit `text-align: left`).
+    textAlign: centering.textAlign ?? cs.textAlign,
   };
 
   const parentName = parent.dataAttrs['data-name'];
@@ -140,6 +179,7 @@ function synthesizeTextChild(parent: MeasuredNode, childIndex: number): Measured
     dataAttrs,
     inlineStyle: '',
     textContent: parent.textContent,
+    ...(centering.verticalAlign ? { textVerticalAlign: centering.verticalAlign } : {}),
   };
 }
 
