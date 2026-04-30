@@ -15,6 +15,29 @@ export function parsePx(value: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
+/**
+ * Parse a CSS length that may be either a px value (e.g. "12px") or a
+ * percentage of a base dimension (e.g. "50%" → `base * 0.5`).
+ *
+ * Browsers preserve `%` in the computed value of properties like
+ * `border-radius`, so the builder has to resolve them itself using the
+ * element's measured size. Returns `null` when the value is neither px nor %.
+ *
+ * For multi-value computed strings ("23px 25px" — elliptic per-corner radius)
+ * only the FIRST value is parsed: Penpot stores a single scalar radius per
+ * corner, so we approximate the ellipse with its horizontal radius. Callers
+ * that need both axes should split on whitespace upstream.
+ */
+export function parseLengthOrPct(value: string, base: number): number | null {
+  if (!value) return null;
+  const first = value.trim().split(/\s+/)[0] ?? '';
+  const px = first.match(new RegExp(`^(${NUM})px$`));
+  if (px) return Number(px[1]);
+  const pct = first.match(new RegExp(`^(${NUM})%$`));
+  if (pct) return (Number(pct[1]) / 100) * base;
+  return null;
+}
+
 /** Parse a unitless number (e.g. "1", "0.5"). */
 export function parseNumber(value: string): number | null {
   if (!value) return null;

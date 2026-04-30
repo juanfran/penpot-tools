@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractInlinePx, parseColor, parseNumber, parsePx } from './css';
+import { extractInlinePx, parseColor, parseLengthOrPct, parseNumber, parsePx } from './css';
 
 describe('parsePx', () => {
   it('parses integer px', () => {
@@ -77,6 +77,33 @@ describe('parseColor', () => {
 
   it('returns null for empty string', () => {
     expect(parseColor('')).toBeNull();
+  });
+});
+
+describe('parseLengthOrPct', () => {
+  it('parses px values like parsePx', () => {
+    expect(parseLengthOrPct('12px', 100)).toBe(12);
+    expect(parseLengthOrPct('1.5px', 100)).toBe(1.5);
+    expect(parseLengthOrPct('-4px', 100)).toBe(-4);
+  });
+
+  it('resolves percentages against the supplied base', () => {
+    expect(parseLengthOrPct('50%', 46)).toBe(23);
+    expect(parseLengthOrPct('100%', 80)).toBe(80);
+    expect(parseLengthOrPct('25%', 200)).toBe(50);
+  });
+
+  it('reads only the first value of an elliptic per-corner radius', () => {
+    // `border-top-left-radius: 10px 20px` (rx=10, ry=20). Penpot stores a
+    // scalar radius per corner, so we approximate with the first (rx).
+    expect(parseLengthOrPct('10px 20px', 100)).toBe(10);
+    expect(parseLengthOrPct('25% 50%', 80)).toBe(20);
+  });
+
+  it('returns null for unitless or non-length values', () => {
+    expect(parseLengthOrPct('12', 100)).toBeNull();
+    expect(parseLengthOrPct('1em', 100)).toBeNull();
+    expect(parseLengthOrPct('', 100)).toBeNull();
   });
 });
 

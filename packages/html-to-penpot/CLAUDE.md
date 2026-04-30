@@ -123,6 +123,27 @@ in `measure/headless.ts`). LLMs often wrap fragments in those tags by
 habit; without unwrapping we'd end up with stray nodes or a same-size
 duplicate frame.
 
+## Border-radius percentage resolution
+
+Browsers preserve `%` in the *computed* value of `border-radius` (e.g.
+`border-radius:50%` returns `"50%"` from `getComputedStyle`, not the
+resolved px). `visual/radius.ts` gets the element's untransformed dimensions
+from the build site and resolves percentages against `min(width, height)` —
+Penpot stores a single scalar per corner, so clamping to the smaller side
+keeps the corner from exceeding either half-cap. A 46×46 badge with
+`border-radius:50%` round-trips to `r=23` (a circle); a 100×40 element with
+`border-radius:50%` becomes `r=20` (a stadium on the short axis).
+
+## Occlusion warning
+
+`build/occlusion.ts` walks the built shape tree and warns when a shape is
+fully covered by a later-painting (DOM-later) sibling/cousin with an opaque
+fill — the most common silent-design bug LLMs ship. Heuristic is conservative
+on purpose: skip rotated shapes, skip ancestor/descendant pairs (a frame's
+own bg doesn't occlude its children), skip semi-transparent gradients, and
+require the occluder to FULLY cover the occluded bbox. Each warning names
+both shapes so the LLM can act without re-investigating.
+
 ## Flex shrink rescue for thin leaves
 
 Chrome's flex algorithm shrinks every child (including a `width:1px`

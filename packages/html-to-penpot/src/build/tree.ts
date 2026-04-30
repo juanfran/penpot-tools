@@ -22,6 +22,7 @@ import { newShapeId } from './shape-id';
 import { parseCssTransform } from './transform';
 import { splitChipPatterns } from './chip-split';
 import { extractInlinePx } from './css';
+import { detectOcclusions } from './occlusion';
 
 export interface BuildTreeInput {
   nodes: MeasuredNode[];
@@ -221,7 +222,13 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         `${nodeLabel(node)}: box-shadow could not be parsed and was dropped.`,
       );
     }
-    const radius = radiusFromComputed(node.computedStyle);
+    // Use the unrotated dimensions (offsetWidth/Height) so a `border-radius:50%`
+    // on a rotated element still resolves against the element's own box, not
+    // the inflated bounding box of the rotated rect.
+    const radius = radiusFromComputed(node.computedStyle, {
+      width: node.offsetWidth || node.rect.width,
+      height: node.offsetHeight || node.rect.height,
+    });
 
     // Layout-item fields if the parent is a flex container.
     const parentNode = node.parentIndex !== null ? nodes[node.parentIndex] : undefined;
@@ -379,5 +386,14 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
     }
   }
 
-  return { shapes, rootShapeId, warnings, referencedTokens: Array.from(referencedTokens) };
+  // Surface design-time bugs the LLM can act on without re-investigating:
+  // a layer the author placed but a later sibling completely hides.
+  const occlusionWarnings = detectOcclusions(shapes, rootShapeId);
+
+  return {
+    shapes,
+    rootShapeId,
+    warnings: [...warnings, ...occlusionWarnings],
+    referencedTokens: Array.from(referencedTokens),
+  };
 }
