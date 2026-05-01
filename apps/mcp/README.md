@@ -19,6 +19,7 @@ Set the mode with the `PENPOT_MCP_MODE` env var. See [Read-only vs read-write](#
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `get_current_selection` | _"What am I looking at right now?"_ — returns `{ fileId, pageId, shapeId? }`                                                                                                                                     |
 | `get_html`              | _"Give me the HTML for the design / the Header board / file X page Y"_ — single tool for every shape/page case. No args → viewer selection (selected shape, else page); `shapeId` → that shape; `fileId`/`pageId` → that page (works without the viewer open). Pass `includeScreenshot:true` to also get a PNG in the same response — saves a follow-up `get_screenshot` when implementing or reworking a design. |
+| `get_page`              | _"Give me the raw Penpot data"_ — returns the page JSON exactly as the Penpot API delivers it (full `objects` map, options, ids). For when you need the underlying shape data rather than HTML.                  |
 | `get_page_tokens`       | _"Generate the tokens file for this page"_ — returns the design tokens applied on the page + a `:root { … }` CSS block                                                                                           |
 | `get_page_overview`     | _"Give me a quick overview of the page"_ — returns boards, fonts, top tokens; no HTML, just structure. Use it to discover board ids before calling `get_html({ shapeId })`.                                       |
 | `get_screenshot`        | Image-only render. Most flows are better served by `get_html({ includeScreenshot:true })` — use this when you only want the PNG (no HTML payload).                                                               |
@@ -148,7 +149,7 @@ By default the MCP registers **all** tools — read and write. If you only use i
 | Mode         | Tools available                                                                                                                                                              |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `read-write` (default) | All tools: `get_*`, `list_assets`, `download_asset`, `create_design_from_html`, `update_selection_from_html`, `modify_shape`, `apply_token`, `create_token_set`, `upload_media` |
-| `read-only`  | Read tools only: `get_current_selection`, `get_html`, `get_page_tokens`, `get_page_overview`, `get_screenshot`, `list_assets`, `download_asset`                              |
+| `read-only`  | Read tools only: `get_current_selection`, `get_html`, `get_page`, `get_page_tokens`, `get_page_overview`, `get_screenshot`, `list_assets`, `download_asset`                  |
 
 The instructions block sent to the agent on connect also changes — in `read-only` mode it explicitly tells the agent the server cannot modify the design, so it won't offer to.
 

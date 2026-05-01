@@ -10,6 +10,7 @@ import {
   type ShapeHtmlBundle,
 } from './convert.ts';
 import { describePageBundle, describeShapeBundle } from './format.ts';
+import { fetchPage } from './penpot-api.ts';
 import { buildScreenshotContent, renderScreenshot, type ScreenshotOutput } from './screenshot.ts';
 import { requireSelection, requireToken, resolvePage, resolveTarget } from './state.ts';
 import { registerGuideResources } from './resources.ts';
@@ -282,6 +283,33 @@ server.registerTool(
     }
 
     return { content };
+  },
+);
+
+server.registerTool(
+  'get_page',
+  {
+    title: 'Raw Penpot page data',
+    description:
+      "Returns the raw Penpot page JSON exactly as the API delivers it (id, name, options, and the full `objects` map keyed by shape id). Use when you need the underlying data structure — token usages, layout flags, content trees — rather than HTML. Defaults to the viewer selection; pass fileId/pageId to bypass the viewer. Output can be large (every shape on the page); prefer `get_page_overview` or `get_html` when you don't need the raw shape JSON.",
+    inputSchema: {
+      fileId: z
+        .string()
+        .uuid()
+        .optional()
+        .describe("Override the file id; defaults to the viewer's current selection."),
+      pageId: z
+        .string()
+        .uuid()
+        .optional()
+        .describe("Override the page id; defaults to the viewer's current selection."),
+    },
+  },
+  async ({ fileId, pageId }) => {
+    const token = await requireToken();
+    const page = await resolvePage(fileId, pageId);
+    const data = await fetchPage(token, page.fileId, page.pageId);
+    return ok(JSON.stringify(data, null, 2));
   },
 );
 
