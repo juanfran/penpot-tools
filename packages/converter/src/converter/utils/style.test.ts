@@ -53,4 +53,24 @@ describe('mergeStyles', () => {
       mergeStyles('left: 0px;', 'transform: translate(10px, 20px);', 'transform: rotate(45deg);'),
     ).toBe('left: 0px; transform: translate(10px, 20px) rotate(45deg);');
   });
+
+  it('dedupes width/height with last-wins semantics', () => {
+    expect(mergeStyles('width: 10px; height: 5px;', 'width: 20px;')).toBe(
+      'height: 5px; width: 20px;',
+    );
+  });
+
+  it('dedupes when the same property appears in a single part', () => {
+    expect(mergeStyles('color: red; color: blue;')).toBe('color: blue;');
+  });
+
+  it('preserves insertion order of unique props alongside an override', () => {
+    expect(
+      mergeStyles('position: absolute;', 'left: 10px;', 'top: 20px;', 'left: 50px;'),
+    ).toBe('position: absolute; top: 20px; left: 50px;');
+  });
+
+  it('property names are case-insensitive (CSS spec)', () => {
+    expect(mergeStyles('WIDTH: 10px;', 'width: 20px;')).toBe('width: 20px;');
+  });
 });

@@ -391,6 +391,7 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         growType: 'fixed',
         content: buildTextContent(node.textContent!, node.computedStyle, {
           verticalAlign: node.textVerticalAlign,
+          inlineStyle: node.inlineStyle,
         }),
         // `fills` / `strokes` / `shadow` / `radius` are kept as a defensive
         // belt — chip-pattern leaves are split into frame+text by

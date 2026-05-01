@@ -16,10 +16,20 @@ function fontFamilyOf(style: PickedComputedStyle): string {
   return first.replace(/^["']|["']$/g, '');
 }
 
-function lineHeightOf(style: PickedComputedStyle): string {
-  // Browsers normalize `line-height` to px even when authored as a unitless
-  // ratio. We pass it through as-is — the converter consumes either form.
-  return style.lineHeight && style.lineHeight !== 'normal' ? style.lineHeight : '1.2';
+function lineHeightOf(style: PickedComputedStyle, inlineStyle?: string): string {
+  // The headless mount applies a Tailwind-style preflight that cascades
+  // `line-height: 1.5` down to every element, so the *computed* line-height is
+  // always set even when the author didn't ask for one. Storing that inflated
+  // value silently changes the text shape's height on round-trip (a 16px font
+  // becomes 24px tall instead of ~19px). Trust the computed value only when
+  // the author explicitly opted in via the element's own inline style; fall
+  // back to '1.2' otherwise so the read-mode converter emits a sane default.
+  const inlineHasLineHeight =
+    inlineStyle !== undefined && /(?:^|;)\s*line-height\s*:/i.test(inlineStyle);
+  if (inlineHasLineHeight && style.lineHeight && style.lineHeight !== 'normal') {
+    return style.lineHeight;
+  }
+  return '1.2';
 }
 
 /**
@@ -78,7 +88,7 @@ function applyTextTransform(text: string, transform: string): string {
 export function buildTextContent(
   text: string,
   style: PickedComputedStyle,
-  opts: { verticalAlign?: 'top' | 'center' | 'bottom' } = {},
+  opts: { verticalAlign?: 'top' | 'center' | 'bottom'; inlineStyle?: string } = {},
 ): TextContent {
   const fontSizePx = parsePx(style.fontSize) ?? 14;
   const transformedText = applyTextTransform(text, style.textTransform || 'none');
@@ -89,7 +99,7 @@ export function buildTextContent(
     fontSize: String(fontSizePx),
     fontWeight: style.fontWeight || '400',
     fontStyle: style.fontStyle || 'normal',
-    lineHeight: lineHeightOf(style),
+    lineHeight: lineHeightOf(style, opts.inlineStyle),
     letterSpacing: letterSpacingOf(style),
     textAlign: style.textAlign || 'left',
     textDecoration: 'none',

@@ -177,7 +177,10 @@ function synthesizeTextChild(parent: MeasuredNode, childIndex: number): Measured
     offsetHeight: innerH,
     computedStyle: childStyle,
     dataAttrs,
-    inlineStyle: '',
+    // Forward the parent's inline style so downstream consumers (e.g.
+    // `buildTextContent`'s line-height detection) can still see what the
+    // author originally declared on the chip.
+    inlineStyle: parent.inlineStyle ?? '',
     textContent: parent.textContent,
     ...(centering.verticalAlign ? { textVerticalAlign: centering.verticalAlign } : {}),
   };

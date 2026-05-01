@@ -3,14 +3,23 @@
  *
  * Each part may contain one or more semicolon-separated declarations.
  * Empty parts (or parts that split to nothing) are skipped.
- * Multiple `box-shadow` declarations are merged into a single comma-separated
- * property so neither value is silently dropped.
- * Multiple `transform` declarations are merged into a single space-separated
- * value so positional translate and rotation/matrix transforms coexist.
+ *
+ * Repeated single-value properties (e.g. `width`, `height`, `color`) follow
+ * CSS cascade semantics: the last declaration wins. The deduped declaration
+ * is moved to the position of the LAST occurrence so the override is visible
+ * at the end of the inline style — `width: 10px; height: 5px; width: 20px`
+ * collapses to `height: 5px; width: 20px;`.
+ *
+ * Two properties keep all values:
+ * - `box-shadow`: multiple shadows are merged into one comma-separated value.
+ * - `transform`: multiple transforms are merged into one space-separated value.
  *
  * @example
  * mergeStyles('left: 10px;', '', 'top: 20px;')
  * // → 'left: 10px; top: 20px;'
+ *
+ * mergeStyles('width: 10px; height: 5px;', 'width: 20px;')
+ * // → 'height: 5px; width: 20px;'
  *
  * mergeStyles('box-shadow: 0 2px 4px #000;', 'box-shadow: inset 0 0 0 2px red;')
  * // → 'box-shadow: 0 2px 4px #000, inset 0 0 0 2px red;'
@@ -21,7 +30,8 @@
 export function mergeStyles(...parts: string[]): string {
   const boxShadowValues: string[] = [];
   const transformValues: string[] = [];
-  const rest: string[] = [];
+  const order: string[] = [];
+  const valueByProp = new Map<string, string>();
 
   for (const part of parts) {
     const decls = part
@@ -29,24 +39,37 @@ export function mergeStyles(...parts: string[]): string {
       .map((d) => d.trim())
       .filter(Boolean);
     for (const decl of decls) {
-      const bsMatch = /^box-shadow:\s*(.+)$/.exec(decl);
-      const tfMatch = /^transform:\s*(.+)$/.exec(decl);
-      if (bsMatch) {
-        boxShadowValues.push(bsMatch[1].trim());
-      } else if (tfMatch) {
-        transformValues.push(tfMatch[1].trim());
-      } else {
-        rest.push(`${decl};`);
+      const colon = decl.indexOf(':');
+      if (colon === -1) continue;
+      const prop = decl.slice(0, colon).trim().toLowerCase();
+      const value = decl.slice(colon + 1).trim();
+      if (!prop) continue;
+      if (prop === 'box-shadow') {
+        boxShadowValues.push(value);
+        continue;
       }
+      if (prop === 'transform') {
+        transformValues.push(value);
+        continue;
+      }
+      if (valueByProp.has(prop)) {
+        // Move the override to the end so the cascade is visible.
+        const idx = order.indexOf(prop);
+        if (idx !== -1) order.splice(idx, 1);
+      }
+      order.push(prop);
+      valueByProp.set(prop, value);
     }
   }
 
+  const out = order.map((prop) => `${prop}: ${valueByProp.get(prop)};`);
+
   if (boxShadowValues.length > 0) {
-    rest.push(`box-shadow: ${boxShadowValues.join(', ')};`);
+    out.push(`box-shadow: ${boxShadowValues.join(', ')};`);
   }
   if (transformValues.length > 0) {
-    rest.push(`transform: ${transformValues.join(' ')};`);
+    out.push(`transform: ${transformValues.join(' ')};`);
   }
 
-  return rest.join(' ');
+  return out.join(' ');
 }

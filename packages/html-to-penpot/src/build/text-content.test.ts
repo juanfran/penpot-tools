@@ -76,6 +76,41 @@ describe('buildTextContent verticalAlign', () => {
   });
 });
 
+describe('buildTextContent lineHeight', () => {
+  it('defaults to 1.2 when the author did not declare line-height', () => {
+    // Computed style still shows the inherited preflight value (1.5×16=24px)
+    // but the inline style attr has nothing about line-height.
+    const content = buildTextContent('hi', makeStyle({ lineHeight: '24px' }), {});
+    const leaf = content.children[0]!.children[0]!.children[0];
+    expect(leaf?.lineHeight).toBe('1.2');
+  });
+
+  it('honours an explicit inline line-height', () => {
+    const content = buildTextContent('hi', makeStyle({ lineHeight: '20px' }), {
+      inlineStyle: 'font-size: 16px; line-height: 20px;',
+    });
+    const leaf = content.children[0]!.children[0]!.children[0];
+    expect(leaf?.lineHeight).toBe('20px');
+  });
+
+  it('honours an explicit unitless inline line-height', () => {
+    const content = buildTextContent('hi', makeStyle({ lineHeight: '22.4px' }), {
+      inlineStyle: 'line-height: 1.4;',
+    });
+    const leaf = content.children[0]!.children[0]!.children[0];
+    // Browser normalises unitless to px in computedStyle, we trust that.
+    expect(leaf?.lineHeight).toBe('22.4px');
+  });
+
+  it('uses 1.2 fallback when computed is "normal" (no preflight cascade)', () => {
+    const content = buildTextContent('hi', makeStyle({ lineHeight: 'normal' }), {
+      inlineStyle: 'line-height: normal;',
+    });
+    const leaf = content.children[0]!.children[0]!.children[0];
+    expect(leaf?.lineHeight).toBe('1.2');
+  });
+});
+
 describe('buildTextContent letterSpacing', () => {
   it('strips px from computed letter-spacing — Penpot stores it unitless', () => {
     const leaf = leafOf(makeStyle({ letterSpacing: '-6px' }));

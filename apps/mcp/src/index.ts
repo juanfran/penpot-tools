@@ -7,6 +7,7 @@ import {
   getPageOverview,
   getPageTokens,
   type PageHtmlBundle,
+  type ShapeHtmlBundle,
 } from './convert.ts';
 import { describePageBundle, describeShapeBundle } from './format.ts';
 import { buildScreenshotContent, renderScreenshot, type ScreenshotOutput } from './screenshot.ts';
@@ -45,7 +46,7 @@ Read tools: \`get_html\` (HTML + optional inline screenshot),
 \`get_page_overview\` (boards/fonts/top tokens), \`get_page_tokens\` (full
 tokens + \`:root\` CSS), \`get_screenshot\` (image only), \`list_assets\` /
 \`download_asset\` (image media). All return raw inline-styled HTML +
-tokensCss + fontsCss; convert to the user's target framework — do NOT paste
+tokensCss + a \`fontsUsed\` summary; convert to the user's target framework — do NOT paste
 verbatim. When implementing or reworking a design call
 \`get_html({ includeScreenshot: true })\` so HTML and image arrive in one
 round trip — image gives hierarchy, HTML gives exact tokens/sizes.
@@ -68,7 +69,7 @@ Read tools: \`get_html\` (HTML + optional inline screenshot),
 \`get_page_overview\` (boards/fonts/top tokens), \`get_page_tokens\` (full
 tokens + \`:root\` CSS), \`get_screenshot\` (image only), \`list_assets\` /
 \`download_asset\` (image media). All return raw inline-styled HTML +
-tokensCss + fontsCss; convert to the user's target framework — do NOT paste
+tokensCss + a \`fontsUsed\` summary; convert to the user's target framework — do NOT paste
 verbatim. When implementing or reworking a design call
 \`get_html({ includeScreenshot: true })\` so HTML and image arrive in one
 round trip — image gives hierarchy, HTML gives exact tokens/sizes.
@@ -179,7 +180,7 @@ server.registerTool(
   {
     title: 'HTML for a Penpot shape or page',
     description:
-      'Returns raw inline-styled HTML + tokensCss + fontsCss. With no args, uses the viewer selection (selected shape, else the page). Pass shapeId for any board/shape (e.g. one returned by get_page_overview); pass fileId/pageId to bypass the viewer entirely. Set includeScreenshot:true to also receive a PNG render in the same response — saves a follow-up get_screenshot when implementing or reworking a design. See `penpot://convert-guide` before pasting into framework code.',
+      'Returns raw inline-styled HTML + tokensCss + a compact `fontsUsed` summary (family/weight/italic). The full ~35 KB @font-face block is omitted by default — opt in via `includeFontsCss:true` only if you need it. With no args, uses the viewer selection (selected shape, else the page). Pass shapeId for any board/shape (e.g. one returned by get_page_overview); pass fileId/pageId to bypass the viewer entirely. Set includeScreenshot:true to also receive a PNG render in the same response — saves a follow-up get_screenshot when implementing or reworking a design. See `penpot://convert-guide` before pasting into framework code.',
     inputSchema: {
       fileId: z
         .string()
@@ -201,6 +202,12 @@ server.registerTool(
         .boolean()
         .optional()
         .describe('Also return a PNG render in the same response. Default false.'),
+      includeFontsCss: z
+        .boolean()
+        .optional()
+        .describe(
+          'Inline the full @font-face CSS block (~35 KB per response). Default false — the response always lists the families/weights used under `## fontsUsed`. Only opt in if you need the raw CSS for a downstream tool.',
+        ),
       maxWidth: z
         .number()
         .int()
@@ -217,28 +224,29 @@ server.registerTool(
         .describe('Screenshot max height when includeScreenshot:true.'),
     },
   },
-  async ({ fileId, pageId, shapeId, includeScreenshot, maxWidth, maxHeight }) => {
+  async ({ fileId, pageId, shapeId, includeScreenshot, includeFontsCss, maxWidth, maxHeight }) => {
     const token = await requireToken();
     const target = await resolveTarget({ fileId, pageId, shapeId });
 
     let bundle: PageHtmlBundle;
-    let text: string;
     let caption: string;
     if (target.shapeId) {
-      const shapeBundle = await convertShapeToHtml(
-        token,
-        target.fileId,
-        target.pageId,
-        target.shapeId,
-      );
-      bundle = shapeBundle;
-      text = describeShapeBundle(shapeBundle);
-      caption = `Penpot screenshot — shape ${target.shapeId} on page "${shapeBundle.pageName}"`;
+      bundle = await convertShapeToHtml(token, target.fileId, target.pageId, target.shapeId);
+      caption = `Penpot screenshot — shape ${target.shapeId} on page "${bundle.pageName}"`;
     } else {
       bundle = await convertPageToHtml(token, target.fileId, target.pageId);
-      text = describePageBundle(bundle, 'full open page');
       caption = `Penpot screenshot — full page "${bundle.pageName}"`;
     }
+
+    // The full @font-face CSS is needed if the caller wants it in text form OR
+    // if we have to render a screenshot. Compute it at most once and reuse.
+    const needFontsCss = !!includeFontsCss || !!includeScreenshot;
+    const fontsCss = needFontsCss ? await bundle.buildFontsCss() : '';
+
+    const text =
+      'shapeId' in bundle
+        ? describeShapeBundle(bundle as ShapeHtmlBundle, { includeFontsCss, fontsCss })
+        : describePageBundle(bundle, 'full open page', { includeFontsCss, fontsCss });
 
     const content: Array<
       | { type: 'text'; text: string }
@@ -249,7 +257,7 @@ server.registerTool(
       const shot = await renderScreenshot({
         html: bundle.html,
         tokensCss: bundle.tokensCss,
-        fontsCss: bundle.fontsCss,
+        fontsCss,
         maxWidth,
         maxHeight,
       });
@@ -373,10 +381,11 @@ server.registerTool(
         ? await convertShapeToHtml(token, resolved.fileId, resolved.pageId, resolvedShape)
         : await convertPageToHtml(token, resolved.fileId, resolved.pageId);
 
+    const fontsCss = await bundle.buildFontsCss();
     const shot = await renderScreenshot({
       html: bundle.html,
       tokensCss: bundle.tokensCss,
-      fontsCss: bundle.fontsCss,
+      fontsCss,
       maxWidth,
       maxHeight,
     });

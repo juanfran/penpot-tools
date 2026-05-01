@@ -1,6 +1,7 @@
 import type { Shape } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 import { getChildren } from '../tree';
+import { escapeHtml } from '../utils/html';
 import { renderRect } from './rect';
 import { renderCircle } from './circle';
 import { renderImage } from './image';
@@ -12,6 +13,27 @@ import { renderFrame } from './frame';
 import { renderText } from './text';
 
 /**
+ * Injects attributes (`data-name`, editor-only locked/blocked flags) into the
+ * first opening tag of a rendered shape. Lives here so it applies to EVERY
+ * call to `renderShape`, including the recursive ones from `frame.ts` and
+ * `group.ts` — the public `../render.ts:renderShape` wrapper used to do it
+ * but only for the entry call, so child layers lost their `data-name` on
+ * read-back. (See `roundtrip.integration.test.ts` for the regression.)
+ */
+function injectShapeAttrs(html: string, shape: Shape): string {
+  if (!html) return html;
+  const attrs: Array<[string, string]> = [];
+  const name = (shape.name ?? '').trim();
+  if (name) attrs.push(['data-name', name]);
+  const extended = shape as Shape & { locked?: boolean; blocked?: boolean };
+  if (extended.locked) attrs.push(['data-penpot-locked', 'true']);
+  if (extended.blocked) attrs.push(['data-penpot-blocked', 'true']);
+  if (attrs.length === 0) return html;
+  const attrStr = attrs.map(([k, v]) => `${k}="${escapeHtml(v)}"`).join(' ');
+  return html.replace(/^(<\w[\w-]*)/, `$1 ${attrStr}`);
+}
+
+/**
  * Dispatches a shape to its type-specific renderer.
  * Unknown shape types fall back to an empty string.
  */
@@ -20,30 +42,41 @@ export function renderShape(
   objects: Record<string, Shape>,
   ctx: ConverterContext,
 ): string {
+  let html: string;
   switch (shape.type) {
     case 'rect':
-      return renderRect(shape, null, ctx);
+      html = renderRect(shape, null, ctx);
+      break;
     case 'circle':
-      return renderCircle(shape, null, ctx);
+      html = renderCircle(shape, null, ctx);
+      break;
     case 'image':
-      return renderImage(shape, ctx);
+      html = renderImage(shape, ctx);
+      break;
     case 'path':
-      return renderPath(shape, ctx);
+      html = renderPath(shape, ctx);
+      break;
     case 'bool':
-      return renderBool(shape, ctx);
+      html = renderBool(shape, ctx);
+      break;
     case 'svg-raw':
-      return renderSvgRaw(shape, ctx);
+      html = renderSvgRaw(shape, ctx);
+      break;
     case 'group': {
       const children = getChildren(shape, objects);
-      return renderGroup(shape, children, objects, ctx);
+      html = renderGroup(shape, children, objects, ctx);
+      break;
     }
     case 'frame': {
       const children = getChildren(shape, objects);
-      return renderFrame(shape, children, objects, ctx);
+      html = renderFrame(shape, children, objects, ctx);
+      break;
     }
     case 'text':
-      return renderText(shape, ctx);
+      html = renderText(shape, ctx);
+      break;
     default:
       return '';
   }
+  return injectShapeAttrs(html, shape);
 }

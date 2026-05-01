@@ -11,7 +11,11 @@ const CONVERT_GUIDE = `# Converting Penpot HTML to your target framework
 
 The HTML returned by \`get_*_html\` tools is intentionally low-level: a <div>
 tree with inline \`style="..."\`, \`var(--token, fallback)\` for design tokens,
-and \`@font-face\` for web fonts (in the \`fontsCss\` field).
+and a compact \`fontsUsed\` summary listing the (family, weight, italic) tuples
+in play. The full \`@font-face\` block is omitted by default — pass
+\`includeFontsCss:true\` if you actually need the raw CSS (e.g. to forward to
+another tool); otherwise rely on the summary plus your target framework's own
+font loading.
 
 Do NOT paste it verbatim. Always:
 

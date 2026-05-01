@@ -50,7 +50,24 @@ describe('renderShape', () => {
     expect(renderShape(withComponent as Shape, {}, ctx)).toContain('data-id="rect-1"');
   });
 
-  it('does not add data-penpot-name attribute', () => {
+  it('emits data-name from shape.name (write-mode round-trip identity)', () => {
+    expect(renderShape(makeRect({ name: 'My Rect' } as Partial<RectShape>), {}, ctx)).toContain(
+      'data-name="My Rect"',
+    );
+  });
+
+  it('omits data-name when shape.name is empty / whitespace', () => {
+    expect(renderShape(makeRect({ name: '   ' } as Partial<RectShape>), {}, ctx)).not.toContain(
+      'data-name=',
+    );
+  });
+
+  it('html-escapes data-name (defensive, names can contain quotes)', () => {
+    const html = renderShape(makeRect({ name: 'a "quoted" <name>' } as Partial<RectShape>), {}, ctx);
+    expect(html).toContain('data-name="a &quot;quoted&quot; &lt;name&gt;"');
+  });
+
+  it('does not add the legacy data-penpot-name attribute', () => {
     expect(renderShape(makeRect({ name: 'My Rect' } as Partial<RectShape>), {}, ctx)).not.toContain(
       'data-penpot-name',
     );

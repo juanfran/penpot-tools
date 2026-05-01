@@ -22,10 +22,11 @@ export async function shapeScreenshotContent(
 ): Promise<McpContentBlock[]> {
   try {
     const bundle = await convertShapeToHtml(token, fileId, pageId, shapeId);
+    const fontsCss = await bundle.buildFontsCss();
     const shot = await renderScreenshot({
       html: bundle.html,
       tokensCss: bundle.tokensCss,
-      fontsCss: bundle.fontsCss,
+      fontsCss,
     });
     return buildScreenshotContent(shot, caption);
   } catch (err) {

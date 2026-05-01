@@ -162,7 +162,35 @@ export async function renderScreenshot(input: ScreenshotInput): Promise<Screensh
     await page.setContent(buildDocument(input), { waitUntil: 'load' });
 
     await page.evaluate(async () => {
+      // `@font-face` declarations don't trigger a font fetch by themselves —
+      // the browser only requests the font file once layout actually needs the
+      // glyphs. If we await `document.fonts.ready` BEFORE forcing a layout,
+      // it resolves with no fonts in flight and we then screenshot before the
+      // web font has loaded. The first render of a brand-new design then
+      // shows a serif fallback while the second (post-cache) call shows the
+      // correct family.
+      //
+      // Touch a layout-forcing property so the font requests get queued, wait
+      // for them, then explicitly load every used family / weight pair as a
+      // belt-and-braces in case a hidden element triggered the layout.
+      document.documentElement.offsetHeight;
       try {
+        await document.fonts.ready;
+      } catch {
+        /* ignore */
+      }
+      const families = new Set<string>();
+      for (const el of Array.from(document.querySelectorAll<HTMLElement>('*'))) {
+        const cs = getComputedStyle(el);
+        if (!cs.fontFamily) continue;
+        const family = cs.fontFamily.split(',')[0]!.trim().replace(/^['"]|['"]$/g, '');
+        if (!family) continue;
+        const weight = cs.fontWeight || '400';
+        const style = cs.fontStyle || 'normal';
+        families.add(`${style} ${weight} 1em "${family}"`);
+      }
+      try {
+        await Promise.all([...families].map((spec) => document.fonts.load(spec)));
         await document.fonts.ready;
       } catch {
         /* ignore */

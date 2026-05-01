@@ -1,15 +1,44 @@
 import { convertPage, convertShape, buildPenpotFontsCss } from '@penpot-tools/converter';
-import type { ConverterContext } from '@penpot-tools/converter';
+import type { ConverterContext, FontInfo } from '@penpot-tools/converter';
 import { extractTokens, extractAllTokens, tokensToCss } from '@penpot-tools/converter/tokens';
 import type { TokenInfo } from '@penpot-tools/converter/tokens';
 import type { Shape } from '@penpot-tools/converter/types';
 import { fetchPage, getPenpotBase, imageUrlFor } from './penpot-api.ts';
 
+/** Compact list of (family, weight, italic) tuples used by the page. Used to
+ *  let the LLM know which fonts are involved without paying the ~35 KB
+ *  @font-face block on every request. The full CSS is materialised on demand
+ *  via `buildFontsCss` (still required by the screenshot pipeline). */
+export interface FontUsage {
+  family: string;
+  weight: number;
+  italic: boolean;
+}
+
 export interface PageHtmlBundle {
   pageName: string;
   html: string;
-  fontsCss: string;
+  /** Compact fonts summary — see `FontUsage`. */
+  fontsUsed: FontUsage[];
+  /** Lazy fetch of the full @font-face CSS (still needed by renderScreenshot
+   *  and any caller that opted in via `includeFontsCss`). */
+  buildFontsCss: () => Promise<string>;
   tokensCss: string;
+}
+
+function summariseFonts(fonts: readonly FontInfo[]): FontUsage[] {
+  const seen = new Map<string, FontUsage>();
+  for (const f of fonts) {
+    const family = (f.fontFamily ?? '').replace(/^['"]|['"]$/g, '').trim();
+    if (!family) continue;
+    const weight = Number(f.fontWeight ?? 400) || 400;
+    const italic = f.fontStyle === 'italic';
+    const key = `${family}|${weight}|${italic}`;
+    if (!seen.has(key)) seen.set(key, { family, weight, italic });
+  }
+  return [...seen.values()].sort(
+    (a, b) => a.family.localeCompare(b.family) || a.weight - b.weight,
+  );
 }
 
 export async function convertPageToHtml(
@@ -28,7 +57,8 @@ export async function convertPageToHtml(
   return {
     pageName: page.name,
     html,
-    fontsCss: await buildPenpotFontsCss(fonts, { baseUrl: getPenpotBase() }),
+    fontsUsed: summariseFonts(fonts),
+    buildFontsCss: () => buildPenpotFontsCss(fonts, { baseUrl: getPenpotBase() }),
     tokensCss: tokensToCss(tokens),
   };
 }
@@ -63,7 +93,8 @@ export async function convertShapeToHtml(
     shapeName: shape.name,
     shapeType: shape.type,
     html,
-    fontsCss: await buildPenpotFontsCss(fonts, { baseUrl: getPenpotBase() }),
+    fontsUsed: summariseFonts(fonts),
+    buildFontsCss: () => buildPenpotFontsCss(fonts, { baseUrl: getPenpotBase() }),
     tokensCss: tokensToCss(tokens),
   };
 }

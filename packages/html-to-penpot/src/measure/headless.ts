@@ -138,7 +138,28 @@ export async function measureHtml(input: MeasureInput): Promise<MeasureOutput> {
     await page.setContent(buildDocument(input), { waitUntil: 'load' });
 
     await page.evaluate(async () => {
+      // See screenshot.ts for the rationale — `@font-face` is lazy, so we have
+      // to force layout AND explicitly load every used family before measuring,
+      // otherwise the first measurement uses a serif fallback and Penpot stores
+      // the wrong text width/height.
+      document.documentElement.offsetHeight;
       try {
+        await document.fonts.ready;
+      } catch {
+        /* ignore */
+      }
+      const families = new Set<string>();
+      for (const el of Array.from(document.querySelectorAll<HTMLElement>('*'))) {
+        const cs = getComputedStyle(el);
+        if (!cs.fontFamily) continue;
+        const family = cs.fontFamily.split(',')[0]!.trim().replace(/^['"]|['"]$/g, '');
+        if (!family) continue;
+        const weight = cs.fontWeight || '400';
+        const style = cs.fontStyle || 'normal';
+        families.add(`${style} ${weight} 1em "${family}"`);
+      }
+      try {
+        await Promise.all([...families].map((spec) => document.fonts.load(spec)));
         await document.fonts.ready;
       } catch {
         /* ignore */
