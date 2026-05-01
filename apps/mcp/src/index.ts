@@ -6,13 +6,13 @@ import {
   convertShapeToHtml,
   getPageOverview,
   getPageTokens,
+  type PageHtmlBundle,
 } from './convert.ts';
 import { describePageBundle, describeShapeBundle } from './format.ts';
 import { buildScreenshotContent, renderScreenshot, type ScreenshotOutput } from './screenshot.ts';
-import { requireSelection, requireToken } from './state.ts';
+import { requireSelection, requireToken, resolvePage, resolveTarget } from './state.ts';
 import { registerGuideResources } from './resources.ts';
 import { registerAssetTools } from './tools/assets.ts';
-import { registerShapeHtmlTool } from './tools/shape-html.ts';
 import { registerApplyTokenTool } from './tools/write/apply-token.ts';
 import { registerCreateFromHtmlTool } from './tools/write/create-from-html.ts';
 import { registerCreateTokenSetTool } from './tools/write/create-token-set.ts';
@@ -41,20 +41,20 @@ NO write tools registered, so do not offer to modify the design. The current
 file/page/shape selection is tracked by the viewer — call
 \`get_current_selection\` if unsure; do NOT ask the user for IDs.
 
-Read tools (\`get_current_html\`, \`get_shape_html\`, \`get_page_html\`,
-\`get_screenshot\`, \`get_page_overview\`, \`get_page_tokens\`, \`list_assets\`,
-\`download_asset\`) return raw inline-styled HTML + tokensCss + fontsCss.
-Convert to the user's target framework — do NOT paste verbatim. Pair
-\`get_screenshot\` with \`get_current_html\` when implementing or reworking:
-image gives hierarchy, HTML gives exact tokens/sizes.
+Read tools: \`get_html\` (HTML + optional inline screenshot),
+\`get_page_overview\` (boards/fonts/top tokens), \`get_page_tokens\` (full
+tokens + \`:root\` CSS), \`get_screenshot\` (image only), \`list_assets\` /
+\`download_asset\` (image media). All return raw inline-styled HTML +
+tokensCss + fontsCss; convert to the user's target framework — do NOT paste
+verbatim. When implementing or reworking a design call
+\`get_html({ includeScreenshot: true })\` so HTML and image arrive in one
+round trip — image gives hierarchy, HTML gives exact tokens/sizes.
 
-If the user supplies explicit \`fileId\`/\`pageId\` (e.g. "in file X page Y,
-give me the header HTML") pass them directly to \`get_page_html\`,
-\`get_page_overview\`, \`get_page_tokens\`, \`get_shape_html\`, \`list_assets\`,
-or \`get_screenshot\` — viewer selection is not required when IDs are
-provided. Use \`get_page_overview\` to discover board ids by name, then
-\`get_shape_html\` to fetch each one. \`PENPOT_TOKEN\` env var can also be set
-to skip the viewer entirely.
+\`get_html\` covers every shape/page case: no args → viewer selection
+(selected shape, else page); \`shapeId\` → that shape; \`fileId\`/\`pageId\`
+→ that page (works without the viewer open). Use \`get_page_overview\` to
+discover board ids by name, then \`get_html({ shapeId, fileId, pageId })\`
+to fetch each. \`PENPOT_TOKEN\` env var skips the viewer entirely.
 
 For framework conversion guidance fetch \`penpot://convert-guide\`.
 `.trim();
@@ -64,20 +64,20 @@ Tools to read and write the Penpot file the user has open in the dev-mode viewer
 (http://localhost:3000). The current file/page/shape selection is tracked by the
 viewer — call \`get_current_selection\` if unsure; do NOT ask the user for IDs.
 
-Read tools (\`get_current_html\`, \`get_shape_html\`, \`get_page_html\`,
-\`get_screenshot\`, \`get_page_overview\`, \`get_page_tokens\`, \`list_assets\`,
-\`download_asset\`) return raw inline-styled HTML + tokensCss + fontsCss.
-Convert to the user's target framework — do NOT paste verbatim. Pair
-\`get_screenshot\` with \`get_current_html\` when implementing or reworking:
-image gives hierarchy, HTML gives exact tokens/sizes.
+Read tools: \`get_html\` (HTML + optional inline screenshot),
+\`get_page_overview\` (boards/fonts/top tokens), \`get_page_tokens\` (full
+tokens + \`:root\` CSS), \`get_screenshot\` (image only), \`list_assets\` /
+\`download_asset\` (image media). All return raw inline-styled HTML +
+tokensCss + fontsCss; convert to the user's target framework — do NOT paste
+verbatim. When implementing or reworking a design call
+\`get_html({ includeScreenshot: true })\` so HTML and image arrive in one
+round trip — image gives hierarchy, HTML gives exact tokens/sizes.
 
-If the user supplies explicit \`fileId\`/\`pageId\` (e.g. "in file X page Y,
-give me the header HTML") pass them directly to \`get_page_html\`,
-\`get_page_overview\`, \`get_page_tokens\`, \`get_shape_html\`, \`list_assets\`,
-or \`get_screenshot\` — viewer selection is not required when IDs are
-provided. Use \`get_page_overview\` to discover board ids by name, then
-\`get_shape_html\` to fetch each one. \`PENPOT_TOKEN\` env var can also be set
-to skip the viewer entirely.
+\`get_html\` covers every shape/page case: no args → viewer selection
+(selected shape, else page); \`shapeId\` → that shape; \`fileId\`/\`pageId\`
+→ that page (works without the viewer open). Use \`get_page_overview\` to
+discover board ids by name, then \`get_html({ shapeId, fileId, pageId })\`
+to fetch each. \`PENPOT_TOKEN\` env var skips the viewer entirely.
 
 Write tools (\`create_design_from_html\`, \`update_selection_from_html\`,
 \`modify_shape\`, \`apply_token\`, \`create_token_set\`, \`upload_media\`) push
@@ -161,46 +161,88 @@ server.registerTool(
 );
 
 server.registerTool(
-  'get_current_html',
+  'get_html',
   {
-    title: 'HTML for the current selection',
+    title: 'HTML for a Penpot shape or page',
     description:
-      'Selected shape if any, else the full page. See `penpot://convert-guide` before pasting into framework code.',
-    inputSchema: {},
-  },
-  async () => {
-    const token = await requireToken();
-    const sel = await requireSelection();
-    if (sel.shapeId) {
-      const bundle = await convertShapeToHtml(token, sel.fileId, sel.pageId, sel.shapeId);
-      return ok(describeShapeBundle(bundle));
-    }
-    const bundle = await convertPageToHtml(token, sel.fileId, sel.pageId);
-    return ok(describePageBundle(bundle, 'full open page'));
-  },
-);
-
-server.registerTool(
-  'get_page_html',
-  {
-    title: 'HTML for the current page',
-    description: 'Full page HTML even if a shape is selected.',
+      'Returns raw inline-styled HTML + tokensCss + fontsCss. With no args, uses the viewer selection (selected shape, else the page). Pass shapeId for any board/shape (e.g. one returned by get_page_overview); pass fileId/pageId to bypass the viewer entirely. Set includeScreenshot:true to also receive a PNG render in the same response — saves a follow-up get_screenshot when implementing or reworking a design. See `penpot://convert-guide` before pasting into framework code.',
     inputSchema: {
-      fileId: z.string().uuid().optional(),
-      pageId: z.string().uuid().optional(),
+      fileId: z
+        .string()
+        .uuid()
+        .optional()
+        .describe("Override the file id; defaults to the viewer's current selection."),
+      pageId: z
+        .string()
+        .uuid()
+        .optional()
+        .describe("Override the page id; defaults to the viewer's current selection."),
+      shapeId: z
+        .string()
+        .optional()
+        .describe(
+          'Fetch this shape instead of the full page. Without fileId/pageId falls back to the viewer selection.',
+        ),
+      includeScreenshot: z
+        .boolean()
+        .optional()
+        .describe('Also return a PNG render in the same response. Default false.'),
+      maxWidth: z
+        .number()
+        .int()
+        .positive()
+        .max(4000)
+        .optional()
+        .describe('Screenshot max width when includeScreenshot:true.'),
+      maxHeight: z
+        .number()
+        .int()
+        .positive()
+        .max(10000)
+        .optional()
+        .describe('Screenshot max height when includeScreenshot:true.'),
     },
   },
-  async ({ fileId, pageId }) => {
+  async ({ fileId, pageId, shapeId, includeScreenshot, maxWidth, maxHeight }) => {
     const token = await requireToken();
-    let resolvedFile = fileId;
-    let resolvedPage = pageId;
-    if (!resolvedFile || !resolvedPage) {
-      const sel = await requireSelection();
-      resolvedFile ??= sel.fileId;
-      resolvedPage ??= sel.pageId;
+    const target = await resolveTarget({ fileId, pageId, shapeId });
+
+    let bundle: PageHtmlBundle;
+    let text: string;
+    let caption: string;
+    if (target.shapeId) {
+      const shapeBundle = await convertShapeToHtml(
+        token,
+        target.fileId,
+        target.pageId,
+        target.shapeId,
+      );
+      bundle = shapeBundle;
+      text = describeShapeBundle(shapeBundle);
+      caption = `Penpot screenshot — shape ${target.shapeId} on page "${shapeBundle.pageName}"`;
+    } else {
+      bundle = await convertPageToHtml(token, target.fileId, target.pageId);
+      text = describePageBundle(bundle, 'full open page');
+      caption = `Penpot screenshot — full page "${bundle.pageName}"`;
     }
-    const bundle = await convertPageToHtml(token, resolvedFile, resolvedPage);
-    return ok(describePageBundle(bundle, 'full open page'));
+
+    const content: Array<
+      | { type: 'text'; text: string }
+      | { type: 'image'; data: string; mimeType: string }
+    > = [{ type: 'text', text }];
+
+    if (includeScreenshot) {
+      const shot = await renderScreenshot({
+        html: bundle.html,
+        tokensCss: bundle.tokensCss,
+        fontsCss: bundle.fontsCss,
+        maxWidth,
+        maxHeight,
+      });
+      content.push(...buildScreenshotContent(shot, caption));
+    }
+
+    return { content };
   },
 );
 
@@ -208,7 +250,8 @@ server.registerTool(
   'get_page_tokens',
   {
     title: 'Design tokens applied on the current page',
-    description: 'Tokens (colors, typography, spacing, radius, ...) plus a ready-to-paste :root { ... } block.',
+    description:
+      'Tokens (colors, typography, spacing, radius, ...) plus a ready-to-paste :root { ... } block.',
     inputSchema: {
       fileId: z.string().uuid().optional(),
       pageId: z.string().uuid().optional(),
@@ -216,14 +259,8 @@ server.registerTool(
   },
   async ({ fileId, pageId }) => {
     const token = await requireToken();
-    let resolvedFile = fileId;
-    let resolvedPage = pageId;
-    if (!resolvedFile || !resolvedPage) {
-      const sel = await requireSelection();
-      resolvedFile ??= sel.fileId;
-      resolvedPage ??= sel.pageId;
-    }
-    const bundle = await getPageTokens(token, resolvedFile, resolvedPage);
+    const page = await resolvePage(fileId, pageId);
+    const bundle = await getPageTokens(token, page.fileId, page.pageId);
     const text = [
       `# Tokens — page "${bundle.pageName}"`,
       bundle.css ? '\n## CSS\n```css\n' + bundle.css + '\n```' : '',
@@ -259,14 +296,8 @@ server.registerTool(
   },
   async ({ fileId, pageId, depth, summary }) => {
     const token = await requireToken();
-    let resolvedFile = fileId;
-    let resolvedPage = pageId;
-    if (!resolvedFile || !resolvedPage) {
-      const sel = await requireSelection();
-      resolvedFile ??= sel.fileId;
-      resolvedPage ??= sel.pageId;
-    }
-    const overview = await getPageOverview(token, resolvedFile, resolvedPage, {
+    const page = await resolvePage(fileId, pageId);
+    const overview = await getPageOverview(token, page.fileId, page.pageId, {
       depth,
       summary,
     });
@@ -313,17 +344,8 @@ server.registerTool(
   },
   async ({ target = 'auto', shapeId, fileId, pageId, maxWidth, maxHeight }) => {
     const token = await requireToken();
-
-    const anyExplicit = !!(fileId || pageId || shapeId);
-    let resolvedFile = fileId;
-    let resolvedPage = pageId;
-    let resolvedShape = shapeId;
-    if (!resolvedFile || !resolvedPage || (!anyExplicit && !resolvedShape)) {
-      const sel = await requireSelection();
-      resolvedFile ??= sel.fileId;
-      resolvedPage ??= sel.pageId;
-      if (!anyExplicit) resolvedShape ??= sel.shapeId;
-    }
+    const resolved = await resolveTarget({ fileId, pageId, shapeId });
+    const resolvedShape = target === 'page' ? undefined : resolved.shapeId;
 
     const wantShape = target === 'shape' || (target === 'auto' && !!resolvedShape);
     if (target === 'shape' && !resolvedShape) {
@@ -334,8 +356,8 @@ server.registerTool(
 
     const bundle =
       wantShape && resolvedShape
-        ? await convertShapeToHtml(token, resolvedFile, resolvedPage, resolvedShape)
-        : await convertPageToHtml(token, resolvedFile, resolvedPage);
+        ? await convertShapeToHtml(token, resolved.fileId, resolved.pageId, resolvedShape)
+        : await convertPageToHtml(token, resolved.fileId, resolved.pageId);
 
     const shot = await renderScreenshot({
       html: bundle.html,
@@ -354,7 +376,6 @@ server.registerTool(
   },
 );
 
-registerShapeHtmlTool(server);
 registerAssetTools(server);
 
 registerGuideResources(server, { writable: WRITABLE });

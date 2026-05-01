@@ -54,3 +54,29 @@ export async function requireSelection(): Promise<McpSelection> {
   }
   return state.selection;
 }
+
+export async function resolvePage(
+  fileId: string | undefined,
+  pageId: string | undefined,
+): Promise<{ fileId: string; pageId: string }> {
+  if (fileId && pageId) return { fileId, pageId };
+  const sel = await requireSelection();
+  return { fileId: fileId ?? sel.fileId, pageId: pageId ?? sel.pageId };
+}
+
+export async function resolveTarget(args: {
+  fileId?: string;
+  pageId?: string;
+  shapeId?: string;
+}): Promise<{ fileId: string; pageId: string; shapeId?: string }> {
+  const anyExplicit = !!(args.fileId || args.pageId || args.shapeId);
+  if (args.fileId && args.pageId) {
+    return { fileId: args.fileId, pageId: args.pageId, shapeId: args.shapeId };
+  }
+  const sel = await requireSelection();
+  return {
+    fileId: args.fileId ?? sel.fileId,
+    pageId: args.pageId ?? sel.pageId,
+    shapeId: anyExplicit ? args.shapeId : (args.shapeId ?? sel.shapeId),
+  };
+}

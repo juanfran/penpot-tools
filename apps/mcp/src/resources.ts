@@ -47,8 +47,9 @@ Do NOT paste it verbatim. Always:
    mechanism (local asset, next/image, etc.). The Penpot URL is included so
    you can download the asset.
 
-When implementing or reworking a design, pair \`get_screenshot\` with
-\`get_current_html\`. The screenshot tells you visual hierarchy (what is a
+When implementing or reworking a design, call
+\`get_html({ includeScreenshot: true })\` so the HTML and a PNG render arrive
+in one round trip. The screenshot tells you visual hierarchy (what is a
 button vs a badge vs a card, where icons go); the HTML tells you the exact
 tokens, fonts, sizes, structure.
 `;

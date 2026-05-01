@@ -2,7 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import type { Page, Shape } from '@penpot-tools/converter/types';
 import { fetchPage, getPenpotBase, imageUrlFor } from '../penpot-api.ts';
-import { requireSelection, requireToken } from '../state.ts';
+import { requireToken, resolvePage } from '../state.ts';
 
 const MAX_DOWNLOAD_BYTES = 5 * 1024 * 1024;
 
@@ -112,14 +112,8 @@ export function registerAssetTools(server: McpServer): void {
     },
     async ({ fileId, pageId }) => {
       const token = await requireToken();
-      let resolvedFile = fileId;
-      let resolvedPage = pageId;
-      if (!resolvedFile || !resolvedPage) {
-        const sel = await requireSelection();
-        resolvedFile ??= sel.fileId;
-        resolvedPage ??= sel.pageId;
-      }
-      const page = await fetchPage(token, resolvedFile, resolvedPage);
+      const ids = await resolvePage(fileId, pageId);
+      const page = await fetchPage(token, ids.fileId, ids.pageId);
       const assets = collectPageAssets(page);
       const text = [
         `# Assets — page "${page.name}" (${assets.length} unique)`,
