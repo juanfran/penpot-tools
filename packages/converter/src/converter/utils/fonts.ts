@@ -23,12 +23,40 @@ function cleanFamily(family: string): string {
     .replace(/\s+/g, ' ');
 }
 
+const BUNDLED_FONT_IDS = new Set(['sourcesanspro']);
+
+const GENERIC_FAMILIES = new Set([
+  'serif',
+  'sans-serif',
+  'monospace',
+  'cursive',
+  'fantasy',
+  'system-ui',
+  'ui-serif',
+  'ui-sans-serif',
+  'ui-monospace',
+  'ui-rounded',
+  'math',
+  'emoji',
+  'inherit',
+  'initial',
+  'unset',
+]);
+
+function familySlug(family: string): string {
+  return family.toLowerCase().replace(/\s+/g, '');
+}
+
 function normalize(font: FontInfo): NormalizedFont | null {
   const fontFamily = cleanFamily(font.fontFamily);
   if (!fontFamily) return null;
+  if (GENERIC_FAMILIES.has(fontFamily.toLowerCase())) return null;
+  // Skip token-like references (e.g. "textos.texto1") that weren't resolved upstream.
+  if (fontFamily.includes('.')) return null;
   const weight = Number(font.fontWeight ?? 400) || 400;
   const italic = font.fontStyle === 'italic';
-  const fontId = font.fontId ?? fontFamily.toLowerCase().replace(/\s+/g, '');
+  const slug = familySlug(fontFamily);
+  const fontId = font.fontId ?? (BUNDLED_FONT_IDS.has(slug) ? slug : `gfont-${slug}`);
   return { fontId, fontFamily, weight, italic };
 }
 
@@ -124,7 +152,11 @@ export async function buildPenpotFontsCss(
   }
 
   for (const [family, variants] of gfontsByFamily) {
-    cssParts.push(await fetchGfontsCss(family, variants, baseUrl, fetchFn));
+    try {
+      cssParts.push(await fetchGfontsCss(family, variants, baseUrl, fetchFn));
+    } catch (err) {
+      console.warn(`[buildPenpotFontsCss] skipping "${family}":`, err);
+    }
   }
 
   return cssParts.join('\n');

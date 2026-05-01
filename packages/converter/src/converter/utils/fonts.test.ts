@@ -112,6 +112,71 @@ describe('buildPenpotFontsCss', () => {
     expect(fetchFn).toHaveBeenCalledWith(expectedUrl);
   });
 
+  it('cuando falta fontId, asume Google Fonts salvo familias bundled', async () => {
+    const expectedUrl =
+      'https://design.penpot.app/internal/gfonts/css?family=Inter:regular&display=block';
+    const fetchFn = mockFetch(
+      new Map([
+        [
+          expectedUrl,
+          `@font-face { src: url(https://fonts.gstatic.com/s/inter/v20/A.woff2) format('woff2'); }`,
+        ],
+      ]),
+    );
+
+    const css = await buildPenpotFontsCss(
+      [
+        { fontFamily: 'Inter', fontWeight: '400' },
+        { fontFamily: 'sourcesanspro', fontWeight: '400' },
+      ],
+      { fetch: fetchFn },
+    );
+
+    expect(css).toContain('https://design.penpot.app/internal/gfonts/font/inter/v20/A.woff2');
+    expect(css).toContain('https://design.penpot.app/fonts/sourcesanspro-regular.woff2');
+  });
+
+  it('ignora familias genéricas CSS y referencias tipo token', async () => {
+    const fetchFn = vi.fn();
+    const css = await buildPenpotFontsCss(
+      [
+        { fontFamily: 'monospace' },
+        { fontFamily: 'sans-serif' },
+        { fontFamily: 'textos.texto1' },
+      ],
+      { fetch: fetchFn as unknown as typeof globalThis.fetch },
+    );
+
+    expect(fetchFn).not.toHaveBeenCalled();
+    expect(css).toBe('');
+  });
+
+  it('si la CSS de gfonts falla, sigue emitiendo el resto', async () => {
+    const goodUrl =
+      'https://design.penpot.app/internal/gfonts/css?family=Roboto:regular&display=block';
+    const badUrl =
+      'https://design.penpot.app/internal/gfonts/css?family=Nope:regular&display=block';
+    const fetchFn = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === goodUrl) return new Response(SAMPLE_GFONT_CSS, { status: 200 });
+      if (url === badUrl) return new Response('not found', { status: 404 });
+      throw new Error(`Unexpected fetch: ${url}`);
+    }) as unknown as typeof globalThis.fetch;
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const css = await buildPenpotFontsCss(
+      [
+        { fontId: 'gfont-roboto', fontFamily: 'Roboto' },
+        { fontId: 'gfont-nope', fontFamily: 'Nope' },
+      ],
+      { fetch: fetchFn },
+    );
+
+    expect(css).toContain('https://design.penpot.app/internal/gfonts/font/roboto/v51/AAAA.woff2');
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
   it('combina bundled + google fonts en la misma salida', async () => {
     const expectedUrl =
       'https://design.penpot.app/internal/gfonts/css?family=Roboto:regular&display=block';
