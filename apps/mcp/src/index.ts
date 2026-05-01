@@ -93,24 +93,35 @@ response — always scan it before declaring done. Pass
 \`includeScreenshot:true\` on the create/update tools to get a PNG of the
 result back in the same call (saves the follow-up \`get_screenshot\`).
 
+**Author ONE outer wrapper.** When your HTML has a single top-level element,
+THAT element becomes the Penpot board — its background / radius / padding /
+shadow / dimensions land directly on the board's chrome (no synthetic frame
+in between). So for a card design, write \`<div data-name="Card" style="...">
+…children…</div>\` and your card chrome survives. The board's layer name is
+the MCP \`name\` param if provided, else the wrapper's \`data-name\`. Sibling
+top-level elements still get a synthetic wrapper, so prefer one-root.
+
 Composition: \`display:flex\` / \`display:grid\` for stacked layout;
 \`position:relative\` parent + \`position:absolute; left/top/right/bottom\`
 children for editorial overlap. **Z-order = DOM order** — later siblings
-paint on top. \`transform: rotate(<deg>)\` rotates around the centre.
+paint on top. \`transform: rotate(<deg>)\` rotates around the centre and
+snaps to integer degrees within rounding noise.
 
 ✓ Supported: width/height/padding (per-side); border-radius (px or %, %
 resolves against min(w,h)); border (uniform — top side wins); opacity, color
 (rgb/rgba/#hex); background (solid / linear-gradient / radial-gradient,
 alpha in stops works); box-shadow (drop, inset, negative spread, multi;
 \`0 0 0 Npx color\` → outer stroke); font (family/size/weight/style/
-line-height); letter-spacing, text-align; display:flex/grid (gap, padding,
-justify/align, grid-template px/fr/auto/repeat); \`var(--name, fallback)\`
-tokens — fallback REQUIRED (used to compute geometry).
+line-height); letter-spacing, text-align, **text-transform (uppercase /
+lowercase / capitalize is pre-applied to the stored glyphs)**;
+display:flex/grid (gap, padding, justify/align, grid-template px/fr/auto/
+repeat); \`var(--name, fallback)\` tokens — fallback REQUIRED (used to
+compute geometry).
 
-✗ Dropped silently (still surfaced as warnings): margin (use flex \`gap\`);
-conic-gradient, image \`url()\`, multiple backgrounds; scale/skew/matrix/3D
-transforms, transform-origin; position:fixed/sticky; filter; mix-blend-mode;
-clip-path; mask; outline; \`::before\`/\`::after\`; transitions, animations;
+✗ Dropped (warned): margin (use flex \`gap\` or padding); conic-gradient,
+image \`url()\`, multiple backgrounds; scale/skew/matrix/3D transforms,
+transform-origin; position:fixed/sticky; filter; mix-blend-mode; clip-path;
+mask; outline; \`::before\`/\`::after\`; transitions, animations;
 currentColor; text-decoration colour.
 
 Auto-splits & gotchas:
@@ -123,8 +134,11 @@ Auto-splits & gotchas:
   spacing use flex \`gap\`.
 - Mixed text + element children drops bare text:
   \`<p>Hello <span>x</span></p>\` loses "Hello". Wrap every text run in its
-  own element.
+  own element (e.g. \`<span>Hello</span> <span>x</span>\`).
 - One element per line of text — \`<br>\` and multi-\`<p>\` are not supported.
+- Padding on a \`position:relative\` wrapper does NOT inset its absolutely-
+  positioned children (HTML spec). Use child coordinates that already include
+  the padding — or wrap the children in a relative inner div.
 - Silent occlusion: a small layer fully covered by a later opaque sibling
   becomes invisible. Reorder DOM so the small layer paints AFTER the
   occluder, or shift the occluder.

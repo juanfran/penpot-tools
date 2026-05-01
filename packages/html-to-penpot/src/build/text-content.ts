@@ -44,6 +44,29 @@ function leafFills(style: PickedComputedStyle): Fill[] {
 }
 
 /**
+ * Pre-apply CSS `text-transform` to the stored text. Browsers apply the
+ * transform at render time, so `Element.textContent` returns the authored
+ * characters — but Penpot's text engine treats `textTransform` as a hint
+ * only on the leaf and the read-mode converter erases it. Storing the
+ * already-transformed string keeps the rendered glyphs faithful even after
+ * the file is edited or re-exported.
+ */
+function applyTextTransform(text: string, transform: string): string {
+  switch (transform) {
+    case 'uppercase':
+      return text.toUpperCase();
+    case 'lowercase':
+      return text.toLowerCase();
+    case 'capitalize':
+      // CSS capitalize uppercases the first letter of each whitespace-
+      // delimited word — keep the rest of each word unchanged.
+      return text.replace(/(^|\s)(\S)/g, (_, lead, ch) => lead + ch.toUpperCase());
+    default:
+      return text;
+  }
+}
+
+/**
  * Build a Penpot text `content` tree from a single text element. v1 emits a
  * single leaf inheriting the element's computed font styles. Multi-run text
  * (mixed `<span>` styling, `<br>` paragraph breaks) lands in Phase 2.
@@ -58,9 +81,10 @@ export function buildTextContent(
   opts: { verticalAlign?: 'top' | 'center' | 'bottom' } = {},
 ): TextContent {
   const fontSizePx = parsePx(style.fontSize) ?? 14;
+  const transformedText = applyTextTransform(text, style.textTransform || 'none');
 
   const leaf: TextLeaf = {
-    text,
+    text: transformedText,
     fontFamily: fontFamilyOf(style),
     fontSize: String(fontSizePx),
     fontWeight: style.fontWeight || '400',

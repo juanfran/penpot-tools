@@ -44,6 +44,7 @@ function style(overrides: Partial<PickedComputedStyle> = {}): PickedComputedStyl
     letterSpacing: 'normal',
     color: 'rgb(255, 255, 255)',
     textAlign: 'left',
+    textTransform: 'none',
     flexGrow: '0',
     flexShrink: '1',
     flexBasis: 'auto',

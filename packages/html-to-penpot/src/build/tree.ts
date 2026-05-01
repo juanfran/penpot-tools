@@ -29,8 +29,13 @@ export interface BuildTreeInput {
   pageId: Uuid;
   /** Page-absolute origin where the top-level board should be placed. */
   rootOffset: { x: number; y: number };
-  /** Name of the top-level board created to hold the measured tree. */
-  rootName: string;
+  /**
+   * Name applied to the root board. When undefined, the builder prefers the
+   * top element's `data-name`, falling back to a generic default. This lets
+   * the MCP layer pass the caller's `name` parameter through verbatim
+   * (including when the caller omits it).
+   */
+  rootName?: string;
   /** Parent of the new top-level board (page root by default). */
   parentBoardId?: Uuid;
 }
@@ -38,6 +43,8 @@ export interface BuildTreeInput {
 export interface BuildTreeResult {
   shapes: Shape[];
   rootShapeId: Uuid;
+  /** Resolved name on the root shape (caller name > data-name > default). */
+  rootShapeName: string;
   warnings: string[];
   /** Distinct token names referenced via `var(--...)` across the tree. */
   referencedTokens: string[];
@@ -98,13 +105,30 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
   const boardWidth = Math.max(1, Math.ceil(maxX - minX));
   const boardHeight = Math.max(1, Math.ceil(maxY - minY));
 
-  const rootShapeId = newShapeId();
+  // "Promote top to board" mode: when the user supplies a single top-level
+  // container with element children, use it directly as the board. This drops
+  // the otherwise-redundant synthetic frame that swallowed the user's
+  // background, radius, and shadow on every previous run, and avoids the
+  // "ghost wrapper" trap where Penpot's reg-objects then resized the synthetic
+  // to fit children-only and visually buried the user's chrome.
+  const promotedTop =
+    tops.length === 1 &&
+    tops[0]!.childIndices.length > 0 &&
+    !tops[0]!.imageMediaId &&
+    !tops[0]!.svgOuter
+      ? tops[0]!
+      : null;
+
   const idByIndex = new Map<number, Uuid>();
   const shapeIdsForNode: Uuid[] = nodes.map((n) => {
     const id = (n.preserveId as Uuid) ?? newShapeId();
     idByIndex.set(n.index, id);
     return id;
   });
+
+  const rootShapeId = promotedTop
+    ? shapeIdsForNode[promotedTop.index]!
+    : newShapeId();
 
   // Penpot stores flex children in back-to-front Z-order — the renderer
   // reverses the array on the way out (see converter CLAUDE.md "Flex child
@@ -117,41 +141,55 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
   const childOrder = (n: MeasuredNode): number[] =>
     isFlexContainer(n) ? [...n.childIndices].reverse() : n.childIndices;
 
-  // Top-level synthetic board that contains the measured tree.
-  const boardRect = buildSelrect({
-    x: rootOffset.x,
-    y: rootOffset.y,
-    width: boardWidth,
-    height: boardHeight,
-  });
-  const board: FrameShape = {
-    id: rootShapeId,
-    name: rootName,
-    type: 'frame',
-    parentId: parentBoardId,
-    frameId: parentBoardId,
-    x: rootOffset.x,
-    y: rootOffset.y,
-    width: boardWidth,
-    height: boardHeight,
-    selrect: boardRect.selrect,
-    points: boardRect.points,
-    transform: identityMatrix(),
-    transformInverse: identityMatrix(),
-    rotation: 0,
-    fills: [{ fillColor: '#FFFFFF' as HexColor, fillOpacity: 1 }],
-    strokes: [],
-    proportionLock: false,
-    showContent: true,
-    hideFillOnExport: false,
-    shapes: tops.map((n) => shapeIdsForNode[n.index]!),
-  };
-  shapes.push(board);
+  if (!promotedTop) {
+    // Synthetic board path: needed when there are zero, multiple, or non-
+    // container top-level elements. Its fill is transparent so any sibling
+    // top-level element painted on top isn't visually buried by an unrelated
+    // white plate.
+    const boardRect = buildSelrect({
+      x: rootOffset.x,
+      y: rootOffset.y,
+      width: boardWidth,
+      height: boardHeight,
+    });
+    const board: FrameShape = {
+      id: rootShapeId,
+      name: rootName ?? 'New design',
+      type: 'frame',
+      parentId: parentBoardId,
+      frameId: parentBoardId,
+      x: rootOffset.x,
+      y: rootOffset.y,
+      width: boardWidth,
+      height: boardHeight,
+      selrect: boardRect.selrect,
+      points: boardRect.points,
+      transform: identityMatrix(),
+      transformInverse: identityMatrix(),
+      rotation: 0,
+      fills: [{ fillColor: '#FFFFFF' as HexColor, fillOpacity: 1 }],
+      strokes: [],
+      proportionLock: false,
+      showContent: true,
+      hideFillOnExport: false,
+      shapes: tops.map((n) => shapeIdsForNode[n.index]!),
+    };
+    shapes.push(board);
+  }
 
   for (const node of nodes) {
     const id = shapeIdsForNode[node.index]!;
+    // Top-level nodes attach to the parent board. With `promotedTop`, the top
+    // node IS the root shape, so it must parent to `parentBoardId` directly
+    // (otherwise it would become its own parent). Non-top nodes always parent
+    // to their measured DOM parent.
+    const isPromotedTop = promotedTop !== null && node.index === promotedTop.index;
     const parent =
-      node.parentIndex === null ? rootShapeId : shapeIdsForNode[node.parentIndex]!;
+      node.parentIndex === null
+        ? promotedTop
+          ? parentBoardId
+          : rootShapeId
+        : shapeIdsForNode[node.parentIndex]!;
 
     // CSS `transform` produces an axis-aligned bounding box larger than the
     // element's own box. Penpot stores the unrotated rect plus a separate
@@ -291,9 +329,16 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
       const grid = isGridContainer(node)
         ? gridLayoutFromComputed(node.computedStyle, gridChildren)
         : null;
+      // Root-shape naming: explicit caller name (MCP `name` param) wins, then
+      // `data-name`, then a generic fallback so the layer panel never shows a
+      // bare semantic tag for the board. Non-root nodes keep
+      // `data-name` > tag (the tag is informative inside the tree).
+      const frameName = isPromotedTop
+        ? (rootName ?? node.dataAttrs['data-name'] ?? 'New design')
+        : (node.dataAttrs['data-name'] ?? node.semanticTag);
       const frame: FrameShape = {
         id,
-        name: node.dataAttrs['data-name'] ?? node.semanticTag,
+        name: frameName,
         type: 'frame',
         parentId: parent,
         frameId: parent,
@@ -392,9 +437,16 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
   // a layer the author placed but a later sibling completely hides.
   const occlusionWarnings = detectOcclusions(shapes, rootShapeId);
 
+  // Root shape name precedence: explicit caller name > top element data-name
+  // > generic fallback. Mirrors what the per-node loop applied to the
+  // promoted-top frame so the MCP can report it without re-deriving.
+  const topDataName = promotedTop?.dataAttrs['data-name'];
+  const rootShapeName = rootName ?? topDataName ?? 'New design';
+
   return {
     shapes,
     rootShapeId,
+    rootShapeName,
     warnings: [...warnings, ...occlusionWarnings],
     referencedTokens: Array.from(referencedTokens),
   };

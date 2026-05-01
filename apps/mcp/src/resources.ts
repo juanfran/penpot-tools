@@ -77,7 +77,14 @@ shadows, missing media ids, scale/skew transforms, occluded layers, …).
 ## What you send
 
 - Send a fragment, not a full document — \`<!DOCTYPE>\`, \`<html>\`, \`<body>\`
-  are auto-stripped. Your single root element becomes the board's contents.
+  are auto-stripped.
+- **Author one outer wrapper.** When the fragment has a single top-level
+  element, THAT element becomes the Penpot board: its background / radius /
+  padding / shadow / dimensions land on the board's chrome (no separate
+  synthetic frame). The board's name is the MCP \`name\` param if you pass
+  one, otherwise the wrapper's \`data-name\`. With multiple sibling top-level
+  elements, the converter falls back to a synthetic wrapper named after
+  \`name\`.
 - Set \`data-name="…"\` on **every** element. Without it, layers are named
   after the tag (\`div\`, \`section\`, …) and the Penpot outline is unusable.
 
@@ -108,6 +115,7 @@ shadows, missing media ids, scale/skew transforms, occluded layers, …).
 | box-shadow \`0 0 0 Npx color\`                        | ✓ — emitted as outer stroke         |
 | font: family / size / weight / style / line-height  | ✓                                   |
 | letter-spacing, text-align                          | ✓                                   |
+| text-transform (uppercase / lowercase / capitalize) | ✓ — pre-applied to the stored glyphs|
 | transform: rotate                                   | ✓                                   |
 | scale / skew / matrix / 3D / transform-origin       | drop                                |
 | display: flex / grid (incl. inline variants)        | ✓                                   |
@@ -180,6 +188,12 @@ overlay is semi-transparent so it does NOT trigger an occlusion warning:
 
 ## Gotchas
 
+- **Padding on a \`position:relative\` wrapper does NOT inset its absolutely-
+  positioned children.** Per HTML spec, abs children resolve their containing
+  block to the wrapper's *padding edge*, but their \`top:N\` / \`left:N\` are
+  still measured from that edge — there's no automatic offset. Two options:
+  (a) author child coordinates that already include the padding you want, or
+  (b) wrap the children in another \`position:relative\` div with no padding.
 - **Mixed text + element children loses prose.** \`<p>Hello <span>x</span></p>\`
   drops "Hello ". Wrap every text run in its own element (\`<span>\` is fine).
   Reported as a warning when it happens.

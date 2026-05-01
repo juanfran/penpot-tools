@@ -45,12 +45,16 @@ export function registerCreateFromHtmlTool(server: McpServer): void {
 
       const meta = await getFileMeta(token, resolvedFile);
 
-      const boardName = name ?? 'New design';
+      // Leave `rootName` undefined when the caller didn't pass one — the
+      // converter will then prefer the top element's `data-name`. Falling back
+      // to a generic "New design" only matters when the HTML has no usable
+      // name (no top-level `data-name`), which the converter handles itself.
       const bundle = await htmlToChanges(html, {
         pageId: resolvedPage as Uuid,
-        rootName: boardName,
+        rootName: name,
         rootPosition: position,
       });
+      const boardName = name ?? bundle.rootShapeName ?? 'New design';
 
       try {
         const result = await updateFile(

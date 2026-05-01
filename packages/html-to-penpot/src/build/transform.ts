@@ -82,8 +82,18 @@ function parseMatrixComponents(a: number, b: number, c: number, d: number): Pars
   const hasUnsupportedComponent =
     !nearlyEquals(scaleX, 1) || !nearlyEquals(scaleY, 1) || !nearlyEquals(skewX, 0);
 
+  // Chrome canonicalises the matrix to ~6 decimal places, so atan2 round-trip
+  // jitters by ~1e-6 (e.g. authored `-4deg` arrives as `-4.0000017deg`). Snap
+  // to the nearest integer when the result is within 1e-3 — designers virtually
+  // always author whole-degree rotations and the float drift only confuses
+  // future round-trips. Keep 4 dp in the rare non-integer case.
+  const css = -cssAngleDeg;
+  const rounded = Math.round(css);
+  const snapped =
+    Math.abs(css - rounded) < 1e-3 ? rounded : Math.round(css * 10000) / 10000;
+
   return {
-    rotationDeg: -cssAngleDeg,
+    rotationDeg: snapped,
     hasUnsupportedComponent,
   };
 }

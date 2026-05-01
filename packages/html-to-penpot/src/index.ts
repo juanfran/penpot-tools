@@ -31,11 +31,14 @@ export async function htmlToChanges(html: string, ctx: BuildContext): Promise<Ch
     maxHeight: ctx.maxHeight,
   });
 
-  const { shapes, rootShapeId, warnings: buildWarnings, referencedTokens } = buildTree({
+  const { shapes, rootShapeId, rootShapeName, warnings: buildWarnings, referencedTokens } = buildTree({
     nodes,
     pageId: ctx.pageId,
     rootOffset: ctx.rootPosition ?? { x: 0, y: 0 },
-    rootName: ctx.rootName ?? 'New design',
+    // Pass undefined through when the caller didn't supply a name — the
+    // builder will then prefer the top element's `data-name` so user
+    // intent (e.g. `<div data-name="Pricing card">`) survives untouched.
+    rootName: ctx.rootName,
     parentBoardId: ctx.parentId,
   });
 
@@ -46,6 +49,7 @@ export async function htmlToChanges(html: string, ctx: BuildContext): Promise<Ch
   return {
     changes: [...addChanges, regChange],
     rootShapeId,
+    rootShapeName,
     createdShapeIds,
     warnings: [...walkerWarnings, ...buildWarnings],
     referencedTokens,

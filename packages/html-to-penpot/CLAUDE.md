@@ -123,6 +123,30 @@ in `measure/headless.ts`). LLMs often wrap fragments in those tags by
 habit; without unwrapping we'd end up with stray nodes or a same-size
 duplicate frame.
 
+## Promoted-top board (single-root mode)
+
+When the fragment has exactly **one** top-level element AND that element has
+element children (no `<img>` / `<svg>`), the builder skips its synthetic
+"New design" wrapper and uses the user's element directly as the board.
+That element's `background` / `border-radius` / `box-shadow` / dimensions
+flow onto the board's chrome — exactly what the LLM authored.
+
+Without this promotion an outer card written as
+`<div data-name="Card" style="background:#FAF7F2; border-radius:18px;
+box-shadow:…;">…</div>` got buried under a synthetic 100% white frame
+hardcoded in `tree.ts`, and Penpot's `reg-objects` resized that synthetic
+to fit children-only — so a designer's 40px breathing room around the
+content also vanished. The promoted-top mode preserves both the chrome
+and the wrapper's full declared dimensions.
+
+Naming priority for the root shape:
+1. `BuildContext.rootName` — typically the MCP `name` parameter.
+2. The promoted top's `data-name`.
+3. The literal `'New design'`.
+
+Sibling top-level elements (no shared wrapper) still get the synthetic
+frame as their parent so they stay grouped on the page.
+
 ## Border-radius percentage resolution
 
 Browsers preserve `%` in the *computed* value of `border-radius` (e.g.

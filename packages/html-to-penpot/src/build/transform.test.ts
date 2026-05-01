@@ -45,4 +45,25 @@ describe('parseCssTransform', () => {
     );
     expect(result?.rotationDeg).toBeCloseTo(-10, 3);
   });
+
+  it('snaps to integer when Chrome canonicalises the matrix to 6 dp', () => {
+    // Chromium serialises the rotation matrix with ~6-decimal precision, so
+    // an authored `rotate(-4deg)` arrives here as `matrix(0.997564, ...)`
+    // — atan2 round-trip yields `-4.000001701562398`. Pre-fix this jittered
+    // value flowed straight into Penpot's `rotation` field and re-emerged in
+    // every read-back, polluting the LLM's "current state" view. Snap when
+    // close to integer.
+    const result = parseCssTransform('matrix(0.997564, -0.0697565, 0.0697565, 0.997564, 0, 0)');
+    expect(result?.rotationDeg).toBe(4);
+    expect(result?.hasUnsupportedComponent).toBe(false);
+  });
+
+  it('preserves true non-integer rotations at 4 dp', () => {
+    // 4.5° is genuinely intentional (e.g. tilted text); don't crush it to an
+    // integer just because we snap close ones.
+    const cos = Math.cos((-4.5 * Math.PI) / 180);
+    const sin = Math.sin((-4.5 * Math.PI) / 180);
+    const result = parseCssTransform(`matrix(${cos}, ${sin}, ${-sin}, ${cos}, 0, 0)`);
+    expect(result?.rotationDeg).toBe(4.5);
+  });
 });

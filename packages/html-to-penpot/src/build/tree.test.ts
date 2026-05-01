@@ -45,6 +45,7 @@ function style(overrides: Partial<PickedComputedStyle> = {}): PickedComputedStyl
     letterSpacing: 'normal',
     color: 'rgb(0, 0, 0)',
     textAlign: 'left',
+    textTransform: 'none',
     flexGrow: '0',
     flexShrink: '1',
     flexBasis: 'auto',
@@ -84,18 +85,20 @@ const PAGE_ID = '00000000-0000-0000-0000-000000000001' as Uuid;
 
 describe('buildTree — layer naming via data-name', () => {
   it('uses data-name on a frame (container with children)', () => {
+    // No rootName: the top frame is promoted and its `data-name` becomes the
+    // board's layer name (no synthetic wrapper to absorb it).
     const nodes = [
       node({ index: 0, parentIndex: null, childIndices: [1], semanticTag: 'div', dataAttrs: { 'data-name': 'Hero' } }),
       node({ index: 1, parentIndex: 0, semanticTag: 'p', textContent: 'Welcome' }),
     ];
-    const { shapes } = buildTree({
+    const { shapes, rootShapeName } = buildTree({
       nodes,
       pageId: PAGE_ID,
       rootOffset: { x: 0, y: 0 },
-      rootName: 'Board',
     });
     const hero = shapes.find((s) => s.type === 'frame' && s.name === 'Hero');
     expect(hero).toBeDefined();
+    expect(rootShapeName).toBe('Hero');
   });
 
   it('uses data-name on a text leaf', () => {
@@ -152,19 +155,22 @@ describe('buildTree — layer naming via data-name', () => {
     expect(image?.name).toBe('Logo');
   });
 
-  it('falls back to the semantic tag when data-name is missing', () => {
+  it('falls back to the semantic tag when data-name is missing on inner nodes', () => {
+    // Two-level tree so we can check the semantic-tag fallback on a non-root
+    // frame. The promoted top frame inherits `rootName` (or the generic
+    // default) — the inner frame is the one that exercises the tag fallback.
     const nodes = [
-      node({ index: 0, parentIndex: null, childIndices: [1], semanticTag: 'section' }),
-      node({ index: 1, parentIndex: 0, semanticTag: 'p', textContent: 'body' }),
+      node({ index: 0, parentIndex: null, childIndices: [1], semanticTag: 'div' }),
+      node({ index: 1, parentIndex: 0, childIndices: [2], semanticTag: 'section' }),
+      node({ index: 2, parentIndex: 1, semanticTag: 'p', textContent: 'body' }),
     ];
     const { shapes } = buildTree({
       nodes,
       pageId: PAGE_ID,
       rootOffset: { x: 0, y: 0 },
-      rootName: 'Board',
     });
-    const frame = shapes.find((s) => s.type === 'frame' && s.name !== 'Board');
-    expect(frame?.name).toBe('section');
+    const sectionFrame = shapes.find((s) => s.type === 'frame' && s.name === 'section');
+    expect(sectionFrame).toBeDefined();
     const text = shapes.find((s) => s.type === 'text');
     expect(text?.name).toBe('p');
   });
@@ -312,14 +318,17 @@ describe('buildTree — chip pattern is split into frame + text', () => {
         textContent: 'OCEAN VIEW',
       } satisfies MeasuredNode,
     ];
+    // No rootName: the chip's `data-name` becomes the layer name on the
+    // promoted top, which is what an LLM authoring `<div data-name="Chip">`
+    // would expect.
     const { shapes } = buildTree({
       nodes,
       pageId: PAGE_ID,
       rootOffset: { x: 0, y: 0 },
-      rootName: 'Board',
     });
-    // Board + chip frame + chip text = 3 shapes.
-    expect(shapes.length).toBe(3);
+    // Promoted-top chip frame + synthesized chip text = 2 shapes (the chip
+    // frame doubles as the root; no separate synthetic wrapper).
+    expect(shapes.length).toBe(2);
 
     const frame = shapes.find((s) => s.type === 'frame' && s.name === 'Chip');
     expect(frame).toBeDefined();

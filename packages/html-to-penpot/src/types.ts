@@ -46,6 +46,14 @@ export interface PickedComputedStyle {
   letterSpacing: string;
   color: string;
   textAlign: string;
+  /**
+   * `text-transform` (uppercase / lowercase / capitalize / none). The browser
+   * applies the transform AT RENDER TIME — `Element.textContent` always
+   * returns the authored characters. We read this so the build step can
+   * pre-apply the transform to the stored text (Penpot's read converter
+   * doesn't honour `textTransform` either).
+   */
+  textTransform: string;
   flexGrow: string;
   flexShrink: string;
   flexBasis: string;
@@ -185,6 +193,13 @@ export interface ChangeBundle {
   changes: FileChange[];
   /** Top-level shape created (board/frame). */
   rootShapeId: Uuid;
+  /**
+   * Resolved name applied to the root shape: caller's `rootName` if provided,
+   * otherwise the top element's `data-name`, otherwise a sensible default.
+   * Lets the MCP layer report the actual name without duplicating the fallback
+   * chain.
+   */
+  rootShapeName: string;
   /** Every shape created by this bundle, in document order. */
   createdShapeIds: Uuid[];
   /** Warnings about CSS we couldn't translate (LLM should fix). */
