@@ -7,6 +7,21 @@ export function identityMatrix(): GeomMatrix {
 }
 
 /**
+ * Snap a float to 2 decimal places. Browser `getBoundingClientRect` returns
+ * sub-pixel positions with ~6 decimal jitter (e.g. `97.81249809265137` for a
+ * rotated rect). 0.01px is below visual perception but big enough to hide
+ * the trigonometric residue, so diff-friendly numbers without real loss.
+ */
+export function snapCoord(n: number): number {
+  if (!Number.isFinite(n)) return n;
+  return Math.round(n * 100) / 100;
+}
+
+function snapPoint(p: GeomPoint): GeomPoint {
+  return { x: snapCoord(p.x), y: snapCoord(p.y) };
+}
+
+/**
  * Build the `selrect` + `points` Penpot expects from a measured AABB plus an
  * optional rotation in degrees (Penpot convention — the renderer emits CSS
  * `rotate(-rotation deg)`). `selrect` is always the unrotated AABB; `points`
@@ -20,10 +35,10 @@ export function buildSelrect(
   selrect: GeomRect & { x1: number; y1: number; x2: number; y2: number };
   points: [GeomPoint, GeomPoint, GeomPoint, GeomPoint];
 } {
-  const x = rect.x;
-  const y = rect.y;
-  const w = Math.max(0, rect.width);
-  const h = Math.max(0, rect.height);
+  const x = snapCoord(rect.x);
+  const y = snapCoord(rect.y);
+  const w = snapCoord(Math.max(0, rect.width));
+  const h = snapCoord(Math.max(0, rect.height));
 
   const corners: [GeomPoint, GeomPoint, GeomPoint, GeomPoint] = [
     { x, y },
@@ -49,7 +64,7 @@ export function buildSelrect(
   const rotate = (p: GeomPoint): GeomPoint => {
     const dx = p.x - cx;
     const dy = p.y - cy;
-    return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+    return snapPoint({ x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos });
   };
   return {
     selrect: { x, y, width: w, height: h, x1: x, y1: y, x2: x + w, y2: y + h },

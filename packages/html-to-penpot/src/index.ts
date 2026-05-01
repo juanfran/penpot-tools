@@ -35,6 +35,7 @@ export async function htmlToChanges(html: string, ctx: BuildContext): Promise<Ch
     html,
     tokensCss: ctx.tokensCss,
     fontsCss: ctx.fontsCss,
+    autoLoadFonts: ctx.autoLoadFonts,
     background: ctx.background,
     maxWidth: ctx.maxWidth,
     maxHeight: ctx.maxHeight,

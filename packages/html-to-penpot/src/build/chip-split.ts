@@ -183,6 +183,7 @@ function synthesizeTextChild(parent: MeasuredNode, childIndex: number): Measured
     inlineStyle: parent.inlineStyle ?? '',
     textContent: parent.textContent,
     ...(centering.verticalAlign ? { textVerticalAlign: centering.verticalAlign } : {}),
+    _chipSplitChild: true,
   };
 }
 

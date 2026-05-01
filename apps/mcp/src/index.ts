@@ -123,13 +123,16 @@ so paint order stays stable when you replace a child of a card.
 resolves against min(w,h)); border (uniform — top side wins); opacity, color
 (rgb/rgba/#hex); background (solid / linear-gradient / radial-gradient,
 alpha in stops works); box-shadow (drop, inset, negative spread, multi;
-\`0 0 0 Npx color\` → outer stroke); font (family/size/weight/style/
-line-height); letter-spacing, text-align, **text-transform (uppercase /
-lowercase / capitalize is pre-applied to the stored glyphs)**;
-display:flex/grid (gap, padding, justify/align, grid-template px/fr/auto/
-repeat); **\`<br>\` for hard line breaks inside a single text shape** (one
-paragraph per line); \`var(--name, fallback)\` tokens — fallback REQUIRED
-(used to compute geometry).
+\`0 0 0 Npx color\` → outer stroke); **\`font-family\` for any Google Fonts
+family is auto-loaded before measurement** (no \`<link>\` needed — just
+declare it: \`font-family: 'Inter'\`); font size/weight/style/line-height;
+letter-spacing, text-align, **text-transform (uppercase / lowercase /
+capitalize is pre-applied to the stored glyphs)**, \`white-space: nowrap\`
+to keep text single-line in a tight flex row; display:flex/grid (gap,
+padding, justify/align, grid-template px/fr/auto/repeat); **\`<br>\` for
+hard line breaks inside a single text shape** (one paragraph per line);
+\`var(--name, fallback)\` tokens — fallback REQUIRED (used to compute
+geometry).
 
 ✗ Dropped (warned): margin (use flex \`gap\` or padding); conic-gradient,
 image \`url()\`, multiple backgrounds; scale/skew/matrix/3D transforms,
@@ -161,6 +164,10 @@ Auto-splits & gotchas:
 - Silent occlusion: a small layer fully covered by a later opaque sibling
   becomes invisible. Reorder DOM so the small layer paints AFTER the
   occluder, or shift the occluder.
+- Tight flex rows: when a text leaf in \`display:flex\` wraps to a second
+  line because siblings + gaps + padding don't leave enough room, the tool
+  warns naming both the text and the row. Fix by widening, shrinking
+  gap/padding, or adding \`white-space:nowrap\` to the text.
 
 For framework conversion guidance (read-mode) fetch \`penpot://convert-guide\`.
 For the full write-mode reference (recipes with code, tokens DTCG schema,

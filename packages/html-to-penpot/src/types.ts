@@ -161,6 +161,15 @@ export interface MeasuredNode {
    * sits at the top-left of its 44×44 frame instead of the centre.
    */
   textVerticalAlign?: 'top' | 'center' | 'bottom';
+
+  /**
+   * Marker for the text child synthesized by `splitChipPatterns`. The
+   * synthesized child fills the parent chip's inner content box, so its
+   * height is naturally a multiple of the line-height (44px avatar → 44px
+   * text shape, well above the wrap threshold). Without this marker the
+   * tight-flex detector would warn on every chip / pill / avatar.
+   */
+  _chipSplitChild?: boolean;
 }
 
 /**
@@ -181,6 +190,13 @@ export interface BuildContext {
   tokensCss?: string;
   /** Optional @font-face CSS injected before measuring. */
   fontsCss?: string;
+  /**
+   * When `fontsCss` is omitted, scan the HTML for `font-family` declarations
+   * and auto-fetch matching `@font-face` rules from Google Fonts so geometry
+   * is measured against the real font. Default true. Set to `false` to keep
+   * measurement fully offline (used by the test suite).
+   */
+  autoLoadFonts?: boolean;
   /** Background of the headless document; only matters for measuring. */
   background?: string;
   /** Hard cap for the headless viewport. */

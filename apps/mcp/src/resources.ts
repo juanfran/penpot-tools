@@ -104,6 +104,24 @@ shadows, missing media ids, scale/skew transforms, occluded layers, …).
   layer A should appear on top of layer B, put A AFTER B in the DOM.
 - **Rotation:** \`transform: rotate(<deg>)\` rotates around the element centre.
 
+## Fonts (auto-loaded)
+
+Reference any **Google Fonts** family by name (\`font-family: 'Inter'\`,
+\`font-family: 'Source Sans 3'\`, \`font-family: 'Playfair Display'\`, …).
+Before measurement the converter scans your inline styles, fetches a
+matching \`@font-face\` block from \`fonts.googleapis.com\`, and injects it
+into the headless document. This means **text geometry is measured against
+the real font**, not a sans-serif fallback — chips and tight rows size
+correctly first try.
+
+If a family is not on Google Fonts (or the network call fails), you'll see
+a warning naming the unresolved families. The shape is still created;
+geometry just falls back to whatever the headless picks.
+
+Generic families (\`sans-serif\`, \`serif\`, \`monospace\`, \`system-ui\`, …)
+are NOT fetched — they resolve to the headless's defaults like in any
+browser.
+
 ## What works, what's dropped
 
 | Property                                            | Status                              |
@@ -117,10 +135,11 @@ shadows, missing media ids, scale/skew transforms, occluded layers, …).
 | conic-gradient, image \`url()\`, multiple bgs         | drop                                |
 | box-shadow (drop, inset, negative spread, multi)    | ✓                                   |
 | box-shadow \`0 0 0 Npx color\`                        | ✓ — emitted as outer stroke         |
-| font: family / size / weight / style / line-height  | ✓                                   |
+| font: family / size / weight / style / line-height  | ✓ — Google Fonts auto-loaded        |
 | letter-spacing, text-align                          | ✓                                   |
 | text-transform (uppercase / lowercase / capitalize) | ✓ — pre-applied to the stored glyphs|
-| transform: rotate                                   | ✓                                   |
+| white-space: nowrap (single-line text in tight rows)| ✓                                   |
+| transform: rotate                                   | ✓ — coords snapped to 0.01px        |
 | scale / skew / matrix / 3D / transform-origin       | drop                                |
 | display: flex / grid (incl. inline variants)        | ✓                                   |
 | position: fixed / sticky                            | drop (rendered as static)           |
@@ -211,7 +230,10 @@ overlay is semi-transparent so it does NOT trigger an occlusion warning:
   container, Chrome's flex shrinks every child including thin separators
   (\`width:1px\`). Authored \`width:Npx\` on a leaf is restored if flex shrunk
   it below N — but if you want a column to keep its intrinsic width, leave
-  more room or set \`flex-shrink:0\`.
+  more room or set \`flex-shrink:0\`. **A text leaf that wraps to a second
+  line inside a flex row is reported under \`## Warnings\`** — fix it by
+  widening the parent, shrinking padding/gap, shortening siblings, or
+  adding \`white-space: nowrap\` to the text.
 - **Silent occlusion is reported.** If you place a small layer (e.g. a price
   chip on a photo) and a later, larger element with an opaque fill lands on
   top of it, that layer is invisible. The tool reports each fully-covered

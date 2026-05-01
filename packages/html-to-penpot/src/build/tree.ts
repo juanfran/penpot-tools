@@ -17,12 +17,13 @@ import { gridLayoutFromComputed } from '../layout/grid';
 import { layoutItemFromComputed } from '../layout/layout-item';
 import { tokensInInlineStyle } from '../tokens/extract';
 import { buildTextContent } from './text-content';
-import { buildSelrect, identityMatrix } from './selrect';
+import { buildSelrect, identityMatrix, snapCoord } from './selrect';
 import { newShapeId } from './shape-id';
 import { parseCssTransform } from './transform';
 import { splitChipPatterns } from './chip-split';
 import { extractInlinePx } from './css';
 import { detectOcclusions } from './occlusion';
+import { detectTightFlexRows } from './tight-flex';
 
 export interface BuildTreeInput {
   nodes: MeasuredNode[];
@@ -245,10 +246,14 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
     }
 
     // Page-absolute coordinates for every shape, offset by the board origin.
-    const x = rootOffset.x + localX - minX;
-    const y = rootOffset.y + localY - minY;
-    const w = Math.max(0, localWidth);
-    const h = Math.max(0, localHeight);
+    // Snap to 0.01px to strip the trigonometric jitter that
+    // `getBoundingClientRect` introduces on rotated elements (else `x` lands
+    // at e.g. 97.81249809265137 — visually identical, diff-hostile, and a
+    // pain for any equality test downstream).
+    const x = snapCoord(rootOffset.x + localX - minX);
+    const y = snapCoord(rootOffset.y + localY - minY);
+    const w = snapCoord(Math.max(0, localWidth));
+    const h = snapCoord(Math.max(0, localHeight));
     const rotation = parsedTransform?.rotationDeg ?? 0;
     const rect = buildSelrect({ x, y, width: w, height: h }, rotation);
 
@@ -380,6 +385,11 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
       // delta without visibly affecting layout — the text shape is anchored
       // top-left, so 2 extra px on the right is invisible.
       const textWidth = Math.ceil(w) + 2;
+      // Rebuild selrect/points with the slack-inflated width so the text
+      // shape's `width` and `selrect.width` agree — otherwise the audit shows
+      // ~2.4px drift (selrect 63.59 vs width 66) and click targets miss the
+      // visible right edge.
+      const textRect = buildSelrect({ x, y, width: textWidth, height: h }, rotation);
       const textName = isPromotedTop
         ? (rootName ?? node.dataAttrs['data-name'] ?? 'New design')
         : (node.dataAttrs['data-name'] ?? node.semanticTag);
@@ -393,8 +403,8 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         y,
         width: textWidth,
         height: h,
-        selrect: rect.selrect,
-        points: rect.points,
+        selrect: textRect.selrect,
+        points: textRect.points,
         transform: identityMatrix(),
         transformInverse: identityMatrix(),
         rotation,
@@ -445,8 +455,13 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
   }
 
   // Surface design-time bugs the LLM can act on without re-investigating:
-  // a layer the author placed but a later sibling completely hides.
+  //   - a layer the author placed but a later sibling completely hides;
+  //   - a flex row that silently wraps a text child (the most common
+  //     "looked fine in HTML, broke in Penpot" failure mode).
   const occlusionWarnings = detectOcclusions(shapes, rootShapeId);
+  // `nodes` was post-chip-split; pass it directly so synthesized text shapes
+  // are inspected too (the chip-split text shape is what actually wraps).
+  const tightFlexWarnings = detectTightFlexRows(nodes);
 
   // Root shape name precedence: explicit caller name > top element data-name
   // > generic fallback. Mirrors what the per-node loop applied to the
@@ -458,7 +473,7 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
     shapes,
     rootShapeId,
     rootShapeName,
-    warnings: [...warnings, ...occlusionWarnings],
+    warnings: [...warnings, ...tightFlexWarnings, ...occlusionWarnings],
     referencedTokens: Array.from(referencedTokens),
   };
 }

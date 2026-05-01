@@ -65,7 +65,10 @@ async function roundtrip(html: string): Promise<{
   rendered: string;
   warnings: string[];
 }> {
-  const bundle = await htmlToChanges(html, { pageId: PAGE_ID });
+  // `autoLoadFonts: false` keeps the integration suite deterministic and
+  // offline. The font-loader is exercised separately in font-loader.test.ts
+  // (mocked fetch) and integration-fonts.test.ts (live, network-permitting).
+  const bundle = await htmlToChanges(html, { pageId: PAGE_ID, autoLoadFonts: false });
   const objects = objectsFromChanges(bundle.changes);
   const rootShape = objects[bundle.rootShapeId];
   if (!rootShape) throw new Error('root shape missing from changes');

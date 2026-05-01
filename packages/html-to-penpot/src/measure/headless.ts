@@ -1,6 +1,7 @@
 import { chromium, type Browser } from 'playwright';
 import type { MeasuredNode } from '../types';
 import { WALKER_SOURCE } from './walk';
+import { autoFontsCssFor, type FetchOptions } from './font-loader';
 
 /**
  * Tailwind v3 preflight reset, kept in sync with `apps/mcp/src/screenshot.ts`.
@@ -66,6 +67,15 @@ export interface MeasureInput {
   background?: string;
   maxWidth?: number;
   maxHeight?: number;
+  /**
+   * When the caller hasn't supplied `fontsCss`, scan the inline styles for
+   * `font-family` declarations and fetch a matching `@font-face` block from
+   * Google Fonts so geometry is measured against the real font. Default true.
+   * Tests can opt out with `false` to keep measurement offline.
+   */
+  autoLoadFonts?: boolean;
+  /** Test hook — overrides the global fetch / UA / timeout used by the loader. */
+  fontFetch?: FetchOptions;
 }
 
 export interface MeasureOutput {
@@ -125,6 +135,25 @@ ${fontsCss ? `<style data-penpot-fonts>${fontsCss}</style>` : ''}
  * visible content sits at `(0, 0)` — the same trick the screenshot tool uses.
  */
 export async function measureHtml(input: MeasureInput): Promise<MeasureOutput> {
+  const fontWarnings: string[] = [];
+  // Resolve webfonts BEFORE booting Chromium so the @font-face block is part
+  // of the document the browser parses on first paint — otherwise the first
+  // layout uses the fallback metrics and the LLM gets text shapes whose
+  // stored width is for the wrong font.
+  let resolvedFontsCss = input.fontsCss;
+  if (!resolvedFontsCss && input.autoLoadFonts !== false) {
+    const auto = await autoFontsCssFor(input.html, input.fontFetch);
+    if (auto.css) {
+      resolvedFontsCss = auto.css;
+    } else if (auto.families.length > 0) {
+      fontWarnings.push(
+        `Could not auto-load webfont(s) ${auto.families.map((f) => `"${f}"`).join(', ')}; ` +
+          `headless Chromium will fall back to its default sans-serif and the stored ` +
+          `text geometry may not match the final render. Pass \`fontsCss\` to override.`,
+      );
+    }
+  }
+
   const browser = await getBrowser();
   const context = await browser.newContext({
     viewport: {
@@ -135,7 +164,10 @@ export async function measureHtml(input: MeasureInput): Promise<MeasureOutput> {
   });
   try {
     const page = await context.newPage();
-    await page.setContent(buildDocument(input), { waitUntil: 'load' });
+    await page.setContent(
+      buildDocument({ ...input, fontsCss: resolvedFontsCss }),
+      { waitUntil: 'load' },
+    );
 
     await page.evaluate(async () => {
       // See screenshot.ts for the rationale — `@font-face` is lazy, so we have
@@ -187,7 +219,7 @@ export async function measureHtml(input: MeasureInput): Promise<MeasureOutput> {
       throw new Error('measureHtml: walker returned no nodes — empty or invalid HTML?');
     }
 
-    return { nodes: result.nodes, warnings: result.warnings ?? [] };
+    return { nodes: result.nodes, warnings: [...fontWarnings, ...(result.warnings ?? [])] };
   } finally {
     await context.close();
   }
