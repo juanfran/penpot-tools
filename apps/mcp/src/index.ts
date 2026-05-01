@@ -11,6 +11,8 @@ import { describePageBundle, describeShapeBundle } from './format.ts';
 import { buildScreenshotContent, renderScreenshot, type ScreenshotOutput } from './screenshot.ts';
 import { requireSelection, requireToken } from './state.ts';
 import { registerGuideResources } from './resources.ts';
+import { registerAssetTools } from './tools/assets.ts';
+import { registerShapeHtmlTool } from './tools/shape-html.ts';
 import { registerApplyTokenTool } from './tools/write/apply-token.ts';
 import { registerCreateFromHtmlTool } from './tools/write/create-from-html.ts';
 import { registerCreateTokenSetTool } from './tools/write/create-token-set.ts';
@@ -39,11 +41,20 @@ NO write tools registered, so do not offer to modify the design. The current
 file/page/shape selection is tracked by the viewer — call
 \`get_current_selection\` if unsure; do NOT ask the user for IDs.
 
-Read tools (\`get_current_html\`, \`get_page_html\`, \`get_screenshot\`,
-\`get_page_overview\`, \`get_page_tokens\`) return raw inline-styled HTML +
-tokensCss + fontsCss. Convert to the user's target framework — do NOT paste
-verbatim. Pair \`get_screenshot\` with \`get_current_html\` when implementing
-or reworking: image gives hierarchy, HTML gives exact tokens/sizes.
+Read tools (\`get_current_html\`, \`get_shape_html\`, \`get_page_html\`,
+\`get_screenshot\`, \`get_page_overview\`, \`get_page_tokens\`, \`list_assets\`,
+\`download_asset\`) return raw inline-styled HTML + tokensCss + fontsCss.
+Convert to the user's target framework — do NOT paste verbatim. Pair
+\`get_screenshot\` with \`get_current_html\` when implementing or reworking:
+image gives hierarchy, HTML gives exact tokens/sizes.
+
+If the user supplies explicit \`fileId\`/\`pageId\` (e.g. "in file X page Y,
+give me the header HTML") pass them directly to \`get_page_html\`,
+\`get_page_overview\`, \`get_page_tokens\`, \`get_shape_html\`, \`list_assets\`,
+or \`get_screenshot\` — viewer selection is not required when IDs are
+provided. Use \`get_page_overview\` to discover board ids by name, then
+\`get_shape_html\` to fetch each one. \`PENPOT_TOKEN\` env var can also be set
+to skip the viewer entirely.
 
 For framework conversion guidance fetch \`penpot://convert-guide\`.
 `.trim();
@@ -53,11 +64,20 @@ Tools to read and write the Penpot file the user has open in the dev-mode viewer
 (http://localhost:3000). The current file/page/shape selection is tracked by the
 viewer — call \`get_current_selection\` if unsure; do NOT ask the user for IDs.
 
-Read tools (\`get_current_html\`, \`get_page_html\`, \`get_screenshot\`,
-\`get_page_overview\`, \`get_page_tokens\`) return raw inline-styled HTML +
-tokensCss + fontsCss. Convert to the user's target framework — do NOT paste
-verbatim. Pair \`get_screenshot\` with \`get_current_html\` when implementing
-or reworking: image gives hierarchy, HTML gives exact tokens/sizes.
+Read tools (\`get_current_html\`, \`get_shape_html\`, \`get_page_html\`,
+\`get_screenshot\`, \`get_page_overview\`, \`get_page_tokens\`, \`list_assets\`,
+\`download_asset\`) return raw inline-styled HTML + tokensCss + fontsCss.
+Convert to the user's target framework — do NOT paste verbatim. Pair
+\`get_screenshot\` with \`get_current_html\` when implementing or reworking:
+image gives hierarchy, HTML gives exact tokens/sizes.
+
+If the user supplies explicit \`fileId\`/\`pageId\` (e.g. "in file X page Y,
+give me the header HTML") pass them directly to \`get_page_html\`,
+\`get_page_overview\`, \`get_page_tokens\`, \`get_shape_html\`, \`list_assets\`,
+or \`get_screenshot\` — viewer selection is not required when IDs are
+provided. Use \`get_page_overview\` to discover board ids by name, then
+\`get_shape_html\` to fetch each one. \`PENPOT_TOKEN\` env var can also be set
+to skip the viewer entirely.
 
 Write tools (\`create_design_from_html\`, \`update_selection_from_html\`,
 \`modify_shape\`, \`apply_token\`, \`create_token_set\`, \`upload_media\`) push
@@ -270,21 +290,40 @@ server.registerTool(
   {
     title: 'PNG of the current selection',
     description:
-      'Selected shape if any, else the full page. Defaults to a 1600×2000 cap; output is auto-trimmed and the caption flags it. Raise maxWidth/maxHeight only when needed.',
+      'Selected shape if any, else the full page. Defaults to a 1600×2000 cap; output is auto-trimmed and the caption flags it. Raise maxWidth/maxHeight only when needed. Pass fileId/pageId to bypass the viewer selection (e.g. when the viewer is not open).',
     inputSchema: {
       target: z
         .enum(['auto', 'page', 'shape'])
         .optional()
         .describe('auto (default) | page | shape.'),
       shapeId: z.string().optional(),
+      fileId: z
+        .string()
+        .uuid()
+        .optional()
+        .describe("Override the file id; defaults to the viewer's current selection."),
+      pageId: z
+        .string()
+        .uuid()
+        .optional()
+        .describe("Override the page id; defaults to the viewer's current selection."),
       maxWidth: z.number().int().positive().max(4000).optional(),
       maxHeight: z.number().int().positive().max(10000).optional(),
     },
   },
-  async ({ target = 'auto', shapeId, maxWidth, maxHeight }) => {
+  async ({ target = 'auto', shapeId, fileId, pageId, maxWidth, maxHeight }) => {
     const token = await requireToken();
-    const sel = await requireSelection();
-    const resolvedShape = shapeId ?? sel.shapeId;
+
+    const anyExplicit = !!(fileId || pageId || shapeId);
+    let resolvedFile = fileId;
+    let resolvedPage = pageId;
+    let resolvedShape = shapeId;
+    if (!resolvedFile || !resolvedPage || (!anyExplicit && !resolvedShape)) {
+      const sel = await requireSelection();
+      resolvedFile ??= sel.fileId;
+      resolvedPage ??= sel.pageId;
+      if (!anyExplicit) resolvedShape ??= sel.shapeId;
+    }
 
     const wantShape = target === 'shape' || (target === 'auto' && !!resolvedShape);
     if (target === 'shape' && !resolvedShape) {
@@ -295,8 +334,8 @@ server.registerTool(
 
     const bundle =
       wantShape && resolvedShape
-        ? await convertShapeToHtml(token, sel.fileId, sel.pageId, resolvedShape)
-        : await convertPageToHtml(token, sel.fileId, sel.pageId);
+        ? await convertShapeToHtml(token, resolvedFile, resolvedPage, resolvedShape)
+        : await convertPageToHtml(token, resolvedFile, resolvedPage);
 
     const shot = await renderScreenshot({
       html: bundle.html,
@@ -314,6 +353,9 @@ server.registerTool(
     return okImage(shot, caption);
   },
 );
+
+registerShapeHtmlTool(server);
+registerAssetTools(server);
 
 registerGuideResources(server, { writable: WRITABLE });
 
