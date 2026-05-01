@@ -54,8 +54,16 @@ export function parseTracks(value: string): GridTrack[] {
 
 /**
  * Build the Penpot grid container fields from a parent's computed style and
- * the children we already measured. Each child's `grid-row-start` /
- * `grid-column-start` is read from its computed style (1-based, like CSS).
+ * the children we already measured.
+ *
+ * `getComputedStyle` returns `'auto'` for `grid-row-start` / `grid-column-start`
+ * of auto-placed items — Chrome never resolves them to the actually-used cell.
+ * So we run our own CSS Grid auto-placement: explicit `grid-row` / `grid-column`
+ * (when both are integers) become `position: 'manual'`; everything else flows
+ * into the next free cell along `grid-auto-flow` (default `row`, scanning
+ * left-to-right then top-to-bottom). Without this, every auto-placed child
+ * landed on `(row 1, column 1)` and Penpot stacked them all on top of each
+ * other instead of distributing across the template.
  *
  * Returns null when the parent isn't a grid container.
  */
@@ -72,21 +80,108 @@ export function gridLayoutFromComputed(
   const layoutGridColumns = parseTracks(parentStyle.gridTemplateColumns);
   const layoutGridRows = parseTracks(parentStyle.gridTemplateRows);
 
+  // CSS default: `grid-auto-flow: row`. The walker passes the computed string
+  // verbatim; only the axis token matters here (we don't yet honour `dense`).
+  const flowAxis: 'row' | 'column' = (parentStyle.gridAutoFlow || 'row').includes('column')
+    ? 'column'
+    : 'row';
+  // Number of explicit tracks along the cross axis bounds the cursor wrap.
+  // When the template is empty (e.g. `grid-template-rows: none` for a flow:row
+  // container), we treat it as 1 — the implicit grid will grow as items are
+  // placed, but the cursor still needs a wrap point.
+  const numCols = Math.max(layoutGridColumns.length, 1);
+  const numRows = Math.max(layoutGridRows.length, 1);
+
+  interface Entry extends GridChildEntry {
+    cellId: string;
+    explicitRow: number | null;
+    explicitCol: number | null;
+    placedRow: number;
+    placedCol: number;
+  }
+
+  const entries: Entry[] = children.map(({ node, shapeId }) => ({
+    node,
+    shapeId,
+    cellId: randomUUID(),
+    explicitRow: parseNumber(node.computedStyle.gridRowStart),
+    explicitCol: parseNumber(node.computedStyle.gridColumnStart),
+    placedRow: 0,
+    placedCol: 0,
+  }));
+
+  const occupied = new Set<string>();
+  const key = (r: number, c: number): string => `${r},${c}`;
+
+  // Pass 1: pin every child with explicit `grid-row` AND `grid-column`. They
+  // mark their cells occupied regardless of DOM order so subsequent auto
+  // children skip over them — this matches the CSS Grid spec.
+  for (const entry of entries) {
+    if (entry.explicitRow !== null && entry.explicitCol !== null) {
+      entry.placedRow = entry.explicitRow;
+      entry.placedCol = entry.explicitCol;
+      occupied.add(key(entry.placedRow, entry.placedCol));
+    }
+  }
+
+  // Pass 2: auto-place the rest along the flow axis. The cursor only ever
+  // moves forward (sparse placement, the default). Children with only one
+  // axis specified are still treated as fully auto here — the partial-axis
+  // case is rare in our corpus and would need spec-faithful "next free row
+  // for this column" logic that we can add later.
+  let cursorRow = 1;
+  let cursorCol = 1;
+  for (const entry of entries) {
+    if (entry.explicitRow !== null && entry.explicitCol !== null) continue;
+
+    if (flowAxis === 'row') {
+      while (true) {
+        if (cursorCol > numCols) {
+          cursorCol = 1;
+          cursorRow++;
+        }
+        if (!occupied.has(key(cursorRow, cursorCol))) {
+          entry.placedRow = cursorRow;
+          entry.placedCol = cursorCol;
+          occupied.add(key(cursorRow, cursorCol));
+          cursorCol++;
+          break;
+        }
+        cursorCol++;
+      }
+    } else {
+      while (true) {
+        if (cursorRow > numRows) {
+          cursorRow = 1;
+          cursorCol++;
+        }
+        if (!occupied.has(key(cursorRow, cursorCol))) {
+          entry.placedRow = cursorRow;
+          entry.placedCol = cursorCol;
+          occupied.add(key(cursorRow, cursorCol));
+          cursorRow++;
+          break;
+        }
+        cursorRow++;
+      }
+    }
+  }
+
   const layoutGridCells: Record<string, GridCell> = {};
-  for (const { node, shapeId } of children) {
-    const id = randomUUID();
-    const row = parseNumber(node.computedStyle.gridRowStart);
-    const column = parseNumber(node.computedStyle.gridColumnStart);
+  for (const entry of entries) {
     const cell: GridCell = {
-      id: id as Uuid,
-      row: row ?? 1,
+      id: entry.cellId as Uuid,
+      row: entry.placedRow,
       rowSpan: 1,
-      column: column ?? 1,
+      column: entry.placedCol,
       columnSpan: 1,
-      position: row !== null && column !== null ? 'manual' : 'auto',
-      shapes: [shapeId],
+      // We always compute the resolved cell ourselves — even when the author
+      // didn't specify one — so Penpot doesn't need to re-run auto-placement.
+      // 'manual' tells the renderer the row/column are authoritative.
+      position: 'manual',
+      shapes: [entry.shapeId],
     };
-    layoutGridCells[id] = cell;
+    layoutGridCells[entry.cellId] = cell;
   }
 
   return {

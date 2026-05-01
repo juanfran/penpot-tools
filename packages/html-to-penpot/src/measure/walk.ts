@@ -39,7 +39,7 @@ export const WALKER_SOURCE = `
     'boxShadow',
     'flexDirection','justifyContent','alignItems','rowGap','columnGap',
     'paddingTop','paddingRight','paddingBottom','paddingLeft',
-    'gridTemplateColumns','gridTemplateRows','gridRowStart','gridColumnStart',
+    'gridTemplateColumns','gridTemplateRows','gridRowStart','gridColumnStart','gridAutoFlow',
     'fontFamily','fontSize','fontWeight','fontStyle','lineHeight','letterSpacing',
     'color','textAlign','textTransform',
     'flexGrow','flexShrink','flexBasis',

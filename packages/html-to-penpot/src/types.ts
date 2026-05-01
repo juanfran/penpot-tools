@@ -38,6 +38,14 @@ export interface PickedComputedStyle {
   gridTemplateRows: string;
   gridRowStart: string;
   gridColumnStart: string;
+  /**
+   * `grid-auto-flow` (`row` / `column` / `row dense` / `column dense`). The
+   * spec default is `row`. We need this because `getComputedStyle` returns
+   * `'auto'` for `grid-row-start` / `grid-column-start` of auto-placed grid
+   * items — never the resolved cell — so the build step computes placement
+   * itself by walking children in DOM order with this flow direction.
+   */
+  gridAutoFlow: string;
   fontFamily: string;
   fontSize: string;
   fontWeight: string;

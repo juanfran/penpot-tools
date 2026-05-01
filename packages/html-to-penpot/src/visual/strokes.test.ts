@@ -36,6 +36,7 @@ function style(overrides: Partial<PickedComputedStyle>): PickedComputedStyle {
     gridTemplateRows: 'none',
     gridRowStart: 'auto',
     gridColumnStart: 'auto',
+    gridAutoFlow: 'row',
     fontFamily: 'sans-serif',
     fontSize: '14px',
     fontWeight: '400',

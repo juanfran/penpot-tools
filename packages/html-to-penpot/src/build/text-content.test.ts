@@ -36,6 +36,7 @@ function makeStyle(over: Partial<PickedComputedStyle> = {}): PickedComputedStyle
     gridTemplateRows: 'none',
     gridRowStart: 'auto',
     gridColumnStart: 'auto',
+    gridAutoFlow: 'row',
     fontFamily: 'Inter',
     fontSize: '16px',
     fontWeight: '400',
