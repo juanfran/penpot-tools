@@ -8,7 +8,7 @@ import {
   getPageTokens,
 } from './convert.ts';
 import { describePageBundle, describeShapeBundle } from './format.ts';
-import { renderScreenshot } from './screenshot.ts';
+import { buildScreenshotContent, renderScreenshot, type ScreenshotOutput } from './screenshot.ts';
 import { requireSelection, requireToken } from './state.ts';
 import { registerGuideResources } from './resources.ts';
 import { registerApplyTokenTool } from './tools/write/apply-token.ts';
@@ -62,11 +62,56 @@ or reworking: image gives hierarchy, HTML gives exact tokens/sizes.
 Write tools (\`create_design_from_html\`, \`update_selection_from_html\`,
 \`modify_shape\`, \`apply_token\`, \`create_token_set\`, \`upload_media\`) push
 changes via Penpot's REST API. The user must refresh the viewer to see results.
-HTML is rendered in headless Chromium; only a CSS subset is honoured.
+HTML is rendered in headless Chromium; only a CSS subset is honoured (below).
 
-For framework conversion guidance fetch \`penpot://convert-guide\`.
-For the supported CSS subset, token format, write workflow and concurrency
-notes fetch \`penpot://write-guide\`.
+# Write-mode CSS rules (condensed — full reference at \`penpot://write-guide\`)
+
+Send a fragment (\`<!DOCTYPE>\`/\`<html>\`/\`<body>\` are auto-stripped). Set
+\`data-name="..."\` on EVERY element — without it layers are named after the
+tag. Every dropped CSS declaration is reported under \`## Warnings\` in the
+response — always scan it before declaring done. Pass
+\`includeScreenshot:true\` on the create/update tools to get a PNG of the
+result back in the same call (saves the follow-up \`get_screenshot\`).
+
+Composition: \`display:flex\` / \`display:grid\` for stacked layout;
+\`position:relative\` parent + \`position:absolute; left/top/right/bottom\`
+children for editorial overlap. **Z-order = DOM order** — later siblings
+paint on top. \`transform: rotate(<deg>)\` rotates around the centre.
+
+✓ Supported: width/height/padding (per-side); border-radius (px or %, %
+resolves against min(w,h)); border (uniform — top side wins); opacity, color
+(rgb/rgba/#hex); background (solid / linear-gradient / radial-gradient,
+alpha in stops works); box-shadow (drop, inset, negative spread, multi;
+\`0 0 0 Npx color\` → outer stroke); font (family/size/weight/style/
+line-height); letter-spacing, text-align; display:flex/grid (gap, padding,
+justify/align, grid-template px/fr/auto/repeat); \`var(--name, fallback)\`
+tokens — fallback REQUIRED (used to compute geometry).
+
+✗ Dropped silently (still surfaced as warnings): margin (use flex \`gap\`);
+conic-gradient, image \`url()\`, multiple backgrounds; scale/skew/matrix/3D
+transforms, transform-origin; position:fixed/sticky; filter; mix-blend-mode;
+clip-path; mask; outline; \`::before\`/\`::after\`; transitions, animations;
+currentColor; text-decoration colour.
+
+Auto-splits & gotchas:
+- A leaf with text PLUS box visuals (background/border/shadow) is auto-split
+  into a frame + child text shape — use this single-element pattern for chips,
+  pills, buttons, avatars, badges, circular icon buttons. Text auto-centres
+  when the parent uses flex centring (\`align-items:center;
+  justify-content:center\`).
+- Padding is invisible without background/border/shadow. For invisible
+  spacing use flex \`gap\`.
+- Mixed text + element children drops bare text:
+  \`<p>Hello <span>x</span></p>\` loses "Hello". Wrap every text run in its
+  own element.
+- One element per line of text — \`<br>\` and multi-\`<p>\` are not supported.
+- Silent occlusion: a small layer fully covered by a later opaque sibling
+  becomes invisible. Reorder DOM so the small layer paints AFTER the
+  occluder, or shift the occluder.
+
+For framework conversion guidance (read-mode) fetch \`penpot://convert-guide\`.
+For the full write-mode reference (recipes with code, tokens DTCG schema,
+concurrency, per-attribute matrix) fetch \`penpot://write-guide\`.
 `.trim();
 
 const SERVER_INSTRUCTIONS = WRITABLE ? READ_WRITE_INSTRUCTIONS : READ_ONLY_INSTRUCTIONS;
@@ -78,27 +123,9 @@ const server = new McpServer(
 
 const ok = (text: string) => ({ content: [{ type: 'text' as const, text }] });
 
-interface ImageMeta {
-  base64: string;
-  width: number;
-  height: number;
-  fullWidth?: number;
-  fullHeight?: number;
-  trimmed?: boolean;
-}
-
-const okImage = (img: ImageMeta, caption: string) => {
-  const sizeNote =
-    img.trimmed && img.fullWidth && img.fullHeight
-      ? `${caption} (${img.width}×${img.height} px — trimmed from ${img.fullWidth}×${img.fullHeight}; pass maxWidth/maxHeight to see more)`
-      : `${caption} (${img.width}×${img.height} px)`;
-  return {
-    content: [
-      { type: 'text' as const, text: sizeNote },
-      { type: 'image' as const, data: img.base64, mimeType: 'image/png' as const },
-    ],
-  };
-};
+const okImage = (img: ScreenshotOutput, caption: string) => ({
+  content: buildScreenshotContent(img, caption),
+});
 
 server.registerTool(
   'get_current_selection',

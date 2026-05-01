@@ -3,9 +3,11 @@ import { htmlToChanges } from '@penpot-tools/html-to-penpot';
 import type { FileChange, Shape, Uuid } from '@penpot-tools/converter/types';
 import { z } from 'zod';
 import { fetchPage, getFileMeta, PenpotConflictError, updateFile } from '../../penpot-api.ts';
+import type { McpContentBlock } from '../../screenshot.ts';
 import { requireSelection, requireToken } from '../../state.ts';
+import { shapeScreenshotContent } from './screenshot.ts';
 
-const ok = (text: string) => ({ content: [{ type: 'text' as const, text }] });
+const okText = (text: string) => ({ content: [{ type: 'text' as const, text }] });
 
 interface DelObjChange {
   type: 'del-obj';
@@ -35,23 +37,29 @@ export function registerUpdateSelectionFromHtmlTool(server: McpServer): void {
     {
       title: 'Replace the selected shape with a new HTML design',
       description:
-        'Replaces the selected shape (and descendants) with a fresh subtree at the same position. The new shape gets a new id. Send a fragment (the tool auto-strips `<!DOCTYPE>`/`<html>`/`<body>`) and set `data-name="..."` on every element. The response includes a `## Warnings` section listing dropped CSS — read it. For single-attribute tweaks use modify_shape.',
+        'Replaces the selected shape (and descendants) with a fresh subtree at the same position. The new shape gets a new id. Send a fragment (`<!DOCTYPE>`/`<html>`/`<body>` are auto-stripped) and set `data-name="..."` on every element. The response includes a `## Warnings` section listing dropped CSS — read it. Pass `includeScreenshot:true` to get a PNG of the result back in the same call (skips the follow-up `get_screenshot`). The condensed CSS subset lives in the server `instructions`; full reference at `penpot://write-guide`. For single-attribute tweaks use modify_shape.',
       inputSchema: {
         html: z.string().min(1).describe('Replacement HTML+CSS.'),
         name: z.string().optional(),
+        includeScreenshot: z
+          .boolean()
+          .optional()
+          .describe(
+            'When true, render the resulting shape and return a PNG alongside the text summary (saves a follow-up `get_screenshot` round-trip). Default false.',
+          ),
         fileId: z.string().uuid().optional(),
         pageId: z.string().uuid().optional(),
         shapeId: z.string().uuid().optional(),
       },
     },
-    async ({ html, name, fileId, pageId, shapeId }) => {
+    async ({ html, name, includeScreenshot, fileId, pageId, shapeId }) => {
       const token = await requireToken();
       const sel = await requireSelection();
       const resolvedFile = fileId ?? sel.fileId;
       const resolvedPage = pageId ?? sel.pageId;
       const resolvedShape = shapeId ?? sel.shapeId;
       if (!resolvedShape) {
-        return ok(
+        return okText(
           '# No shape selected\n\nPick the shape you want to replace in the viewer, then call this tool again.',
         );
       }
@@ -59,7 +67,9 @@ export function registerUpdateSelectionFromHtmlTool(server: McpServer): void {
       const page = await fetchPage(token, resolvedFile, resolvedPage);
       const target = page.objects[resolvedShape];
       if (!target) {
-        return ok(`# Shape not found\n\nShape ${resolvedShape} is not on page ${resolvedPage}.`);
+        return okText(
+          `# Shape not found\n\nShape ${resolvedShape} is not on page ${resolvedPage}.`,
+        );
       }
       const anchorX = target.x ?? target.selrect.x;
       const anchorY = target.y ?? target.selrect.y;
@@ -95,6 +105,7 @@ export function registerUpdateSelectionFromHtmlTool(server: McpServer): void {
           meta.vern,
           changes,
         );
+        const replacementName = name ?? target.name ?? resolvedShape;
         const summary = [
           `# Replaced shape "${target.name ?? resolvedShape}"`,
           '',
@@ -103,16 +114,28 @@ export function registerUpdateSelectionFromHtmlTool(server: McpServer): void {
           `- New file revn: ${result.revn}`,
           bundle.warnings.length
             ? `\n## Warnings\n${bundle.warnings.map((w) => `- ${w}`).join('\n')}`
-            : '',
+            : '\n_No warnings — every authored CSS declaration was applied._',
           '',
           'Refresh the viewer to see the replacement.',
         ]
           .filter(Boolean)
           .join('\n');
-        return ok(summary);
+
+        const content: McpContentBlock[] = [{ type: 'text', text: summary }];
+        if (includeScreenshot) {
+          const shot = await shapeScreenshotContent(
+            token,
+            resolvedFile,
+            resolvedPage,
+            bundle.rootShapeId,
+            `Penpot screenshot — replacement "${replacementName}" (id ${bundle.rootShapeId})`,
+          );
+          content.push(...shot);
+        }
+        return { content };
       } catch (err) {
         if (err instanceof PenpotConflictError) {
-          return ok(
+          return okText(
             `# update-file conflict\n\n${err.message}\n\nReload your selection and try again.`,
           );
         }

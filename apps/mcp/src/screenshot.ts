@@ -89,6 +89,36 @@ export interface ScreenshotOutput {
   trimmed: boolean;
 }
 
+export interface McpTextBlock {
+  type: 'text';
+  text: string;
+}
+export interface McpImageBlock {
+  type: 'image';
+  data: string;
+  mimeType: 'image/png';
+}
+export type McpContentBlock = McpTextBlock | McpImageBlock;
+
+/**
+ * Two-block MCP content for an image tool result: a `caption (WxH px)` text
+ * line followed by the PNG. Shared by the read-mode `get_screenshot` tool and
+ * the optional `includeScreenshot` path on the write tools so they format the
+ * same way.
+ */
+export function buildScreenshotContent(
+  shot: ScreenshotOutput,
+  caption: string,
+): McpContentBlock[] {
+  const sizeNote = shot.trimmed
+    ? `${caption} (${shot.width}×${shot.height} px — trimmed from ${shot.fullWidth}×${shot.fullHeight}; pass maxWidth/maxHeight to see more)`
+    : `${caption} (${shot.width}×${shot.height} px)`;
+  return [
+    { type: 'text', text: sizeNote },
+    { type: 'image', data: shot.base64, mimeType: 'image/png' },
+  ];
+}
+
 function buildDocument({ html, fontsCss, tokensCss, background }: ScreenshotInput): string {
   const bg = background ?? '#ffffff';
   return `<!DOCTYPE html>
