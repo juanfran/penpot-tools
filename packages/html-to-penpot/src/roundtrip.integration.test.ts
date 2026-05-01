@@ -183,3 +183,95 @@ describe('round-trip: text content matches', () => {
     expect(rendered).toContain('Bienvenido');
   }, 30_000);
 });
+
+describe('round-trip: <br> between text runs survives as a multi-line text shape', () => {
+  // Regression: `<div>Casa<br/>Olivar</div>` previously dropped both runs and
+  // emitted a 0-px <br> rect. The walker now treats text + <br>-only as a
+  // single text leaf and the build step splits "\n" into paragraphs.
+  it('keeps both text runs and produces ONE text shape (no stray br rect)', async () => {
+    const html = `<div data-name="Card" style="position:relative; width:400px; height:200px; background:#FFF;">
+      <div data-name="Title" style="position:absolute; left:16px; top:16px; font-size:30px; line-height:1.05; color:#161616;">Casa<br/>Olivar</div>
+    </div>`;
+
+    const { shapes, rendered, warnings } = await roundtrip(html);
+    expect(warnings).toEqual([]);
+
+    // Exactly one text shape — no auxiliary "br" rect.
+    const textShapes = shapes.filter((s) => s.type === 'text');
+    expect(textShapes.length).toBe(1);
+    expect(textShapes[0]!.name).toBe('Title');
+    expect(shapes.find((s) => s.name === 'br')).toBeUndefined();
+
+    // Both lines reach the read-back HTML.
+    expect(rendered).toContain('Casa');
+    expect(rendered).toContain('Olivar');
+  }, 30_000);
+
+  it('emits one paragraph per line in the Penpot text content', async () => {
+    const html = `<div data-name="Card" style="position:relative; width:400px; height:200px;">
+      <div data-name="Title" style="position:absolute; left:16px; top:16px; font-size:24px;">One<br/>Two<br/>Three</div>
+    </div>`;
+
+    const { shapes } = await roundtrip(html);
+    const text = shapes.find((s) => s.name === 'Title') as
+      | (import('@penpot-tools/converter/types').TextShape & { content: import('@penpot-tools/converter/types').TextContent })
+      | undefined;
+    expect(text).toBeDefined();
+    const paragraphs = text!.content.children[0]!.children;
+    expect(paragraphs.length).toBe(3);
+    expect(paragraphs[0]!.children[0]!.text).toBe('One');
+    expect(paragraphs[1]!.children[0]!.text).toBe('Two');
+    expect(paragraphs[2]!.children[0]!.text).toBe('Three');
+  }, 30_000);
+});
+
+describe('round-trip: single text-only wrapper promotes to a text shape (no synthetic frame)', () => {
+  // Regression: `update_selection_from_html` with `<div data-name="X">text</div>`
+  // produced a frame containing a text shape with the same name AND a default
+  // white fill behind the text. Now the text element IS the root shape.
+  it('produces exactly one text shape (no wrapper frame)', async () => {
+    const html = `<div data-name="Address" style="font-family:'Inter',sans-serif; font-size:13px; color:#1B1B1B;">Carrer de l'Olivera</div>`;
+
+    const { shapes, warnings } = await roundtrip(html);
+    expect(warnings).toEqual([]);
+    expect(shapes.length).toBe(1);
+    expect(shapes[0]!.type).toBe('text');
+    expect(shapes[0]!.name).toBe('Address');
+  }, 30_000);
+
+  it('honours the caller rootName on the promoted text root', async () => {
+    const bundle = await htmlToChanges(
+      `<div data-name="Address">Hello</div>`,
+      { pageId: PAGE_ID, rootName: 'Renamed' },
+    );
+    const objects = objectsFromChanges(bundle.changes);
+    const root = objects[bundle.rootShapeId];
+    expect(root?.type).toBe('text');
+    expect(root?.name).toBe('Renamed');
+    expect(bundle.rootShapeName).toBe('Renamed');
+  }, 30_000);
+});
+
+describe('round-trip: source whitespace inside text is normalized', () => {
+  // Source HTML often pads text with newlines / indentation between the open
+  // and close tags. Browsers collapse those visually; the stored Penpot text
+  // must match what the user sees, not the raw source.
+  it('strips leading/trailing newlines and collapses internal whitespace runs', async () => {
+    const html = `<div data-name="Card" style="position:relative; width:600px; height:80px;">
+      <div data-name="Body" style="position:absolute; left:16px; top:16px; font-size:14px;">
+            Tramuntana stone,
+            restored beams.
+          </div>
+    </div>`;
+
+    const { shapes } = await roundtrip(html);
+    const text = shapes.find((s) => s.name === 'Body') as
+      | import('@penpot-tools/converter/types').TextShape
+      | undefined;
+    expect(text).toBeDefined();
+    const content = text!.content!;
+    const leafText = content.children[0].children[0].children[0]!.text;
+    // No leading/trailing whitespace, no double-spaces, no embedded newlines.
+    expect(leafText).toBe('Tramuntana stone, restored beams.');
+  }, 30_000);
+});

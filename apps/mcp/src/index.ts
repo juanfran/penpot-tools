@@ -108,6 +108,16 @@ children for editorial overlap. **Z-order = DOM order** — later siblings
 paint on top. \`transform: rotate(<deg>)\` rotates around the centre and
 snaps to integer degrees within rounding noise.
 
+For tiny edits prefer \`modify_shape\`:
+- \`ops.text\`: replace a label without rewriting HTML — preserves font, size,
+  colour, alignment. Multi-line input ('\\n') becomes paragraphs.
+- \`ops.fill\` / \`ops.stroke\` / \`ops.radius\` / \`ops.opacity\` / \`ops.name\`
+  for surgical visual tweaks. Reach for \`update_selection_from_html\` only
+  when the structure actually changes.
+
+\`update_selection_from_html\` preserves the deleted shape's sibling index,
+so paint order stays stable when you replace a child of a card.
+
 ✓ Supported: width/height/padding (per-side); border-radius (px or %, %
 resolves against min(w,h)); border (uniform — top side wins); opacity, color
 (rgb/rgba/#hex); background (solid / linear-gradient / radial-gradient,
@@ -116,8 +126,9 @@ alpha in stops works); box-shadow (drop, inset, negative spread, multi;
 line-height); letter-spacing, text-align, **text-transform (uppercase /
 lowercase / capitalize is pre-applied to the stored glyphs)**;
 display:flex/grid (gap, padding, justify/align, grid-template px/fr/auto/
-repeat); \`var(--name, fallback)\` tokens — fallback REQUIRED (used to
-compute geometry).
+repeat); **\`<br>\` for hard line breaks inside a single text shape** (one
+paragraph per line); \`var(--name, fallback)\` tokens — fallback REQUIRED
+(used to compute geometry).
 
 ✗ Dropped (warned): margin (use flex \`gap\` or padding); conic-gradient,
 image \`url()\`, multiple backgrounds; scale/skew/matrix/3D transforms,
@@ -126,6 +137,10 @@ mask; outline; \`::before\`/\`::after\`; transitions, animations;
 currentColor; text-decoration colour.
 
 Auto-splits & gotchas:
+- A single text-only element (\`<div data-name="X">label</div>\`) becomes
+  ONE Penpot text shape — no wrapper frame. Set the element's font / colour
+  on the wrapper and you're done. Use this for label-only \`update_selection_from_html\`
+  payloads.
 - A leaf with text PLUS box visuals (background/border/shadow) is auto-split
   into a frame + child text shape — use this single-element pattern for chips,
   pills, buttons, avatars, badges, circular icon buttons. Text auto-centres
@@ -135,8 +150,10 @@ Auto-splits & gotchas:
   spacing use flex \`gap\`.
 - Mixed text + element children drops bare text:
   \`<p>Hello <span>x</span></p>\` loses "Hello". Wrap every text run in its
-  own element (e.g. \`<span>Hello</span> <span>x</span>\`).
-- One element per line of text — \`<br>\` and multi-\`<p>\` are not supported.
+  own element (e.g. \`<span>Hello</span> <span>x</span>\`). \`<br>\` is the
+  exception — it's collapsed into a line break in the same text shape.
+- Source whitespace inside text leaves is collapsed like the browser does
+  (runs of whitespace → single space, leading/trailing trimmed).
 - Padding on a \`position:relative\` wrapper does NOT inset its absolutely-
   positioned children (HTML spec). Use child coordinates that already include
   the padding — or wrap the children in a relative inner div.

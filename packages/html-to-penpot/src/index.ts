@@ -1,10 +1,12 @@
 import { measureHtml } from './measure/headless';
+import { prevalidateHtml } from './measure/prevalidate';
 import { buildTree } from './build/tree';
 import { regObjectsChange, shapesToAddChanges } from './changes/builder';
 import type { BuildContext, ChangeBundle } from './types';
 
 export type { BuildContext, ChangeBundle, MeasuredNode } from './types';
 export { measureHtml } from './measure/headless';
+export { prevalidateHtml } from './measure/prevalidate';
 export { buildTree } from './build/tree';
 
 /**
@@ -22,6 +24,13 @@ export { buildTree } from './build/tree';
  * those are handled separately by `upload_media`.
  */
 export async function htmlToChanges(html: string, ctx: BuildContext): Promise<ChangeBundle> {
+  // Cheap regex sanity-check before paying the Chromium boot cost — failures
+  // here are foot-guns the LLM can fix without seeing a half-built design.
+  const prevalidation = prevalidateHtml(html);
+  if (prevalidation.errors.length > 0) {
+    throw new Error(`htmlToChanges: ${prevalidation.errors.join(' ')}`);
+  }
+
   const { nodes, warnings: walkerWarnings } = await measureHtml({
     html,
     tokensCss: ctx.tokensCss,
@@ -51,7 +60,7 @@ export async function htmlToChanges(html: string, ctx: BuildContext): Promise<Ch
     rootShapeId,
     rootShapeName,
     createdShapeIds,
-    warnings: [...walkerWarnings, ...buildWarnings],
+    warnings: [...prevalidation.warnings, ...walkerWarnings, ...buildWarnings],
     referencedTokens,
   };
 }

@@ -1,7 +1,16 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { FileChange, HexColor, Uuid } from '@penpot-tools/converter/types';
+import type {
+  FileChange,
+  HexColor,
+  ParagraphNode,
+  ParagraphSetNode,
+  TextContent,
+  TextLeaf,
+  TextShape,
+  Uuid,
+} from '@penpot-tools/converter/types';
 import { z } from 'zod';
-import { getFileMeta, PenpotConflictError, updateFile } from '../../penpot-api.ts';
+import { fetchPage, getFileMeta, PenpotConflictError, updateFile } from '../../penpot-api.ts';
 import { requireSelection, requireToken } from '../../state.ts';
 
 const ok = (text: string) => ({ content: [{ type: 'text' as const, text }] });
@@ -58,6 +67,14 @@ const OpsInput = z.object({
   visible: z.boolean().optional(),
   locked: z.boolean().optional(),
   opacity: z.number().min(0).max(1).optional(),
+  /**
+   * Replace the text content of a text shape. Multi-line input (`\n`) is split
+   * into one paragraph per line. The shape's existing typography (font /
+   * size / weight / colour / line-height / letter-spacing / alignment) is
+   * preserved — only the leaf text changes. Cheaper and safer than calling
+   * `update_selection_from_html` for a label tweak.
+   */
+  text: z.string().optional(),
 });
 
 interface SetOp {
@@ -80,6 +97,40 @@ const SET = (attr: string, val: unknown): SetOp => ({
   val,
   ignoreTouched: true,
 });
+
+/**
+ * Rebuild a Penpot text content tree, preserving every leaf-level style
+ * (font, size, weight, colour, alignment, …) while substituting the actual
+ * characters with `newText`. Multi-line input becomes one paragraph per line;
+ * each new paragraph clones the existing typography so a one-line label can
+ * be split into two without losing its font.
+ *
+ * Returns the rebuilt tree, or `null` when the shape has no parseable text
+ * content (caller should error in that case).
+ *
+ * Exported for unit testing — kept off the public MCP surface intentionally.
+ */
+export function rebuildTextContent(existing: TextContent, newText: string): TextContent | null {
+  const sourceParagraph = existing.children?.[0]?.children?.[0];
+  const sourceLeaf = sourceParagraph?.children?.[0];
+  if (!sourceParagraph || !sourceLeaf) return null;
+
+  const lines = newText.split('\n');
+  // `String.split` always returns at least one element, so the cast to the
+  // non-empty tuple type is safe.
+  const paragraphs = lines.map((line): ParagraphNode => {
+    const leaf: TextLeaf = { ...sourceLeaf, text: line };
+    return { ...sourceParagraph, children: [leaf] };
+  }) as [ParagraphNode, ...ParagraphNode[]];
+
+  const paragraphSet: ParagraphSetNode = {
+    ...existing.children[0],
+    type: 'paragraph-set',
+    children: paragraphs,
+  };
+
+  return { ...existing, type: 'root', children: [paragraphSet] };
+}
 
 function buildOperations(ops: z.infer<typeof OpsInput>): { ops: SetOp[]; applied: string[] } {
   const out: SetOp[] = [];
@@ -238,6 +289,32 @@ export function registerModifyShapeTool(server: McpServer): void {
       }
 
       const { ops: setOps, applied } = buildOperations(ops);
+
+      // The `text` shortcut needs the shape's existing content tree so we can
+      // keep its typography. Fetch the page (always cheap relative to the
+      // round-trip) only when the shortcut is actually requested.
+      if (ops.text !== undefined) {
+        const page = await fetchPage(token, resolvedFile, resolvedPage);
+        const target = page.objects[resolvedShape] as TextShape | undefined;
+        if (!target) {
+          return ok(`# Shape not found\n\nShape ${resolvedShape} is not on page ${resolvedPage}.`);
+        }
+        if (target.type !== 'text' || !target.content) {
+          return ok(
+            `# \`text\` op needs a text shape\n\nShape ${resolvedShape} is a ${target.type}. Use \`update_selection_from_html\` if you want to swap a non-text shape with text.`,
+          );
+        }
+        const newContent = rebuildTextContent(target.content, ops.text);
+        if (!newContent) {
+          return ok(
+            `# Could not rebuild text content\n\nShape ${resolvedShape} has an unexpected content tree. Use \`update_selection_from_html\` instead.`,
+          );
+        }
+        setOps.push(SET('content', newContent));
+        const preview = ops.text.length > 32 ? `${ops.text.slice(0, 29)}…` : ops.text;
+        applied.push(`text → "${preview.replace(/\n/g, '⏎')}"`);
+      }
+
       if (setOps.length === 0) {
         return ok('# No-op\n\nProvide at least one attribute under `ops`.');
       }

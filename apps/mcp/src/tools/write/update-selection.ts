@@ -75,6 +75,16 @@ export function registerUpdateSelectionFromHtmlTool(server: McpServer): void {
       const anchorY = target.y ?? target.selrect.y;
       const parentId = (target.parentId ?? '00000000-0000-0000-0000-000000000000') as Uuid;
 
+      // Capture the deleted shape's sibling index so the replacement keeps the
+      // same z-order. Without this the new shape gets appended to the parent's
+      // `shapes` array, which silently changes paint order — a real bug seen
+      // in the wild when an LLM patched a single text inside a card and the
+      // labels rearranged.
+      const parentShape = page.objects[parentId] as
+        | (typeof target & { shapes?: Uuid[] })
+        | undefined;
+      const originalSiblingIndex = parentShape?.shapes?.indexOf(resolvedShape as Uuid) ?? -1;
+
       const meta = await getFileMeta(token, resolvedFile);
 
       const bundle = await htmlToChanges(html, {
@@ -83,6 +93,14 @@ export function registerUpdateSelectionFromHtmlTool(server: McpServer): void {
         rootPosition: { x: anchorX, y: anchorY },
         parentId,
       });
+
+      // Override the root shape's add-obj `index` to land at the deleted
+      // shape's original slot. Subsequent shapes are descendants going into
+      // freshly-empty parents, so their order is already correct.
+      if (originalSiblingIndex >= 0 && bundle.changes.length > 0) {
+        const firstAdd = bundle.changes[0] as { type?: string; index?: number };
+        if (firstAdd.type === 'add-obj') firstAdd.index = originalSiblingIndex;
+      }
 
       const subtree = collectSubtree(page.objects, resolvedShape);
       const delChanges: FileChange[] = subtree.map((s) => {

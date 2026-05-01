@@ -77,9 +77,12 @@ function applyTextTransform(text: string, transform: string): string {
 }
 
 /**
- * Build a Penpot text `content` tree from a single text element. v1 emits a
- * single leaf inheriting the element's computed font styles. Multi-run text
- * (mixed `<span>` styling, `<br>` paragraph breaks) lands in Phase 2.
+ * Build a Penpot text `content` tree from a single text element.
+ *
+ * Text containing `\n` (typically produced by the walker when an element has
+ * `<br>` line breaks) is split into one paragraph per line — Penpot's text
+ * engine renders paragraphs stacked vertically, which is exactly what `<br>`
+ * does visually.
  *
  * `verticalAlign` is set by the chip-split pipeline when the synthesized text
  * sits inside a flex parent that asks for vertical centring (icon buttons,
@@ -93,8 +96,7 @@ export function buildTextContent(
   const fontSizePx = parsePx(style.fontSize) ?? 14;
   const transformedText = applyTextTransform(text, style.textTransform || 'none');
 
-  const leaf: TextLeaf = {
-    text: transformedText,
+  const sharedLeafStyle = {
     fontFamily: fontFamilyOf(style),
     fontSize: String(fontSizePx),
     fontWeight: style.fontWeight || '400',
@@ -102,23 +104,31 @@ export function buildTextContent(
     lineHeight: lineHeightOf(style, opts.inlineStyle),
     letterSpacing: letterSpacingOf(style),
     textAlign: style.textAlign || 'left',
-    textDecoration: 'none',
-    textTransform: 'none',
+    textDecoration: 'none' as const,
+    textTransform: 'none' as const,
     fills: leafFills(style),
   };
 
-  const paragraph: ParagraphNode = {
-    type: 'paragraph',
-    children: [leaf],
-    fontFamily: leaf.fontFamily,
-    fontSize: leaf.fontSize,
-    fontWeight: leaf.fontWeight,
-    fontStyle: leaf.fontStyle,
-    lineHeight: leaf.lineHeight,
-    letterSpacing: leaf.letterSpacing,
-    textAlign: leaf.textAlign,
-  };
+  // Empty leaf-line still needs a leaf so Penpot's renderer reserves the line
+  // height — important for `text\n\nmore` to render the blank line.
+  // `String.split` always returns at least one element, so the cast to the
+  // non-empty tuple type is safe.
+  const lines = transformedText.split('\n');
+  const paragraphs = lines.map((line): ParagraphNode => {
+    const leaf: TextLeaf = { text: line, ...sharedLeafStyle };
+    return {
+      type: 'paragraph',
+      children: [leaf],
+      fontFamily: leaf.fontFamily,
+      fontSize: leaf.fontSize,
+      fontWeight: leaf.fontWeight,
+      fontStyle: leaf.fontStyle,
+      lineHeight: leaf.lineHeight,
+      letterSpacing: leaf.letterSpacing,
+      textAlign: leaf.textAlign,
+    };
+  }) as [ParagraphNode, ...ParagraphNode[]];
 
-  const paragraphSet: ParagraphSetNode = { type: 'paragraph-set', children: [paragraph] };
+  const paragraphSet: ParagraphSetNode = { type: 'paragraph-set', children: paragraphs };
   return { type: 'root', verticalAlign: opts.verticalAlign ?? 'top', children: [paragraphSet] };
 }

@@ -68,9 +68,17 @@ export const WALKER_SOURCE = `
   const warnings = [];
   const tagRe = /^[a-zA-Z][a-zA-Z0-9-]*$/;
 
-  function isElementOnly(el) {
+  // <br> is a structural line break inside a text run, NOT a separate child
+  // shape. The walker treats elements that mix text + <br> (and only <br>) as
+  // a single text leaf — the joined text carries explicit "\\n" markers that
+  // Penpot's text engine renders as paragraph breaks. Without this special-
+  // case the LLM-natural \`<div>Casa<br/>Olivar</div>\` lost both runs because
+  // the parent fell out of the text branch and the <br> became a 0-px rect.
+  function isLeafLikeForText(el) {
     for (const child of Array.from(el.childNodes)) {
-      if (child.nodeType === Node.ELEMENT_NODE) return false;
+      if (child.nodeType !== Node.ELEMENT_NODE) continue;
+      const tag = child.tagName ? child.tagName.toLowerCase() : '';
+      if (tag !== 'br') return false;
     }
     return true;
   }
@@ -78,13 +86,16 @@ export const WALKER_SOURCE = `
   // Detects "orphan text": a non-whitespace text node living alongside element
   // children (e.g. <p>Hello <span>world</span></p> — "Hello " is dropped because
   // the walker only captures text on pure leaves). Returns the dropped runs so
-  // we can show them in the warning.
+  // we can show them in the warning. <br>-only siblings don't count as
+  // "elements" here — those mix-with-text patterns are now captured.
   function orphanTextRuns(el) {
-    let hasElementChild = false;
+    let hasNonBrElementChild = false;
     for (const c of Array.from(el.childNodes)) {
-      if (c.nodeType === Node.ELEMENT_NODE) { hasElementChild = true; break; }
+      if (c.nodeType !== Node.ELEMENT_NODE) continue;
+      const tag = c.tagName ? c.tagName.toLowerCase() : '';
+      if (tag !== 'br') { hasNonBrElementChild = true; break; }
     }
-    if (!hasElementChild) return null;
+    if (!hasNonBrElementChild) return null;
     const runs = [];
     for (const c of Array.from(el.childNodes)) {
       if (c.nodeType !== Node.TEXT_NODE) continue;
@@ -111,13 +122,53 @@ export const WALKER_SOURCE = `
     return out;
   }
 
+  // Source HTML often carries newlines/indent inside the element open/close
+  // tags — these are visually collapsed by the browser but kept verbatim in
+  // \`textContent\`, so the stored Penpot string ends up with stray leading
+  // whitespace ("\\n    Tramuntana…\\n  "). Match the browser's default
+  // \`white-space: normal\`: collapse internal whitespace runs to one space and
+  // trim each line's edges. Authors who really want hard whitespace can use
+  // explicit characters or add a \`<pre>\` wrapper later.
+  function normalizeLine(line) {
+    return line.replace(/\\s+/g, ' ').replace(/^ | $/g, '');
+  }
+
   function getTextContent(el) {
-    // Only return text if there are no element children (pure text leaf).
+    // Pure text leaf OR text + <br> only — both become a single text shape.
+    // Anything else means the element has real element children, so it must
+    // become a frame and its loose text runs (if any) are picked up as
+    // "orphan text" warnings instead.
+    let hasNonBrElement = false;
+    let hasBr = false;
     for (const child of Array.from(el.childNodes)) {
-      if (child.nodeType === Node.ELEMENT_NODE) return undefined;
+      if (child.nodeType !== Node.ELEMENT_NODE) continue;
+      const tag = child.tagName ? child.tagName.toLowerCase() : '';
+      if (tag === 'br') { hasBr = true; continue; }
+      hasNonBrElement = true;
+      break;
     }
-    const t = el.textContent;
-    return t && t.trim().length > 0 ? t : undefined;
+    if (hasNonBrElement) return undefined;
+
+    if (hasBr) {
+      // Walk childNodes in order, joining text runs with explicit "\\n" at
+      // every <br>. Penpot's text engine respects "\\n" once text-content.ts
+      // splits the joined value into paragraphs.
+      const buf = [''];
+      for (const child of Array.from(el.childNodes)) {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          const tag = child.tagName ? child.tagName.toLowerCase() : '';
+          if (tag === 'br') buf.push('');
+        } else if (child.nodeType === Node.TEXT_NODE) {
+          buf[buf.length - 1] += child.textContent || '';
+        }
+      }
+      const joined = buf.map(normalizeLine).join('\\n');
+      return joined.replace(/^\\s+|\\s+$/g, '').length > 0 ? joined : undefined;
+    }
+
+    const t = el.textContent || '';
+    if (t.trim().length === 0) return undefined;
+    return normalizeLine(t);
   }
 
   function walk(el, parentIndex) {
@@ -175,8 +226,10 @@ export const WALKER_SOURCE = `
     nodes.push(node);
     if (parentIndex !== null) nodes[parentIndex].childIndices.push(myIndex);
 
-    // Recurse only when this element has element children. <svg>/<img> are leaves.
-    if (tag !== 'svg' && tag !== 'img' && !isElementOnly(el)) {
+    // Recurse only when this element has real element children (not just <br>
+    // line breaks). <svg>/<img> are leaves. Elements with text + <br>-only are
+    // captured as a single text leaf in getTextContent above.
+    if (tag !== 'svg' && tag !== 'img' && !isLeafLikeForText(el)) {
       const orphans = orphanTextRuns(el);
       if (orphans) {
         const label = dataAttrs['data-name']

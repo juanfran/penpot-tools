@@ -101,7 +101,10 @@ describe('buildTree — layer naming via data-name', () => {
     expect(rootShapeName).toBe('Hero');
   });
 
-  it('uses data-name on a text leaf', () => {
+  it('uses data-name on a text leaf when no rootName is given', () => {
+    // A single text-only top now promotes to the root shape (no synthetic
+    // frame). Without a caller-supplied rootName, the wrapper's data-name
+    // becomes the layer name — same priority chain as the frame root.
     const nodes = [
       node({
         index: 0,
@@ -111,14 +114,38 @@ describe('buildTree — layer naming via data-name', () => {
         dataAttrs: { 'data-name': 'Greeting' },
       }),
     ];
-    const { shapes } = buildTree({
+    const { shapes, rootShapeName } = buildTree({
+      nodes,
+      pageId: PAGE_ID,
+      rootOffset: { x: 0, y: 0 },
+    });
+    expect(shapes.length).toBe(1);
+    const text = shapes.find((s) => s.type === 'text');
+    expect(text?.name).toBe('Greeting');
+    expect(rootShapeName).toBe('Greeting');
+  });
+
+  it('rootName overrides data-name on a promoted text root', () => {
+    const nodes = [
+      node({
+        index: 0,
+        parentIndex: null,
+        semanticTag: 'p',
+        textContent: 'Hello',
+        dataAttrs: { 'data-name': 'Greeting' },
+      }),
+    ];
+    const { shapes, rootShapeName } = buildTree({
       nodes,
       pageId: PAGE_ID,
       rootOffset: { x: 0, y: 0 },
       rootName: 'Board',
     });
+    // No synthetic frame — the text IS the root, named per rootName.
+    expect(shapes.length).toBe(1);
     const text = shapes.find((s) => s.type === 'text');
-    expect(text?.name).toBe('Greeting');
+    expect(text?.name).toBe('Board');
+    expect(rootShapeName).toBe('Board');
   });
 
   it('uses data-name on an empty leaf (rect)', () => {

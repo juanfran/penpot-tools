@@ -106,17 +106,24 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
   const boardHeight = Math.max(1, Math.ceil(maxY - minY));
 
   // "Promote top to board" mode: when the user supplies a single top-level
-  // container with element children, use it directly as the board. This drops
-  // the otherwise-redundant synthetic frame that swallowed the user's
-  // background, radius, and shadow on every previous run, and avoids the
-  // "ghost wrapper" trap where Penpot's reg-objects then resized the synthetic
-  // to fit children-only and visually buried the user's chrome.
+  // element, use it directly as the root shape. This drops the otherwise-
+  // redundant synthetic frame that swallowed the user's background, radius,
+  // and shadow on every previous run, and avoids the "ghost wrapper" trap
+  // where Penpot's reg-objects then resized the synthetic to fit children-
+  // only and visually buried the user's chrome.
+  //
+  // Promotion fires for both:
+  //   • a container with element children → root becomes a frame
+  //   • a single text-only element       → root becomes a text shape
+  //     (common in update_selection_from_html when the LLM is replacing just
+  //     a label — without this it got buried under a synthetic white frame)
+  const onlyTop = tops.length === 1 ? tops[0]! : null;
   const promotedTop =
-    tops.length === 1 &&
-    tops[0]!.childIndices.length > 0 &&
-    !tops[0]!.imageMediaId &&
-    !tops[0]!.svgOuter
-      ? tops[0]!
+    onlyTop &&
+    !onlyTop.imageMediaId &&
+    !onlyTop.svgOuter &&
+    (onlyTop.childIndices.length > 0 || onlyTop.textContent !== undefined)
+      ? onlyTop
       : null;
 
   const idByIndex = new Map<number, Uuid>();
@@ -373,9 +380,12 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
       // delta without visibly affecting layout — the text shape is anchored
       // top-left, so 2 extra px on the right is invisible.
       const textWidth = Math.ceil(w) + 2;
+      const textName = isPromotedTop
+        ? (rootName ?? node.dataAttrs['data-name'] ?? 'New design')
+        : (node.dataAttrs['data-name'] ?? node.semanticTag);
       const text: TextShape = {
         id,
-        name: node.dataAttrs['data-name'] ?? node.semanticTag,
+        name: textName,
         type: 'text',
         parentId: parent,
         frameId: parent,
