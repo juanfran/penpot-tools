@@ -114,3 +114,43 @@ describe('convertShape', () => {
     expect(html).not.toContain('<body');
   });
 });
+
+/**
+ * Stable-attribute-order contract.
+ *
+ * Downstream consumers (`@penpot-tools/converter/shape-code`,
+ * `@penpot-tools/html-to-penpot`) parse this output with regex — they rely
+ * on `data-id` appearing before `style`, with `data-type` between them and
+ * any injected `data-name` / `data-penpot-*` PRECEDING `data-id`. A future
+ * tweak to the emission order would silently break the orphan-style /
+ * class-extraction passes that anchor on `data-id="…"…style="…"`.
+ *
+ * If you need to change the order on purpose, update the dependent regexes
+ * (search for `data-id="` in `shape-code.ts` and `packages/html-to-penpot/`)
+ * AND loosen these assertions in the same commit.
+ */
+describe('contract: shape wrapper attribute order', () => {
+  function attrOrder(html: string): string[] {
+    const m = /<\w+\s+([^>]*)>/.exec(html);
+    if (!m) throw new Error(`no opening tag in: ${html.slice(0, 60)}`);
+    return [...m[1]!.matchAll(/(\b[\w-]+)=/g)].map((r) => r[1]!);
+  }
+
+  it('emits data-name → data-id → data-type → style on a named rect', async () => {
+    const { html } = await convertShape(makeRect({ name: 'Cancel' }), {}, ctx);
+    expect(attrOrder(html)).toEqual(['data-name', 'data-id', 'data-type', 'style']);
+  });
+
+  it('still emits data-id → data-type → style when the name is missing', () => {
+    const html = renderShape(makeRect({ name: '' } as Partial<RectShape>), {}, ctx);
+    expect(attrOrder(html)).toEqual(['data-id', 'data-type', 'style']);
+  });
+
+  it('keeps data-id before style when editor-only flags are present', () => {
+    const locked = { ...makeRect({ name: 'Locked' }), locked: true } as Shape;
+    const order = attrOrder(renderShape(locked, {}, ctx));
+    expect(order.indexOf('data-id')).toBeLessThan(order.indexOf('style'));
+    expect(order.indexOf('data-name')).toBeLessThan(order.indexOf('data-id'));
+    expect(order.indexOf('data-penpot-locked')).toBeLessThan(order.indexOf('data-id'));
+  });
+});

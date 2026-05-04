@@ -40,6 +40,21 @@ export function ExportDialog({
   const [styling, setStyling] = useState<ShapeCodeStyling>('css');
   const [includeDataAttrs, setIncludeDataAttrs] = useState(false);
 
+  // Warm the Shiki bundle while the user is inspecting — by the time they
+  // click "Export" the chunk + its WASM regex engine are already loaded, so
+  // the first highlight is instant instead of stalling for ~500 ms.
+  useEffect(() => {
+    const preload = (): void => {
+      void import('shiki/bundle/web');
+    };
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(preload);
+      return () => cancelIdleCallback(id);
+    }
+    const t = setTimeout(preload, 300);
+    return () => clearTimeout(t);
+  }, []);
+
   const { data, isFetching, isError, error } = useQuery({
     queryKey: ['shape-code', fileId, pageId, shapeId, format, styling, includeDataAttrs],
     queryFn: () =>
@@ -196,7 +211,11 @@ function useHighlightedCode(code: string, lang: CodeLang): string | null {
       return;
     }
     let cancelled = false;
-    void import('shiki')
+    // `shiki/bundle/web` ships only the languages we actually highlight
+    // (html/jsx/css among them) — roughly half the size of the default
+    // bundle. The lazy import + idle-time preload above keep both initial
+    // load and first dialog open snappy.
+    void import('shiki/bundle/web')
       .then(({ codeToHtml }) => codeToHtml(code, { lang, theme: 'github-light' }))
       .then((result) => {
         if (!cancelled) setHtml(result);
