@@ -1,0 +1,171 @@
+import { describe, expect, it } from 'vitest';
+import {
+  declToTailwind,
+  stylesToCssClasses,
+  stylesToTailwind,
+} from './shape-code';
+
+describe('stylesToCssClasses', () => {
+  it('replaces style attributes with class refs and emits matching rules', () => {
+    const html = `<div data-id="a" style="color: red; font-size: 14px"></div>`;
+    const { html: out, css } = stylesToCssClasses(html, 'class');
+    expect(out).toBe(`<div data-id="a" class="s-1"></div>`);
+    expect(css).toBe(`.s-1 { color: red; font-size: 14px; }`);
+  });
+
+  it('deduplicates identical declarations across elements', () => {
+    const html =
+      `<div style="color: red"></div>` +
+      `<span style="color: red"></span>` +
+      `<p style="color: blue"></p>`;
+    const { html: out, css } = stylesToCssClasses(html, 'class');
+    expect(out).toBe(
+      `<div class="s-1"></div><span class="s-1"></span><p class="s-2"></p>`,
+    );
+    expect(css).toBe(`.s-1 { color: red; }\n.s-2 { color: blue; }`);
+  });
+
+  it('emits className when targeting JSX', () => {
+    const html = `<div style="color: red"></div>`;
+    const { html: out } = stylesToCssClasses(html, 'className');
+    expect(out).toBe(`<div className="s-1"></div>`);
+  });
+
+  it('decodes HTML entities so quoted font families round-trip', () => {
+    const html = `<div style="font-family: &quot;Inter&quot;, sans-serif"></div>`;
+    const { css } = stylesToCssClasses(html, 'class');
+    expect(css).toBe(`.s-1 { font-family: "Inter", sans-serif; }`);
+  });
+
+  it('drops empty style attributes instead of emitting an empty class', () => {
+    const html = `<div data-id="a" style=""></div>`;
+    const { html: out, css } = stylesToCssClasses(html, 'class');
+    expect(out).toBe(`<div data-id="a"></div>`);
+    expect(css).toBe('');
+  });
+
+  it('leaves untouched HTML alone when no style attributes exist', () => {
+    const html = `<div data-id="a"><span>hi</span></div>`;
+    const { html: out, css } = stylesToCssClasses(html, 'class');
+    expect(out).toBe(html);
+    expect(css).toBe('');
+  });
+});
+
+describe('stylesToTailwind', () => {
+  it('translates a small inline style into a utility class string', () => {
+    const html = `<div style="display: flex; flex-direction: column; gap: 8px"></div>`;
+    expect(stylesToTailwind(html, 'class')).toBe(
+      `<div class="flex flex-col gap-[8px]"></div>`,
+    );
+  });
+
+  it('uses className when targeting JSX', () => {
+    const html = `<div style="color: red"></div>`;
+    expect(stylesToTailwind(html, 'className')).toBe(
+      `<div className="text-[red]"></div>`,
+    );
+  });
+
+  it('decodes HTML entities and substitutes whitespace in arbitrary values', () => {
+    const html = `<div style="font-family: &quot;Inter&quot;, sans-serif"></div>`;
+    // Quotes are stripped (Tailwind would otherwise reject the attribute);
+    // spaces become `_` per Tailwind v4 arbitrary-value convention.
+    expect(stylesToTailwind(html, 'class')).toBe(
+      `<div class="font-[Inter,_sans-serif]"></div>`,
+    );
+  });
+
+  it('drops style attributes with no parsable declarations', () => {
+    const html = `<div style=""></div>`;
+    expect(stylesToTailwind(html, 'class')).toBe(`<div></div>`);
+  });
+
+  it('preserves declaration order when emitting utilities', () => {
+    const html = `<div style="position: absolute; left: 10px; top: 20px; width: 100px"></div>`;
+    expect(stylesToTailwind(html, 'class')).toBe(
+      `<div class="absolute left-[10px] top-[20px] w-[100px]"></div>`,
+    );
+  });
+});
+
+describe('declToTailwind — known mappings', () => {
+  it.each([
+    ['display', 'flex', 'flex'],
+    ['display', 'grid', 'grid'],
+    ['display', 'inline-block', 'inline-block'],
+    ['display', 'none', 'hidden'],
+    ['position', 'absolute', 'absolute'],
+    ['position', 'sticky', 'sticky'],
+    ['flex-direction', 'column', 'flex-col'],
+    ['flex-direction', 'row-reverse', 'flex-row-reverse'],
+    ['flex-wrap', 'wrap', 'flex-wrap'],
+    ['justify-content', 'space-between', 'justify-between'],
+    ['justify-content', 'flex-start', 'justify-start'],
+    ['align-items', 'center', 'items-center'],
+    ['align-items', 'flex-end', 'items-end'],
+    ['align-self', 'flex-start', 'self-start'],
+    ['width', '100%', 'w-full'],
+    ['height', '100%', 'h-full'],
+    ['width', 'auto', 'w-auto'],
+    ['border-radius', '50%', 'rounded-full'],
+    ['font-weight', '400', 'font-normal'],
+    ['font-weight', '600', 'font-semibold'],
+    ['font-weight', '700', 'font-bold'],
+    ['font-style', 'italic', 'italic'],
+    ['text-align', 'center', 'text-center'],
+    ['text-transform', 'uppercase', 'uppercase'],
+    ['white-space', 'nowrap', 'whitespace-nowrap'],
+    ['overflow', 'hidden', 'overflow-hidden'],
+    ['flex', '1', 'flex-1'],
+    ['flex', 'none', 'flex-none'],
+    ['flex-shrink', '0', 'shrink-0'],
+    ['mix-blend-mode', 'multiply', 'mix-blend-multiply'],
+    ['background-size', 'cover', 'bg-cover'],
+    ['background-repeat', 'no-repeat', 'bg-no-repeat'],
+  ])('%s: %s → %s', (prop, value, expected) => {
+    expect(declToTailwind(prop, value)).toBe(expected);
+  });
+});
+
+describe('declToTailwind — arbitrary values', () => {
+  it('uses tailwind arbitrary-value syntax for numeric lengths', () => {
+    expect(declToTailwind('width', '120px')).toBe('w-[120px]');
+    expect(declToTailwind('top', '-4px')).toBe('top-[-4px]');
+    expect(declToTailwind('gap', '8px')).toBe('gap-[8px]');
+    expect(declToTailwind('padding', '16px')).toBe('p-[16px]');
+    expect(declToTailwind('border-radius', '12px')).toBe('rounded-[12px]');
+    expect(declToTailwind('font-size', '14px')).toBe('text-[14px]');
+    expect(declToTailwind('letter-spacing', '0.1em')).toBe('tracking-[0.1em]');
+    expect(declToTailwind('line-height', '1.4')).toBe('leading-[1.4]');
+  });
+
+  it('emits arbitrary colors and gradients without quoting', () => {
+    expect(declToTailwind('background-color', '#ff0033')).toBe('bg-[#ff0033]');
+    expect(declToTailwind('color', 'rgb(0, 0, 0)')).toBe('text-[rgb(0,_0,_0)]');
+    expect(declToTailwind('background-image', 'linear-gradient(to right, red, blue)')).toBe(
+      'bg-[image:linear-gradient(to_right,_red,_blue)]',
+    );
+  });
+
+  it('routes box-shadow and transform through arbitrary syntax with whitespace folded', () => {
+    expect(declToTailwind('box-shadow', '0 2px 8px rgba(0,0,0,0.1)')).toBe(
+      'shadow-[0_2px_8px_rgba(0,0,0,0.1)]',
+    );
+    expect(declToTailwind('transform', 'translate(10px, 20px) rotate(7deg)')).toBe(
+      '[transform:translate(10px,_20px)_rotate(7deg)]',
+    );
+  });
+
+  it('falls back to the v4 arbitrary-property form for unknown CSS props', () => {
+    expect(declToTailwind('caret-color', '#fff')).toBe('[caret-color:#fff]');
+    expect(declToTailwind('grid-template-columns', '1fr 2fr')).toBe(
+      '[grid-template-columns:1fr_2fr]',
+    );
+  });
+
+  it('preserves z-index numerics inside arbitrary brackets', () => {
+    expect(declToTailwind('z-index', '10')).toBe('z-[10]');
+    expect(declToTailwind('opacity', '0.6')).toBe('opacity-[0.6]');
+  });
+});
