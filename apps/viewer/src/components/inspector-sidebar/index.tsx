@@ -10,6 +10,7 @@ import { type Asset, buildNodeIndex, collectAssetsFromDom } from './assets';
 import { EMPTY_MARGINS, type Margins, computeMargins, extractBoxModel } from './box-model';
 import { BoxModelViz } from './box-model-viz';
 import { ComponentSection, type ComponentRef } from './component-section';
+import { ExportDialog } from './export-dialog';
 import { transformValue } from './format-prefs';
 import { FormatPrefsPopover } from './format-prefs-popover';
 import { INSPECTOR_MAX_WIDTH, INSPECTOR_MIN_WIDTH, useInspectorPrefs } from './prefs-store';
@@ -178,6 +179,9 @@ export function InspectorSidebar({
         <div className="mb-1 flex items-center gap-1.5">
           {shapeIcon(node.type)}
           <span className="text-xs font-medium text-gray-400">{node.type}</span>
+          <div className="ml-auto">
+            <ExportDialog fileId={fileId} pageId={pageId} shapeId={selectedShapeId} />
+          </div>
         </div>
         <h2 className="truncate text-sm font-semibold text-gray-900" title={node.name}>
           {node.name}
