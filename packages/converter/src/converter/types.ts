@@ -1,4 +1,4 @@
-import type { Uuid } from '../penpot.types';
+import type { ShapeCommon, Uuid } from '../penpot.types';
 
 /** Information about a font used in the converted output */
 export interface FontInfo {
@@ -43,6 +43,13 @@ export interface ConverterContext {
   _fontCollector?: Map<string, FontInfo>;
   /** Design token map (tokenName → cssColor). Used to emit `var(--token)` instead of raw hex values. */
   tokens?: Map<string, string>;
+  /**
+   * Returns the HTML tag to use as the wrapper for a frame / rect / text shape.
+   * Default behaviour (when omitted or returning `undefined`) is `'div'`.
+   * Lets callers override semantics — e.g. a downstream tool resolves
+   * "shape X is a button" rules and returns `'button'` for that shape.
+   */
+  tagOverride?: (shape: ShapeCommon) => string | undefined;
   /** When true (default), format the output HTML with oxfmt */
   format?: boolean;
 }

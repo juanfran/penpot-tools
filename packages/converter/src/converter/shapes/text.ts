@@ -182,7 +182,7 @@ export function renderText(shape: TextShape, ctx: ConverterContext): string {
   }
 
   return tag(
-    'div',
+    ctx.tagOverride?.(shape) ?? 'div',
     { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined },
     inner,
   );

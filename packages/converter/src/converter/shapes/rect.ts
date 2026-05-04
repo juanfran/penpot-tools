@@ -23,7 +23,7 @@ export function renderRect(
   const style = mergeStyles(posStyle, base, fills, stroke);
 
   return tag(
-    'div',
+    ctx.tagOverride?.(shape) ?? 'div',
     { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined },
     '',
   );

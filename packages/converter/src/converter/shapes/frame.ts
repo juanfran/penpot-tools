@@ -194,7 +194,7 @@ export function renderFrame(
   }
 
   return tag(
-    'div',
+    ctx.tagOverride?.(shape) ?? 'div',
     { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined },
     inner,
   );

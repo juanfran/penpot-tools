@@ -8,8 +8,10 @@ import {
   type ConverterContext,
 } from '@penpot-tools/converter';
 import { extractTokens, tokensToCss } from '@penpot-tools/converter/tokens';
-import type { Page, Uuid } from '@penpot-tools/penpot-types';
+import type { Page, Shape, Uuid } from '@penpot-tools/penpot-types';
 import { rpc } from './penpot-api-utils.server';
+import { readSemanticsFor } from './semantics-fs.server';
+import { type SemanticRule } from './semantics-types';
 
 const BASE_URL = 'https://design.penpot.app';
 
@@ -50,9 +52,15 @@ export const getShapeCodeFn = createServerFn({ method: 'GET' })
     }
 
     const tokens = extractTokens(page.objects);
+    // Resolve semantic-rule overrides server-side from the per-file store —
+    // the client doesn't need to know the storage shape, and the rules are
+    // always read fresh (no client cache lag when another team member edits).
+    const rules = await readSemanticsFor(data.fileId);
+    const tagOverrides = resolveTagOverrides(rules, page.objects);
     const ctx: ConverterContext = {
       resolveImageUrl: (id: Uuid) => `${BASE_URL}/assets/by-file-media-id/${id}`,
       tokens,
+      tagOverride: tagOverrides.size > 0 ? (s) => tagOverrides.get(s.id) : undefined,
       // We format below with oxfmt using the right extension; skip the
       // converter's own formatting step.
       format: false,
@@ -83,6 +91,48 @@ export const getShapeCodeFn = createServerFn({ method: 'GET' })
       tokensCss: tokensToCss(tokens),
     };
   });
+
+/**
+ * Walks every shape in the page and decides which HTML tag should wrap it
+ * based on the user-supplied semantic rules. Precedence (most specific first):
+ *   1. `shape-id` — the rule's value matches `shape.id` exactly.
+ *   2. `name-equals` — `shape.name` equals the rule's value (case-insensitive).
+ *   3. `name-contains` — `shape.name` contains the rule's value (case-insensitive).
+ * Within the same tier, earlier rules win — so the user can reorder by drag
+ * (or by edit order) to break ties.
+ */
+export function resolveTagOverrides(
+  rules: SemanticRule[],
+  objects: Record<string, Shape>,
+): Map<string, string> {
+  const out = new Map<string, string>();
+  if (rules.length === 0) return out;
+  const enabled = rules.filter((r) => r.enabled);
+  if (enabled.length === 0) return out;
+
+  const byId = enabled.filter((r) => r.type === 'shape-id');
+  const byEq = enabled.filter((r) => r.type === 'name-equals');
+  const byContains = enabled.filter((r) => r.type === 'name-contains');
+
+  for (const shape of Object.values(objects)) {
+    const idMatch = byId.find((r) => r.value === shape.id);
+    if (idMatch) {
+      out.set(shape.id, idMatch.tag);
+      continue;
+    }
+    const name = (shape.name ?? '').toLowerCase();
+    const eqMatch = byEq.find((r) => r.value.toLowerCase() === name);
+    if (eqMatch) {
+      out.set(shape.id, eqMatch.tag);
+      continue;
+    }
+    const containsMatch = byContains.find((r) =>
+      name.includes(r.value.toLowerCase()),
+    );
+    if (containsMatch) out.set(shape.id, containsMatch.tag);
+  }
+  return out;
+}
 
 const STYLE_ATTR_RE = /\sstyle="([^"]*)"/g;
 

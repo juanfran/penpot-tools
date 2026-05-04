@@ -180,7 +180,12 @@ export function InspectorSidebar({
           {shapeIcon(node.type)}
           <span className="text-xs font-medium text-gray-400">{node.type}</span>
           <div className="ml-auto">
-            <ExportDialog fileId={fileId} pageId={pageId} shapeId={selectedShapeId} />
+            <ExportDialog
+              fileId={fileId}
+              pageId={pageId}
+              shapeId={selectedShapeId}
+              shapeName={node.name}
+            />
           </div>
         </div>
         <h2 className="truncate text-sm font-semibold text-gray-900" title={node.name}>

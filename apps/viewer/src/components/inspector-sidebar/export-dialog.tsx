@@ -17,6 +17,7 @@ import { Check, Code2, Copy } from 'lucide-react';
 import { useState } from 'react';
 
 import { Segmented } from './segmented';
+import { SemanticRules } from './semantic-rules';
 
 const FORMATS = ['html', 'jsx'] as const;
 const STYLINGS = ['css', 'tailwind'] as const;
@@ -25,10 +26,12 @@ export function ExportDialog({
   fileId,
   pageId,
   shapeId,
+  shapeName,
 }: {
   fileId: string;
   pageId: string;
   shapeId: string;
+  shapeName: string;
 }) {
   const [open, setOpen] = useState(false);
   const [format, setFormat] = useState<ShapeCodeFormat>('html');
@@ -39,6 +42,8 @@ export function ExportDialog({
     queryFn: () =>
       getShapeCodeFn({ data: { fileId, pageId, shapeId, format, styling } }),
     enabled: open,
+    // Rules are read server-side; SemanticRules invalidates this query on
+    // every save, so we don't include rules in the key here.
     staleTime: Infinity,
     gcTime: Infinity,
     retry: false,
@@ -98,6 +103,12 @@ export function ExportDialog({
             )}
           </div>
         )}
+
+        <SemanticRules
+          fileId={fileId}
+          selectedShapeId={shapeId}
+          selectedShapeName={shapeName}
+        />
       </DialogContent>
     </Dialog>
   );

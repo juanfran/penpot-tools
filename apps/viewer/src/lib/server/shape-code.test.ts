@@ -1,9 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import {
   declToTailwind,
+  resolveTagOverrides,
   stylesToCssClasses,
   stylesToTailwind,
 } from './shape-code';
+import type { SemanticRule } from './semantics-types';
+
+function shape(id: string, name: string): { id: string; name: string } {
+  return { id, name } as { id: string; name: string };
+}
+
+function rule(over: Partial<SemanticRule> & { type: SemanticRule['type'] }): SemanticRule {
+  return {
+    id: over.id ?? `r-${Math.random().toString(36).slice(2, 8)}`,
+    type: over.type,
+    value: over.value ?? '',
+    tag: over.tag ?? 'button',
+    enabled: over.enabled ?? true,
+  };
+}
 
 describe('stylesToCssClasses', () => {
   it('replaces style attributes with class refs and emits matching rules', () => {
@@ -167,5 +183,95 @@ describe('declToTailwind — arbitrary values', () => {
   it('preserves z-index numerics inside arbitrary brackets', () => {
     expect(declToTailwind('z-index', '10')).toBe('z-[10]');
     expect(declToTailwind('opacity', '0.6')).toBe('opacity-[0.6]');
+  });
+});
+
+describe('resolveTagOverrides', () => {
+  it('returns an empty map when there are no rules', () => {
+    const objects = { a: shape('a', 'Card') } as never;
+    expect(resolveTagOverrides([], objects).size).toBe(0);
+  });
+
+  it('matches shape-id rules verbatim', () => {
+    const objects = {
+      a: shape('a', 'Card'),
+      b: shape('b', 'Other'),
+    } as never;
+    const rules = [rule({ type: 'shape-id', value: 'a', tag: 'button' })];
+    const out = resolveTagOverrides(rules, objects);
+    expect(out.get('a')).toBe('button');
+    expect(out.has('b')).toBe(false);
+  });
+
+  it('matches name-equals case-insensitively', () => {
+    const objects = {
+      a: shape('a', 'Login'),
+      b: shape('b', 'login'),
+      c: shape('c', 'Login Button'),
+    } as never;
+    const rules = [rule({ type: 'name-equals', value: 'login', tag: 'a' })];
+    const out = resolveTagOverrides(rules, objects);
+    expect(out.get('a')).toBe('a');
+    expect(out.get('b')).toBe('a');
+    // "Login Button" only contains "login", does not equal it.
+    expect(out.has('c')).toBe(false);
+  });
+
+  it('matches name-contains case-insensitively', () => {
+    const objects = {
+      a: shape('a', 'Submit Button'),
+      b: shape('b', 'BUTTON-primary'),
+      c: shape('c', 'Card'),
+    } as never;
+    const rules = [rule({ type: 'name-contains', value: 'button', tag: 'button' })];
+    const out = resolveTagOverrides(rules, objects);
+    expect(out.get('a')).toBe('button');
+    expect(out.get('b')).toBe('button');
+    expect(out.has('c')).toBe(false);
+  });
+
+  it('applies precedence shape-id > name-equals > name-contains', () => {
+    const objects = { a: shape('a', 'button') } as never;
+    const rules = [
+      rule({ type: 'name-contains', value: 'button', tag: 'span' }),
+      rule({ type: 'name-equals', value: 'button', tag: 'a' }),
+      rule({ type: 'shape-id', value: 'a', tag: 'button' }),
+    ];
+    expect(resolveTagOverrides(rules, objects).get('a')).toBe('button');
+  });
+
+  it('falls through to lower tiers when higher tiers do not match', () => {
+    const objects = { a: shape('a', 'Submit Button') } as never;
+    const rules = [
+      rule({ type: 'shape-id', value: 'somewhere-else', tag: 'span' }),
+      rule({ type: 'name-equals', value: 'button', tag: 'a' }),
+      rule({ type: 'name-contains', value: 'button', tag: 'button' }),
+    ];
+    expect(resolveTagOverrides(rules, objects).get('a')).toBe('button');
+  });
+
+  it('honours the first match within a tier when multiple apply', () => {
+    const objects = { a: shape('a', 'Big Button Card') } as never;
+    const rules = [
+      rule({ type: 'name-contains', value: 'button', tag: 'button' }),
+      rule({ type: 'name-contains', value: 'card', tag: 'article' }),
+    ];
+    expect(resolveTagOverrides(rules, objects).get('a')).toBe('button');
+  });
+
+  it('ignores disabled rules', () => {
+    const objects = { a: shape('a', 'Card') } as never;
+    const rules = [
+      rule({ type: 'shape-id', value: 'a', tag: 'button', enabled: false }),
+    ];
+    expect(resolveTagOverrides(rules, objects).size).toBe(0);
+  });
+
+  it('returns an empty map when all rules are disabled', () => {
+    const objects = { a: shape('a', 'Card') } as never;
+    const rules = [
+      rule({ type: 'name-contains', value: 'card', tag: 'article', enabled: false }),
+    ];
+    expect(resolveTagOverrides(rules, objects).size).toBe(0);
   });
 });
