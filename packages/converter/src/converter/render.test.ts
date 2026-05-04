@@ -118,16 +118,21 @@ describe('convertShape', () => {
 /**
  * Stable-attribute-order contract.
  *
- * Downstream consumers (`@penpot-tools/converter/shape-code`,
- * `@penpot-tools/html-to-penpot`) parse this output with regex — they rely
- * on `data-id` appearing before `style`, with `data-type` between them and
- * any injected `data-name` / `data-penpot-*` PRECEDING `data-id`. A future
- * tweak to the emission order would silently break the orphan-style /
- * class-extraction passes that anchor on `data-id="…"…style="…"`.
+ * `@penpot-tools/converter/shape-code` parses this output with regex —
+ * `STYLE_WITH_ID_RE` anchors on `data-id="…"…style="…"`, so the relative
+ * order of `data-id` (before `style`) and the injected `data-name` /
+ * `data-penpot-*` (before `data-id`) is part of the converter's read-mode
+ * contract. A silent rotation would break class extraction across both the
+ * viewer's export dialog and the MCP `get_html`.
+ *
+ * `html-to-penpot` does NOT depend on this order — it only reads attributes
+ * the LLM writes (`data-name`, `data-penpot-media-id`, `data-penpot-media-type`),
+ * not the converter's emission. So this contract covers the read pipeline
+ * only.
  *
  * If you need to change the order on purpose, update the dependent regexes
- * (search for `data-id="` in `shape-code.ts` and `packages/html-to-penpot/`)
- * AND loosen these assertions in the same commit.
+ * in `shape-code.ts` (search for `data-id="`) AND loosen these assertions
+ * in the same commit.
  */
 describe('contract: shape wrapper attribute order', () => {
   function attrOrder(html: string): string[] {
