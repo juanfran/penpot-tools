@@ -4,8 +4,6 @@
  * measure-and-build round-trip:
  *
  *   • The fragment is empty (no element / no visible text).
- *   • The eventual root element has no `data-name` (the resulting board ends
- *     up named after its tag — "div", "section", etc.).
  *
  * This is intentionally NOT a full HTML parser. Browsers are forgiving — and
  * we trust them to be — so we only flag the high-signal cases.
@@ -19,8 +17,7 @@ export interface PrevalidateResult {
   warnings: string[];
 }
 
-const FIRST_ELEMENT_RE = /<([a-zA-Z][a-zA-Z0-9-]*)\b([^>]*)>/;
-const DATA_NAME_RE = /\bdata-name\s*=\s*("[^"]*"|'[^']*')/;
+const FIRST_ELEMENT_RE = /<([a-zA-Z][a-zA-Z0-9-]*)\b/;
 
 export function prevalidateHtml(html: string): PrevalidateResult {
   const errors: string[] = [];
@@ -34,18 +31,9 @@ export function prevalidateHtml(html: string): PrevalidateResult {
     return { errors, warnings };
   }
 
-  const firstElement = FIRST_ELEMENT_RE.exec(inner);
-  if (!firstElement) {
+  if (!FIRST_ELEMENT_RE.test(inner)) {
     errors.push(
       'HTML fragment has no element — only text was found. Wrap the content in at least one element so it can become a Penpot shape.',
-    );
-    return { errors, warnings };
-  }
-
-  const [, tag, attrs] = firstElement;
-  if (!DATA_NAME_RE.test(attrs ?? '')) {
-    warnings.push(
-      `Top-level <${tag}> has no data-name — the resulting board will be named "${tag}". Add data-name="…" to give the layer a meaningful name.`,
     );
   }
 

@@ -231,18 +231,15 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
         localHeight = inlineH;
       }
     }
+    const drops: string[] = [];
     if (parsedTransform?.hasUnsupportedComponent) {
-      warnings.push(
-        `${nodeLabel(node)}: only rotate() is supported; scale/skew/3D were dropped.`,
-      );
+      drops.push('transform (only rotate() supported)');
     }
     if (node.computedStyle.filter && node.computedStyle.filter !== 'none') {
-      warnings.push(`${nodeLabel(node)}: CSS filter is not supported and was dropped.`);
+      drops.push('filter');
     }
     if (node.computedStyle.mixBlendMode && node.computedStyle.mixBlendMode !== 'normal') {
-      warnings.push(
-        `${nodeLabel(node)}: mix-blend-mode is not supported and was dropped.`,
-      );
+      drops.push('mix-blend-mode');
     }
 
     // Page-absolute coordinates for every shape, offset by the board origin.
@@ -268,9 +265,10 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
     // depth/elevation cues.
     const expectedShadows = shadowEntries.length - strokeResult.consumedShadowIndices.size;
     if (expectedShadows > 0 && shadowList.length === 0) {
-      warnings.push(
-        `${nodeLabel(node)}: box-shadow could not be parsed and was dropped.`,
-      );
+      drops.push('box-shadow (parse failed)');
+    }
+    if (drops.length > 0) {
+      warnings.push(`${nodeLabel(node)}: dropped ${drops.join(', ')}.`);
     }
     // Use the unrotated dimensions (offsetWidth/Height) so a `border-radius:50%`
     // on a rotated element still resolves against the element's own box, not
