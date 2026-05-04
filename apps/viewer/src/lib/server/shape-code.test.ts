@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   declToTailwind,
   resolveTagOverrides,
+  slugifyName,
+  stripDataAttrs,
   stylesToCssClasses,
   stylesToTailwind,
 } from './shape-code';
@@ -22,49 +24,141 @@ function rule(over: Partial<SemanticRule> & { type: SemanticRule['type'] }): Sem
 }
 
 describe('stylesToCssClasses', () => {
-  it('replaces style attributes with class refs and emits matching rules', () => {
+  it('uses the layer name as the class when available', () => {
     const html = `<div data-id="a" style="color: red; font-size: 14px"></div>`;
-    const { html: out, css } = stylesToCssClasses(html, 'class');
-    expect(out).toBe(`<div data-id="a" class="s-1"></div>`);
-    expect(css).toBe(`.s-1 { color: red; font-size: 14px; }`);
+    const names = new Map([['a', 'Card']]);
+    const { html: out, css } = stylesToCssClasses(html, 'class', names);
+    expect(out).toBe(`<div data-id="a" class="card"></div>`);
+    expect(css).toBe(`.card { color: red; font-size: 14px; }`);
   });
 
-  it('deduplicates identical declarations across elements', () => {
+  it('slugifies weird names into safe class identifiers', () => {
+    const html = `<div data-id="a" style="color: red"></div>`;
+    const names = new Map([['a', 'Icons / token']]);
+    const { html: out, css } = stylesToCssClasses(html, 'class', names);
+    expect(out).toBe(`<div data-id="a" class="icons-token"></div>`);
+    expect(css).toBe(`.icons-token { color: red; }`);
+  });
+
+  it('falls back to s-N when the layer has no usable name', () => {
+    const html = `<div data-id="a" style="color: red"></div>`;
+    const { html: out, css } = stylesToCssClasses(html, 'class', new Map());
+    expect(out).toBe(`<div data-id="a" class="s-1"></div>`);
+    expect(css).toBe(`.s-1 { color: red; }`);
+  });
+
+  it('deduplicates identical declarations across elements with different names', () => {
     const html =
-      `<div style="color: red"></div>` +
-      `<span style="color: red"></span>` +
-      `<p style="color: blue"></p>`;
-    const { html: out, css } = stylesToCssClasses(html, 'class');
+      `<div data-id="a" style="color: red"></div>` +
+      `<span data-id="b" style="color: red"></span>` +
+      `<p data-id="c" style="color: blue"></p>`;
+    const names = new Map([['a', 'Card'], ['b', 'Other'], ['c', 'Title']]);
+    const { html: out, css } = stylesToCssClasses(html, 'class', names);
+    // First element wins the slug; second reuses by decls match.
     expect(out).toBe(
-      `<div class="s-1"></div><span class="s-1"></span><p class="s-2"></p>`,
+      `<div data-id="a" class="card"></div>` +
+        `<span data-id="b" class="card"></span>` +
+        `<p data-id="c" class="title"></p>`,
     );
-    expect(css).toBe(`.s-1 { color: red; }\n.s-2 { color: blue; }`);
+    expect(css).toBe(`.card { color: red; }\n.title { color: blue; }`);
+  });
+
+  it('uniquifies names that collide with different declarations', () => {
+    const html =
+      `<div data-id="a" style="color: red"></div>` +
+      `<div data-id="b" style="color: blue"></div>`;
+    const names = new Map([['a', 'Card'], ['b', 'Card']]);
+    const { html: out, css } = stylesToCssClasses(html, 'class', names);
+    expect(out).toBe(
+      `<div data-id="a" class="card"></div>` +
+        `<div data-id="b" class="card-2"></div>`,
+    );
+    expect(css).toBe(`.card { color: red; }\n.card-2 { color: blue; }`);
   });
 
   it('emits className when targeting JSX', () => {
-    const html = `<div style="color: red"></div>`;
-    const { html: out } = stylesToCssClasses(html, 'className');
-    expect(out).toBe(`<div className="s-1"></div>`);
+    const html = `<div data-id="a" style="color: red"></div>`;
+    const names = new Map([['a', 'Card']]);
+    const { html: out } = stylesToCssClasses(html, 'className', names);
+    expect(out).toBe(`<div data-id="a" className="card"></div>`);
   });
 
   it('decodes HTML entities so quoted font families round-trip', () => {
-    const html = `<div style="font-family: &quot;Inter&quot;, sans-serif"></div>`;
-    const { css } = stylesToCssClasses(html, 'class');
-    expect(css).toBe(`.s-1 { font-family: "Inter", sans-serif; }`);
+    const html = `<div data-id="a" style="font-family: &quot;Inter&quot;, sans-serif"></div>`;
+    const { css } = stylesToCssClasses(html, 'class', new Map([['a', 'Title']]));
+    expect(css).toBe(`.title { font-family: "Inter", sans-serif; }`);
   });
 
   it('drops empty style attributes instead of emitting an empty class', () => {
-    const html = `<div data-id="a" style=""></div>`;
-    const { html: out, css } = stylesToCssClasses(html, 'class');
-    expect(out).toBe(`<div data-id="a"></div>`);
+    const html = `<div data-id="a" data-type="frame" style=""></div>`;
+    const { html: out, css } = stylesToCssClasses(html, 'class', new Map());
+    expect(out).toBe(`<div data-id="a" data-type="frame"></div>`);
     expect(css).toBe('');
   });
 
   it('leaves untouched HTML alone when no style attributes exist', () => {
     const html = `<div data-id="a"><span>hi</span></div>`;
-    const { html: out, css } = stylesToCssClasses(html, 'class');
+    const { html: out, css } = stylesToCssClasses(html, 'class', new Map());
     expect(out).toBe(html);
     expect(css).toBe('');
+  });
+});
+
+describe('stripDataAttrs', () => {
+  it('removes every data-* attribute from a tag', () => {
+    const html = `<div data-id="abc" data-type="frame" data-name="Card" class="card"></div>`;
+    expect(stripDataAttrs(html)).toBe(`<div class="card"></div>`);
+  });
+
+  it('strips data-* across nested elements', () => {
+    const html =
+      `<div data-id="a" class="card">` +
+        `<span data-id="b" data-type="text" class="title">hi</span>` +
+      `</div>`;
+    expect(stripDataAttrs(html)).toBe(
+      `<div class="card"><span class="title">hi</span></div>`,
+    );
+  });
+
+  it('handles editor-only data-penpot-* attrs', () => {
+    const html = `<div data-id="x" data-penpot-locked="true" data-penpot-blocked="true" class="x"></div>`;
+    expect(stripDataAttrs(html)).toBe(`<div class="x"></div>`);
+  });
+
+  it('leaves non-data attributes alone', () => {
+    const html = `<a href="/x" target="_blank" data-id="a" rel="noopener">x</a>`;
+    expect(stripDataAttrs(html)).toBe(`<a href="/x" target="_blank" rel="noopener">x</a>`);
+  });
+
+  it('is a no-op when no data-* attrs exist', () => {
+    const html = `<div class="card"><span>hi</span></div>`;
+    expect(stripDataAttrs(html)).toBe(html);
+  });
+});
+
+describe('slugifyName', () => {
+  it.each([
+    ['Card', 'card'],
+    ['Hero Photo', 'hero-photo'],
+    ['Icons / token', 'icons-token'],
+    ['Hello World!!!', 'hello-world'],
+    ['  Padded  ', 'padded'],
+    ['multiple---dashes', 'multiple-dashes'],
+    ['UPPERCASE', 'uppercase'],
+  ])('"%s" → %s', (input, expected) => {
+    expect(slugifyName(input)).toBe(expected);
+  });
+
+  it('returns null for empty / non-printable names so callers can fall back', () => {
+    expect(slugifyName(undefined)).toBeNull();
+    expect(slugifyName('')).toBeNull();
+    expect(slugifyName('   ')).toBeNull();
+    expect(slugifyName('!!!')).toBeNull();
+  });
+
+  it('prefixes a leading digit with `_` so the result is a valid CSS class', () => {
+    expect(slugifyName('123 Card')).toBe('_123-card');
+    expect(slugifyName('2x')).toBe('_2x');
   });
 });
 

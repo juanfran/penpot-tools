@@ -14,10 +14,12 @@ import {
 } from '#/lib/server/shape-code';
 import { useQuery } from '@tanstack/react-query';
 import { Check, Code2, Copy } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Segmented } from './segmented';
 import { SemanticRules } from './semantic-rules';
+
+type CodeLang = 'html' | 'jsx' | 'css';
 
 const FORMATS = ['html', 'jsx'] as const;
 const STYLINGS = ['css', 'tailwind'] as const;
@@ -36,11 +38,14 @@ export function ExportDialog({
   const [open, setOpen] = useState(false);
   const [format, setFormat] = useState<ShapeCodeFormat>('html');
   const [styling, setStyling] = useState<ShapeCodeStyling>('css');
+  const [includeDataAttrs, setIncludeDataAttrs] = useState(false);
 
   const { data, isFetching, isError, error } = useQuery({
-    queryKey: ['shape-code', fileId, pageId, shapeId, format, styling],
+    queryKey: ['shape-code', fileId, pageId, shapeId, format, styling, includeDataAttrs],
     queryFn: () =>
-      getShapeCodeFn({ data: { fileId, pageId, shapeId, format, styling } }),
+      getShapeCodeFn({
+        data: { fileId, pageId, shapeId, format, styling, includeDataAttrs },
+      }),
     enabled: open,
     // Rules are read server-side; SemanticRules invalidates this query on
     // every save, so we don't include rules in the key here.
@@ -51,11 +56,7 @@ export function ExportDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button variant="outline" size="xs" title="Export shape as code" />
-        }
-      >
+      <DialogTrigger render={<Button variant="outline" size="xs" title="Export shape as code" />}>
         <Code2 />
         Export
       </DialogTrigger>
@@ -67,23 +68,22 @@ export function ExportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-wrap gap-4">
-          <Segmented
-            label="Format"
-            value={format}
-            onChange={setFormat}
-            options={FORMATS}
-          />
-          <Segmented
-            label="Styling"
-            value={styling}
-            onChange={setStyling}
-            options={STYLINGS}
-          />
+        <div className="flex flex-wrap items-center gap-4">
+          <Segmented label="Format" value={format} onChange={setFormat} options={FORMATS} />
+          <Segmented label="Styling" value={styling} onChange={setStyling} options={STYLINGS} />
+          <label className="flex cursor-pointer items-center gap-1.5 text-[10px] tracking-wider text-gray-400 uppercase select-none">
+            <input
+              type="checkbox"
+              checked={includeDataAttrs}
+              onChange={(e) => setIncludeDataAttrs(e.target.checked)}
+              className="h-3 w-3 cursor-pointer"
+            />
+            Include data-* attrs
+          </label>
         </div>
 
         {isError ? (
-          <p className="text-xs text-destructive">
+          <p className="text-destructive text-xs">
             {error instanceof Error ? error.message : 'Failed to generate code.'}
           </p>
         ) : (
@@ -91,12 +91,14 @@ export function ExportDialog({
             <CodeBlock
               title={format.toUpperCase()}
               code={data?.code ?? ''}
+              lang={format}
               loading={isFetching}
             />
             {styling === 'css' && (
               <CodeBlock
                 title="CSS"
                 code={data?.css ?? ''}
+                lang="css"
                 loading={isFetching}
                 emptyHint="Shape has no inline styles."
               />
@@ -104,11 +106,7 @@ export function ExportDialog({
           </div>
         )}
 
-        <SemanticRules
-          fileId={fileId}
-          selectedShapeId={shapeId}
-          selectedShapeName={shapeName}
-        />
+        <SemanticRules fileId={fileId} selectedShapeId={shapeId} selectedShapeName={shapeName} />
       </DialogContent>
     </Dialog>
   );
@@ -117,15 +115,18 @@ export function ExportDialog({
 function CodeBlock({
   title,
   code,
+  lang,
   loading,
   emptyHint,
 }: {
   title: string;
   code: string;
+  lang: CodeLang;
   loading: boolean;
   emptyHint?: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const highlighted = useHighlightedCode(code, lang);
 
   const handleCopy = () => {
     if (!code) return;
@@ -136,6 +137,7 @@ function CodeBlock({
   };
 
   const empty = !loading && !code;
+  const showHighlighted = !loading && !empty && highlighted !== null;
 
   return (
     <div className="min-w-0">
@@ -154,15 +156,58 @@ function CodeBlock({
           <span>{copied ? 'Copied!' : 'Copy'}</span>
         </button>
       </div>
-      <pre className="max-h-80 overflow-auto rounded-md bg-gray-50 px-3 py-2 font-mono text-xs leading-relaxed text-gray-800">
-        {loading ? (
-          <span className="text-gray-400">Generating…</span>
-        ) : empty ? (
-          <span className="text-gray-400">{emptyHint ?? 'Empty.'}</span>
-        ) : (
-          code
-        )}
-      </pre>
+      {showHighlighted ? (
+        // Shiki emits its own `<pre>` with inline `background-color` from the
+        // theme — we force-transparent it and strip its padding so the wrapper
+        // owns the chrome (rounded corners, max-height, scroll). Result: theme
+        // colours on tokens, our gray-50 surface around them.
+        <div
+          className="max-h-80 overflow-auto rounded-md px-3 py-2 font-mono text-xs leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: highlighted! }}
+        />
+      ) : (
+        <pre className="max-h-80 overflow-auto rounded-md bg-gray-50 px-3 py-2 font-mono text-xs leading-relaxed text-gray-800">
+          {loading ? (
+            <span className="text-gray-400">Generating…</span>
+          ) : empty ? (
+            <span className="text-gray-400">{emptyHint ?? 'Empty.'}</span>
+          ) : (
+            // Highlighter is still loading; show plain code so the user sees
+            // something useful instead of a blank pre.
+            code
+          )}
+        </pre>
+      )}
     </div>
   );
+}
+
+/**
+ * Lazy-loads Shiki on first call (the `shiki` import is async so it doesn't
+ * land in the initial client bundle) and re-highlights when `code`/`lang`
+ * change. Returns `null` until the first highlighted output is ready.
+ */
+function useHighlightedCode(code: string, lang: CodeLang): string | null {
+  const [html, setHtml] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!code) {
+      setHtml(null);
+      return;
+    }
+    let cancelled = false;
+    void import('shiki')
+      .then(({ codeToHtml }) => codeToHtml(code, { lang, theme: 'github-light' }))
+      .then((result) => {
+        if (!cancelled) setHtml(result);
+      })
+      .catch(() => {
+        if (!cancelled) setHtml(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [code, lang]);
+
+  return html;
 }

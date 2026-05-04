@@ -39,6 +39,12 @@ export const getShapeCodeFn = createServerFn({ method: 'GET' })
       shapeId: z.uuid(),
       format: z.enum(['html', 'jsx']),
       styling: z.enum(['css', 'tailwind']),
+      /**
+       * Keep the converter's `data-id` / `data-type` / `data-name` etc. on the
+       * output. Default `false` — those attrs are useful for the inspector
+       * pipeline but pure noise once you paste the code into a project.
+       */
+      includeDataAttrs: z.boolean().optional(),
     }),
   )
   .middleware([authMiddleware])
@@ -68,15 +74,23 @@ export const getShapeCodeFn = createServerFn({ method: 'GET' })
     const { html, fonts } = await convertShape(shape, page.objects, ctx);
 
     const classAttr = data.format === 'jsx' ? 'className' : 'class';
+    const names = new Map<string, string>();
+    for (const [id, s] of Object.entries(page.objects)) {
+      if (s.name) names.set(id, s.name);
+    }
     const { html: classed, css } =
       data.styling === 'tailwind'
         ? { html: stylesToTailwind(html, classAttr), css: '' }
-        : stylesToCssClasses(html, classAttr);
+        : stylesToCssClasses(html, classAttr, names);
+
+    // Strip the converter's data-* attrs after class extraction (the regex
+    // depends on `data-id` to look up layer names) but before formatting.
+    const stripped = data.includeDataAttrs ? classed : stripDataAttrs(classed);
 
     const fileName = data.format === 'jsx' ? 'shape.jsx' : 'shape.html';
 
     const oxfmt = await import('oxfmt');
-    const { code } = await oxfmt.format(fileName, classed);
+    const { code } = await oxfmt.format(fileName, stripped);
     // oxfmt treats a bare JSX fragment as an expression statement and emits a
     // trailing `;` — undesirable for a snippet meant to be pasted into a JSX
     // context.
@@ -135,34 +149,73 @@ export function resolveTagOverrides(
 }
 
 const STYLE_ATTR_RE = /\sstyle="([^"]*)"/g;
+/**
+ * Capture the converter's `data-id="..."` and the matching `style="..."` on
+ * the same element so we can derive class names from the layer's name. The
+ * converter consistently emits `data-id` before `style`, with `data-type` and
+ * any other attrs in between (see converter `tag()` helper).
+ */
+const STYLE_WITH_ID_RE =
+  /(\sdata-id="([^"]+)"[^>]*?)\sstyle="([^"]*)"/g;
 
 /**
  * Replace every `style="..."` attribute with a deduped class reference and
  * return the collected class definitions as a CSS string. Two elements with
- * identical declaration strings share the same class.
+ * identical declaration strings share the same class. Class names are derived
+ * from the layer name when available — falling back to `s-N` only for shapes
+ * with no usable name.
  */
 export function stylesToCssClasses(
   html: string,
   classAttr: 'class' | 'className',
+  names: Map<string, string>,
 ): { html: string; css: string } {
   const classByDecls = new Map<string, string>();
+  const usedSlugs = new Map<string, number>();
   const rules: string[] = [];
-  let counter = 0;
+  let fallbackCounter = 0;
 
-  const newHtml = html.replace(STYLE_ATTR_RE, (_match, declarations: string) => {
-    const decoded = decodeHtmlEntities(declarations).trim();
-    if (!decoded) return '';
-    let cls = classByDecls.get(decoded);
-    if (!cls) {
-      counter += 1;
-      cls = `s-${counter}`;
-      classByDecls.set(decoded, cls);
-      rules.push(`.${cls} { ${decoded.replace(/;\s*$/, '')}; }`);
-    }
-    return ` ${classAttr}="${cls}"`;
-  });
+  const newHtml = html.replace(
+    STYLE_WITH_ID_RE,
+    (_match, prefix: string, shapeId: string, declarations: string) => {
+      const decoded = decodeHtmlEntities(declarations).trim();
+      if (!decoded) return prefix;
+      let cls = classByDecls.get(decoded);
+      if (!cls) {
+        const base = slugifyName(names.get(shapeId)) ?? `s-${++fallbackCounter}`;
+        const occurrences = usedSlugs.get(base) ?? 0;
+        usedSlugs.set(base, occurrences + 1);
+        cls = occurrences === 0 ? base : `${base}-${occurrences + 1}`;
+        classByDecls.set(decoded, cls);
+        rules.push(`.${cls} { ${decoded.replace(/;\s*$/, '')}; }`);
+      }
+      return `${prefix} ${classAttr}="${cls}"`;
+    },
+  );
 
   return { html: newHtml, css: rules.join('\n') };
+}
+
+/**
+ * Layer names in Penpot are free-form strings ("Icons / token", "Hero photo
+ * #2", emoji, etc). Lowercase, replace any non-alphanumeric run with `-`,
+ * trim. Returns `null` when the result is empty (caller falls back to s-N).
+ *
+ * Note: this preserves plurality — "Icons / token" → "icons-token". Linguistic
+ * singularisation isn't reliable enough to apply automatically; rename the
+ * layer if you want a different class name.
+ */
+export function slugifyName(name: string | undefined): string | null {
+  if (!name) return null;
+  let slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  if (!slug) return null;
+  // CSS class identifiers can't start with a digit; prefix with `_` so the
+  // selector parses without quoting.
+  if (/^\d/.test(slug)) slug = `_${slug}`;
+  return slug;
 }
 
 /**
@@ -393,4 +446,16 @@ function decodeHtmlEntities(s: string): string {
     .replace(/&gt;/g, '>')
     .replace(/&lt;/g, '<')
     .replace(/&amp;/g, '&');
+}
+
+const DATA_ATTR_RE = /\s+data-[a-z][a-z0-9-]*="[^"]*"/gi;
+
+/**
+ * Remove every `data-*="..."` attribute from the HTML. The converter's output
+ * carries `data-id`, `data-type`, `data-name`, `data-penpot-*` to power the
+ * inspector — none of which the user wants when pasting the code into their
+ * own project.
+ */
+export function stripDataAttrs(html: string): string {
+  return html.replace(DATA_ATTR_RE, '');
 }
