@@ -1,13 +1,13 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   _resetSemanticsCacheForTesting,
-  readSemanticsRaw,
-  writeSemanticsRaw,
-} from './semantics-fs.server';
-import type { SemanticRule } from './semantics-types';
+  readSemanticsFromDisk,
+  type SemanticRule,
+  writeSemanticsToDisk,
+} from './semantics-store';
 
 const FILE_A = '11111111-1111-1111-1111-111111111111';
 const FILE_B = '22222222-2222-2222-2222-222222222222';
@@ -24,10 +24,6 @@ function rule(over: Partial<SemanticRule> & { type: SemanticRule['type'] }): Sem
 
 let dir: string;
 
-beforeAll(() => {
-  // Plumbing only — fileId validity is checked elsewhere.
-});
-
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'penpot-semantics-test-'));
   process.env['PENPOT_SEMANTICS_DIR'] = dir;
@@ -41,18 +37,17 @@ afterEach(async () => {
 
 describe('semantics-store', () => {
   it('returns empty rules for a file with no JSON on disk', async () => {
-    const result = await readSemanticsRaw(FILE_A);
-    expect(result.rules).toEqual([]);
+    expect(await readSemanticsFromDisk(FILE_A)).toEqual([]);
   });
 
   it('persists rules to <fileId>.json under PENPOT_SEMANTICS_DIR', async () => {
     const rules = [rule({ type: 'shape-id', value: 'shape-1', tag: 'button' })];
-    await writeSemanticsRaw(FILE_A, { rules, updatedAt: '2026-01-01T00:00:00Z' });
+    await writeSemanticsToDisk(FILE_A, rules);
 
     const raw = await readFile(join(dir, `${FILE_A}.json`), 'utf8');
     const parsed = JSON.parse(raw);
     expect(parsed.rules).toEqual(rules);
-    expect(parsed.updatedAt).toBe('2026-01-01T00:00:00Z');
+    expect(typeof parsed.updatedAt).toBe('string');
   });
 
   it('round-trips rules across cache resets (writes survive a fresh read)', async () => {
@@ -60,21 +55,19 @@ describe('semantics-store', () => {
       rule({ type: 'name-contains', value: 'button', tag: 'button' }),
       rule({ type: 'name-equals', value: 'link', tag: 'a' }),
     ];
-    await writeSemanticsRaw(FILE_A, { rules });
+    await writeSemanticsToDisk(FILE_A, rules);
 
     _resetSemanticsCacheForTesting();
-    const result = await readSemanticsRaw(FILE_A);
-    expect(result.rules).toEqual(rules);
+    expect(await readSemanticsFromDisk(FILE_A)).toEqual(rules);
   });
 
   it('serves the cached value on the second read without touching disk', async () => {
     const rules = [rule({ type: 'shape-id', value: 'x', tag: 'section' })];
-    await writeSemanticsRaw(FILE_A, { rules });
+    await writeSemanticsToDisk(FILE_A, rules);
 
     // Delete the file behind the cache; the next read should still hit memory.
     await rm(join(dir, `${FILE_A}.json`));
-    const result = await readSemanticsRaw(FILE_A);
-    expect(result.rules).toEqual(rules);
+    expect(await readSemanticsFromDisk(FILE_A)).toEqual(rules);
   });
 
   it('drops malformed entries while keeping the rest', async () => {
@@ -91,30 +84,26 @@ describe('semantics-store', () => {
       }),
     );
 
-    const result = await readSemanticsRaw(FILE_A);
-    expect(result.rules).toEqual([validRule]);
+    expect(await readSemanticsFromDisk(FILE_A)).toEqual([validRule]);
   });
 
   it('returns empty rules when the file contains invalid JSON', async () => {
     await writeFile(join(dir, `${FILE_A}.json`), '{ this is not json');
-    const result = await readSemanticsRaw(FILE_A);
-    expect(result.rules).toEqual([]);
+    expect(await readSemanticsFromDisk(FILE_A)).toEqual([]);
   });
 
   it('keeps stores for different fileIds isolated', async () => {
     const rulesA = [rule({ type: 'shape-id', value: 'a', tag: 'button' })];
     const rulesB = [rule({ type: 'shape-id', value: 'b', tag: 'a' })];
-    await writeSemanticsRaw(FILE_A, { rules: rulesA });
-    await writeSemanticsRaw(FILE_B, { rules: rulesB });
+    await writeSemanticsToDisk(FILE_A, rulesA);
+    await writeSemanticsToDisk(FILE_B, rulesB);
 
-    expect((await readSemanticsRaw(FILE_A)).rules).toEqual(rulesA);
-    expect((await readSemanticsRaw(FILE_B)).rules).toEqual(rulesB);
+    expect(await readSemanticsFromDisk(FILE_A)).toEqual(rulesA);
+    expect(await readSemanticsFromDisk(FILE_B)).toEqual(rulesB);
   });
 
   it('rejects fileIds that look like path-traversal attempts', async () => {
-    await expect(
-      writeSemanticsRaw('../escape', { rules: [] }),
-    ).rejects.toThrow(/Invalid fileId/);
-    await expect(readSemanticsRaw('not/a/uuid')).rejects.toThrow(/Invalid fileId/);
+    await expect(writeSemanticsToDisk('../escape', [])).rejects.toThrow(/Invalid fileId/);
+    await expect(readSemanticsFromDisk('not/a/uuid')).rejects.toThrow(/Invalid fileId/);
   });
 });

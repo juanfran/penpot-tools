@@ -9,6 +9,8 @@
       "@/*": ["./src/*"],
       "@penpot-tools/converter": ["../../packages/converter/src/converter/index.ts"],
       "@penpot-tools/converter/tokens": ["../../packages/converter/src/converter/tokens.ts"],
+      "@penpot-tools/converter/shape-code": ["../../packages/converter/src/converter/shape-code.ts"],
+      "@penpot-tools/converter/semantics-store": ["../../packages/converter/src/converter/semantics-store.ts"],
       "@penpot-tools/penpot-types": ["../../packages/converter/src/penpot.types.ts"]
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],

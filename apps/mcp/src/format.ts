@@ -1,4 +1,9 @@
-import type { FontUsage, PageHtmlBundle, ShapeHtmlBundle } from './convert.ts';
+import type {
+  FontUsage,
+  PageHtmlBundle,
+  ShapeCodeBundle,
+  ShapeHtmlBundle,
+} from './convert.ts';
 
 /**
  * The "do not paste verbatim, convert to the user's framework" guidance lives
@@ -61,5 +66,51 @@ export function describeShapeBundle(bundle: ShapeHtmlBundle, opts: DescribeOptio
     bundle,
     `Shape "${bundle.shapeName}" (${bundle.shapeType}, id ${bundle.shapeId})`,
     opts,
+  );
+}
+
+/**
+ * Static guidance the MCP appends to every shape-code response. The converter
+ * mirrors the Penpot tree literally — useful for fidelity, noisy for
+ * production code — so the LLM is reminded to flatten / rename / inline
+ * before pasting. Keep this block short; it ships on every call.
+ */
+const CLEANUP_NOTES = `
+## Notes
+This output mirrors the Penpot design tree literally. Before pasting into a
+project the agent should review and **adapt** — common cleanups:
+- **Flatten single-child wrappers.** Designs often nest a label inside a
+  frame inside the button; collapse them when only one descendant carries
+  the actual content (e.g. \`<button><div><p>Submit</p></div></button>\` →
+  \`<button>Submit</button>\`).
+- **Drop redundant text wrappers.** A \`<p>\` whose only purpose is holding
+  the button's label can usually disappear; merge its styles upward.
+- **Promote semantic tags.** If a layer is named like a button / link /
+  list but no rule was added in the viewer, switch the tag yourself
+  (\`<div role="button">\` → \`<button>\`, anchor needs an \`href\`, etc.).
+- **Consolidate styles.** Identical class definitions across siblings are
+  already deduped; identical *values* across the project (colours, spacing)
+  should be lifted to design tokens / Tailwind theme variables.
+- **Layer-name fallbacks.** Shapes without a meaningful name produce
+  \`s-1\` / \`s-2\` classes — rename those to something the project will
+  recognise (or rename the layers in Penpot for next time).
+`.trimStart();
+
+export function describeShapeCodeBundle(
+  bundle: ShapeCodeBundle,
+  opts: DescribeOptions = {},
+): string {
+  // Pick the right fenced-code language so syntax highlighting works in
+  // markdown-aware UIs.
+  const codeLang = bundle.format === 'jsx' ? 'jsx' : 'html';
+  return (
+    `# Shape "${bundle.shapeName}" (${bundle.shapeType}, id ${bundle.shapeId}) — page "${bundle.pageName}"` +
+    `\n_format: ${bundle.format} · styling: ${bundle.styling}_` +
+    section('tokensCss', 'css', bundle.tokensCss) +
+    fontsUsedSection(bundle.fontsUsed) +
+    (opts.includeFontsCss ? section('fontsCss', 'css', opts.fontsCss ?? '') : '') +
+    section(bundle.format.toUpperCase(), codeLang, bundle.code) +
+    (bundle.styling === 'css' ? section('css', 'css', bundle.css) : '') +
+    `\n${CLEANUP_NOTES}`
   );
 }

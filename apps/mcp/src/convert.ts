@@ -2,6 +2,12 @@ import { convertPage, convertShape, buildPenpotFontsCss } from '@penpot-tools/co
 import type { ConverterContext, FontInfo } from '@penpot-tools/converter';
 import { extractTokens, extractAllTokens, tokensToCss } from '@penpot-tools/converter/tokens';
 import type { TokenInfo } from '@penpot-tools/converter/tokens';
+import {
+  shapeToCode,
+  type ShapeCodeFormat,
+  type ShapeCodeStyling,
+} from '@penpot-tools/converter/shape-code';
+import { readSemanticsFromDisk } from '@penpot-tools/converter/semantics-store';
 import type { Shape } from '@penpot-tools/converter/types';
 import { fetchPage, getPenpotBase, imageUrlFor } from './penpot-api.ts';
 
@@ -96,6 +102,78 @@ export async function convertShapeToHtml(
     fontsUsed: summariseFonts(fonts),
     buildFontsCss: () => buildPenpotFontsCss(fonts, { baseUrl: getPenpotBase() }),
     tokensCss: tokensToCss(tokens),
+  };
+}
+
+export interface ShapeCodeBundle {
+  pageName: string;
+  shapeId: string;
+  shapeName: string;
+  shapeType: string;
+  /** Formatted HTML or JSX with `class` / `className` references — no inline styles. */
+  code: string;
+  /** CSS class definitions when `styling === 'css'`. Empty for tailwind. */
+  css: string;
+  fontsUsed: FontUsage[];
+  buildFontsCss: () => Promise<string>;
+  tokensCss: string;
+  /** Echo of the format/styling used so callers can label their output. */
+  format: ShapeCodeFormat;
+  styling: ShapeCodeStyling;
+}
+
+export interface ShapeCodeOptions {
+  format?: ShapeCodeFormat;
+  styling?: ShapeCodeStyling;
+  /** Keep `data-id` / `data-type` / `data-name` / `data-penpot-*` on the output. */
+  includeDataAttrs?: boolean;
+}
+
+/**
+ * Render a Penpot shape with the same pipeline the viewer's exporter uses:
+ * convertShape with semantic-tag overrides → CSS classes (named after the
+ * layer) or Tailwind utilities → strip `data-*` attrs → oxfmt format. Reads
+ * per-file semantic rules from the same store the viewer writes to so both
+ * tools agree on `<button>` / `<a>` / `<ul>` / … classifications.
+ */
+export async function convertShapeToCode(
+  token: string,
+  fileId: string,
+  pageId: string,
+  shapeId: string,
+  options: ShapeCodeOptions = {},
+): Promise<ShapeCodeBundle> {
+  const page = await fetchPage(token, fileId, pageId);
+  const shape = page.objects[shapeId];
+  if (!shape) {
+    throw new Error(`Shape ${shapeId} not found in page ${pageId}`);
+  }
+  const tokens = extractTokens(page.objects);
+  const ctx: ConverterContext = {
+    resolveImageUrl: imageUrlFor,
+    tokens,
+  };
+  const rules = await readSemanticsFromDisk(fileId);
+  const format = options.format ?? 'html';
+  const styling = options.styling ?? 'css';
+  const { code, css, fonts } = await shapeToCode(shape, page.objects, ctx, {
+    format,
+    styling,
+    includeDataAttrs: options.includeDataAttrs,
+    rules,
+  });
+  return {
+    pageName: page.name,
+    shapeId,
+    shapeName: shape.name,
+    shapeType: shape.type,
+    code,
+    css,
+    fontsUsed: summariseFonts(fonts),
+    buildFontsCss: () => buildPenpotFontsCss(fonts, { baseUrl: getPenpotBase() }),
+    tokensCss: tokensToCss(tokens),
+    format,
+    styling,
   };
 }
 

@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   declToTailwind,
   resolveTagOverrides,
+  type SemanticRule,
   slugifyName,
   stripDataAttrs,
   stylesToCssClasses,
   stylesToTailwind,
 } from './shape-code';
-import type { SemanticRule } from './semantics-types';
 
 function shape(id: string, name: string): { id: string; name: string } {
   return { id, name } as { id: string; name: string };
@@ -101,6 +101,35 @@ describe('stylesToCssClasses', () => {
     const { html: out, css } = stylesToCssClasses(html, 'class', new Map());
     expect(out).toBe(html);
     expect(css).toBe('');
+  });
+
+  it('extracts styles from text leaves that have no data-id', () => {
+    // The converter emits `<p>` / `<span>` inside `renderParagraph` without
+    // any data-id. Those styles must still be moved into class definitions —
+    // otherwise the agent gets a tag mixing classes and inline styles.
+    const html =
+      `<div data-id="a" data-type="frame" style="display: flex">` +
+        `<p style="font-size: 16px; color: red">Hi</p>` +
+      `</div>`;
+    const { html: out, css } = stylesToCssClasses(html, 'class', new Map([['a', 'Card']]));
+    expect(out).toBe(
+      `<div data-id="a" data-type="frame" class="card">` +
+        `<p class="s-1">Hi</p>` +
+      `</div>`,
+    );
+    expect(css).toBe(
+      `.card { display: flex; }\n.s-1 { font-size: 16px; color: red; }`,
+    );
+  });
+
+  it('shares classes between data-id elements and orphan text leaves with identical styles', () => {
+    const html =
+      `<div data-id="a" style="color: red">` +
+        `<p style="color: red">Hi</p>` +
+      `</div>`;
+    const { html: out, css } = stylesToCssClasses(html, 'class', new Map([['a', 'Card']]));
+    expect(out).toBe(`<div data-id="a" class="card"><p class="card">Hi</p></div>`);
+    expect(css).toBe(`.card { color: red; }`);
   });
 });
 
