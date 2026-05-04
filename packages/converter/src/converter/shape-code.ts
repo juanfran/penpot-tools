@@ -14,9 +14,19 @@
  * No node imports here — this file stays browser-friendly. The on-disk store
  * for semantic rules lives in `./semantics-store` and is opt-in via subpath.
  */
-import type { Shape } from '../penpot.types';
+import type { Page, Shape } from '../penpot.types';
 import type { ConverterContext, FontInfo } from './types';
-import { convertShape } from './index';
+import { convertPage, convertShape } from './index';
+
+// Note on what this module deliberately does NOT do: structural cleanup
+// (collapsing `<frame><text>…</text></frame>` into `<frame>…</frame>`,
+// dropping single-child wrappers, etc.). Regex-based HTML manipulation is
+// brittle in the presence of injected attributes (`data-name`,
+// `data-penpot-locked`), and a partial transformation is worse than none —
+// callers can't tell whether the output has been simplified. The MCP's
+// `## Notes` section asks the agent to do that cleanup with full context;
+// modern LLMs do it well and decide per-case whether merging styles is
+// safe.
 
 /** Curated whitelist of semantic HTML tags the converter can emit as overrides. */
 export const SEMANTIC_TAGS = [
@@ -82,7 +92,8 @@ export interface ShapeCodeResult {
 }
 
 /**
- * Run the full pipeline: convert → extract classes → strip data-* → format.
+ * Run the full pipeline on a single shape: convert → extract classes →
+ * strip data-* → format.
  *
  * Caller supplies `ctx` exactly as it would for `convertShape` (image url
  * resolver, tokens, etc.) — `tagOverride` and `format: false` are injected
@@ -94,15 +105,48 @@ export async function shapeToCode(
   ctx: ConverterContext,
   options: ShapeCodeOptions,
 ): Promise<ShapeCodeResult> {
-  const tagOverrides = resolveTagOverrides(options.rules ?? [], allObjects);
-  const innerCtx: ConverterContext = {
+  const innerCtx = withTagOverrides(ctx, options.rules ?? [], allObjects);
+  const { html, fonts } = await convertShape(shape, allObjects, innerCtx);
+  const code = await finishCode(html, allObjects, options);
+  return { ...code, fonts };
+}
+
+/**
+ * Same pipeline as `shapeToCode` but for a whole page — every top-level
+ * board on the canvas is converted under shared class state, so two boards
+ * with identical declarations share a single CSS rule. Used by the MCP
+ * `get_html` page mode so callers without a shapeId still get clean output.
+ */
+export async function pageToCode(
+  page: Page,
+  ctx: ConverterContext,
+  options: ShapeCodeOptions,
+): Promise<ShapeCodeResult> {
+  const innerCtx = withTagOverrides(ctx, options.rules ?? [], page.objects);
+  const { html, fonts } = await convertPage(page, innerCtx);
+  const code = await finishCode(html, page.objects, options);
+  return { ...code, fonts };
+}
+
+function withTagOverrides(
+  ctx: ConverterContext,
+  rules: SemanticRule[],
+  allObjects: Record<string, Shape>,
+): ConverterContext {
+  const tagOverrides = resolveTagOverrides(rules, allObjects);
+  return {
     ...ctx,
     tagOverride: tagOverrides.size > 0 ? (s) => tagOverrides.get(s.id) : undefined,
     // We format below with oxfmt using the right extension.
     format: false,
   };
-  const { html, fonts } = await convertShape(shape, allObjects, innerCtx);
+}
 
+async function finishCode(
+  html: string,
+  allObjects: Record<string, Shape>,
+  options: ShapeCodeOptions,
+): Promise<{ code: string; css: string }> {
   const classAttr = options.format === 'jsx' ? 'className' : 'class';
   const names = new Map<string, string>();
   for (const [id, s] of Object.entries(allObjects)) {
@@ -132,7 +176,7 @@ export async function shapeToCode(
     options.format === 'jsx' ? formatted.replace(/;\s*$/, '\n') : formatted;
   const cssOut = css ? (await oxfmt.format('shape.css', css)).code : '';
 
-  return { code, css: cssOut, fonts };
+  return { code, css: cssOut };
 }
 
 /**
@@ -230,16 +274,43 @@ export function stylesToCssClasses(
   );
 
   // Catch any styles left untouched by the first pass — text-leaf <p> / <span>
-  // inside paragraphs, etc. They don't carry a data-id, so name-derived class
-  // names don't apply; they fall through to s-N.
-  next = next.replace(STYLE_ATTR_RE, (_match, declarations: string) => {
+  // inside paragraphs, etc. They don't carry a data-id, so we can't look up
+  // their layer name. As a softer fallback, derive a name from the nearest
+  // preceding `class="…"` (the wrapping shape's class), e.g. `<p>` inside
+  // `<div class="cancel">` becomes `class="cancel-text"`. Falls through to
+  // `s-N` only when there's no parent class to anchor on.
+  next = next.replace(STYLE_ATTR_RE, (_match, declarations: string, offset: number) => {
     const decoded = decodeHtmlEntities(declarations).trim();
     if (!decoded) return '';
-    const cls = take(decoded, null);
+    const parent = findPrecedingClass(next, offset);
+    const cls = take(decoded, parent ? `${parent}-text` : null);
     return ` ${classAttr}="${cls}"`;
   });
 
   return { html: next, css: rules.join('\n') };
+}
+
+const CLASS_ATTR_RE = /class(?:Name)?="([^"]+)"/g;
+
+/**
+ * Walk backwards from `offset` to find the most recent `class="…"` /
+ * `className="…"` attribute — used by the orphan-style pass to derive a
+ * `${parent}-text` class for `<p>` / `<span>` leaves.
+ *
+ * `String.matchAll` would fully scan the prefix on every leaf; for our
+ * input sizes (a single shape's HTML, a few KB) that's fine. Switch to a
+ * single sweep with offset-aware bookkeeping if profiling ever points
+ * here.
+ */
+function findPrecedingClass(html: string, offset: number): string | null {
+  let last: string | null = null;
+  CLASS_ATTR_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = CLASS_ATTR_RE.exec(html)) !== null) {
+    if (m.index >= offset) break;
+    last = m[1] ?? null;
+  }
+  return last;
 }
 
 /**

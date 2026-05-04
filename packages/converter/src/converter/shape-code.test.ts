@@ -103,10 +103,11 @@ describe('stylesToCssClasses', () => {
     expect(css).toBe('');
   });
 
-  it('extracts styles from text leaves that have no data-id', () => {
+  it('extracts styles from text leaves and names them after the parent class', () => {
     // The converter emits `<p>` / `<span>` inside `renderParagraph` without
-    // any data-id. Those styles must still be moved into class definitions —
-    // otherwise the agent gets a tag mixing classes and inline styles.
+    // any data-id. The orphan-style pass picks them up and derives a class
+    // name from the nearest preceding `class="…"` so the agent gets a
+    // descriptive class instead of an opaque `s-N`.
     const html =
       `<div data-id="a" data-type="frame" style="display: flex">` +
         `<p style="font-size: 16px; color: red">Hi</p>` +
@@ -114,12 +115,19 @@ describe('stylesToCssClasses', () => {
     const { html: out, css } = stylesToCssClasses(html, 'class', new Map([['a', 'Card']]));
     expect(out).toBe(
       `<div data-id="a" data-type="frame" class="card">` +
-        `<p class="s-1">Hi</p>` +
+        `<p class="card-text">Hi</p>` +
       `</div>`,
     );
     expect(css).toBe(
-      `.card { display: flex; }\n.s-1 { font-size: 16px; color: red; }`,
+      `.card { display: flex; }\n.card-text { font-size: 16px; color: red; }`,
     );
+  });
+
+  it('falls back to s-N for text leaves with no preceding class', () => {
+    const html = `<p style="color: red">Hi</p>`;
+    const { html: out, css } = stylesToCssClasses(html, 'class', new Map());
+    expect(out).toBe(`<p class="s-1">Hi</p>`);
+    expect(css).toBe(`.s-1 { color: red; }`);
   });
 
   it('shares classes between data-id elements and orphan text leaves with identical styles', () => {

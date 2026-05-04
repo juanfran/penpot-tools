@@ -175,7 +175,7 @@ export function renderGroup(
   const inner = children.map((child) => renderShape(child, objects, childCtx)).join('');
 
   return tag(
-    'div',
+    ctx.tagOverride?.(shape) ?? 'div',
     { 'data-id': shape.id, 'data-type': shape.type, style: style || undefined },
     inner,
   );

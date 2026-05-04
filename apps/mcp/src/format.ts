@@ -1,5 +1,6 @@
 import type {
   FontUsage,
+  PageCodeBundle,
   PageHtmlBundle,
   ShapeCodeBundle,
   ShapeHtmlBundle,
@@ -105,6 +106,23 @@ export function describeShapeCodeBundle(
   const codeLang = bundle.format === 'jsx' ? 'jsx' : 'html';
   return (
     `# Shape "${bundle.shapeName}" (${bundle.shapeType}, id ${bundle.shapeId}) — page "${bundle.pageName}"` +
+    `\n_format: ${bundle.format} · styling: ${bundle.styling}_` +
+    section('tokensCss', 'css', bundle.tokensCss) +
+    fontsUsedSection(bundle.fontsUsed) +
+    (opts.includeFontsCss ? section('fontsCss', 'css', opts.fontsCss ?? '') : '') +
+    section(bundle.format.toUpperCase(), codeLang, bundle.code) +
+    (bundle.styling === 'css' ? section('css', 'css', bundle.css) : '') +
+    `\n${CLEANUP_NOTES}`
+  );
+}
+
+export function describePageCodeBundle(
+  bundle: PageCodeBundle,
+  opts: DescribeOptions = {},
+): string {
+  const codeLang = bundle.format === 'jsx' ? 'jsx' : 'html';
+  return (
+    `# Page "${bundle.pageName}"` +
     `\n_format: ${bundle.format} · styling: ${bundle.styling}_` +
     section('tokensCss', 'css', bundle.tokensCss) +
     fontsUsedSection(bundle.fontsUsed) +

@@ -2,14 +2,14 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import {
+  convertPageToCode,
   convertPageToHtml,
   convertShapeToCode,
   convertShapeToHtml,
   getPageOverview,
   getPageTokens,
-  type PageHtmlBundle,
 } from './convert.ts';
-import { describePageBundle, describeShapeCodeBundle } from './format.ts';
+import { describePageCodeBundle, describeShapeCodeBundle } from './format.ts';
 import { fetchPage } from './penpot-api.ts';
 import { buildScreenshotContent, renderScreenshot, type ScreenshotOutput } from './screenshot.ts';
 import { requireSelection, requireToken, resolvePage, resolveTarget } from './state.ts';
@@ -50,9 +50,15 @@ CSS), \`get_screenshot\` (image only), \`list_assets\` / \`download_asset\`
 (image media). \`get_html\` defaults to \`format:'html'\` +
 \`styling:'css'\` (class names slugified from layer names — "Icons /
 token" → \`.icons-token\`, \`data-*\` stripped). Pass \`format:'jsx'\` or
-\`styling:'tailwind'\` when the project needs them. Page-level requests
-(no shapeId) still return raw inline-styled HTML; pass a shapeId to get
-the full pipeline. When implementing or reworking a design call
+\`styling:'tailwind'\` when the project needs them. Both shape and page
+modes share the same pipeline. The output mirrors the Penpot design
+tree literally; the response's \`## Notes\` section lists the cleanups
+the agent should apply before pasting (flatten single-child wrappers,
+promote semantic tags, drop redundant text wrappers, …). The CSS
+properties the converter ever emits are listed at
+\`penpot://supported-css\` — useful when round-tripping designs with the
+write tools (only that subset survives \`create_design_from_html\`).
+When implementing or reworking a design call
 \`get_html({ includeScreenshot: true })\` so code + image arrive in one
 round trip.
 
@@ -79,9 +85,15 @@ CSS), \`get_screenshot\` (image only), \`list_assets\` / \`download_asset\`
 (image media). \`get_html\` defaults to \`format:'html'\` +
 \`styling:'css'\` (class names slugified from layer names — "Icons /
 token" → \`.icons-token\`, \`data-*\` stripped). Pass \`format:'jsx'\` or
-\`styling:'tailwind'\` when the project needs them. Page-level requests
-(no shapeId) still return raw inline-styled HTML; pass a shapeId to get
-the full pipeline. When implementing or reworking a design call
+\`styling:'tailwind'\` when the project needs them. Both shape and page
+modes share the same pipeline. The output mirrors the Penpot design
+tree literally; the response's \`## Notes\` section lists the cleanups
+the agent should apply before pasting (flatten single-child wrappers,
+promote semantic tags, drop redundant text wrappers, …). The CSS
+properties the converter ever emits are listed at
+\`penpot://supported-css\` — useful when round-tripping designs with the
+write tools (only that subset survives \`create_design_from_html\`).
+When implementing or reworking a design call
 \`get_html({ includeScreenshot: true })\` so code + image arrive in one
 round trip.
 
@@ -217,7 +229,7 @@ server.registerTool(
   {
     title: 'HTML / JSX for a Penpot shape (or full page)',
     description:
-      'Returns clean, framework-ready code for a shape: HTML or JSX with class / className refs (no inline styles), plus the matching CSS classes (or Tailwind utilities baked into the markup). Class names are derived from each layer\'s name ("Icons / token" → .icons-token), and `data-*` attributes are stripped by default so the output is paste-ready. Per-file semantic rules — set in the viewer or by another team member — are honoured automatically: shapes named "button", `<a>`-tagged ids, `name-contains` patterns, etc. lift the wrapper out of the default `<div>`. With no args, uses the viewer selection (selected shape, else the page). When no shapeId is available the response falls back to the legacy raw-inline-styled page HTML — pass a shapeId to get the full pipeline. Set includeScreenshot:true to also receive a PNG render in the same response. See `penpot://convert-guide` before adapting into framework code.',
+      'Returns clean, framework-ready code for a shape OR a full page: HTML or JSX with class / className refs (no inline styles), plus the matching CSS classes (or Tailwind utilities baked into the markup). Class names are derived from each layer\'s name ("Icons / token" → .icons-token); `<p>`/`<span>` text leaves inherit a `${parent}-text` class. `data-*` attributes are stripped by default. Per-file semantic rules — set in the viewer — are honoured automatically: shapes named "button", `<a>`-tagged ids, `name-contains` patterns, etc. lift the wrapper out of the default `<div>`. The output mirrors the Penpot tree literally: deep wrappers (`<div><div><p>X</p></div></div>`) are common — review the `## Notes` section and flatten / drop redundant wrappers before pasting into a project. With no args, uses the viewer selection (selected shape, else the page). For the exact CSS subset the converter ever emits — useful when feeding the write tools (`create_design_from_html`) — fetch `penpot://supported-css`. Set includeScreenshot:true to also receive a PNG render in the same response. See `penpot://convert-guide` before adapting into framework code.',
     inputSchema: {
       fileId: z
         .string()
@@ -332,28 +344,34 @@ server.registerTool(
       return { content };
     }
 
-    // Page mode keeps the legacy inline-style output — the new pipeline is
-    // shape-focused and a designer normally exports one board at a time.
-    const bundle: PageHtmlBundle = await convertPageToHtml(
-      token,
-      target.fileId,
-      target.pageId,
-    );
+    // Page mode: same pipeline as shape mode applied across every top-level
+    // board, with shared class state so identical declarations across boards
+    // collapse to a single rule.
+    const bundle = await convertPageToCode(token, target.fileId, target.pageId, {
+      format,
+      styling,
+      includeDataAttrs,
+    });
     const needFontsCss = !!includeFontsCss || !!includeScreenshot;
     const fontsCss = needFontsCss ? await bundle.buildFontsCss() : '';
-    const text = describePageBundle(bundle, 'full open page', {
-      includeFontsCss,
-      fontsCss,
-    });
+    const text = describePageCodeBundle(bundle, { includeFontsCss, fontsCss });
     const content: Array<
       | { type: 'text'; text: string }
       | { type: 'image'; data: string; mimeType: string }
     > = [{ type: 'text', text }];
     if (includeScreenshot) {
+      // Screenshot renders the still-styled HTML so the visual is exact —
+      // the cleaned `code` has had its inline styles moved into class
+      // definitions and would render unstyled in headless.
+      const previewBundle = await convertPageToHtml(
+        token,
+        target.fileId,
+        target.pageId,
+      );
       const shot = await renderScreenshot({
-        html: bundle.html,
-        tokensCss: bundle.tokensCss,
-        fontsCss,
+        html: previewBundle.html,
+        tokensCss: previewBundle.tokensCss,
+        fontsCss: fontsCss || (await previewBundle.buildFontsCss()),
         maxWidth,
         maxHeight,
       });

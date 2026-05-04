@@ -3,6 +3,7 @@ import type { ConverterContext, FontInfo } from '@penpot-tools/converter';
 import { extractTokens, extractAllTokens, tokensToCss } from '@penpot-tools/converter/tokens';
 import type { TokenInfo } from '@penpot-tools/converter/tokens';
 import {
+  pageToCode,
   shapeToCode,
   type ShapeCodeFormat,
   type ShapeCodeStyling,
@@ -167,6 +168,59 @@ export async function convertShapeToCode(
     shapeId,
     shapeName: shape.name,
     shapeType: shape.type,
+    code,
+    css,
+    fontsUsed: summariseFonts(fonts),
+    buildFontsCss: () => buildPenpotFontsCss(fonts, { baseUrl: getPenpotBase() }),
+    tokensCss: tokensToCss(tokens),
+    format,
+    styling,
+  };
+}
+
+export interface PageCodeBundle {
+  pageName: string;
+  /** Formatted HTML or JSX with `class` / `className` references — no inline styles. */
+  code: string;
+  /** Class definitions when `styling === 'css'`. Empty for tailwind. */
+  css: string;
+  fontsUsed: FontUsage[];
+  buildFontsCss: () => Promise<string>;
+  tokensCss: string;
+  format: ShapeCodeFormat;
+  styling: ShapeCodeStyling;
+}
+
+/**
+ * Page-level mirror of `convertShapeToCode`. Runs the same export pipeline
+ * (semantic-tag overrides → flatten text wrappers → CSS classes / Tailwind →
+ * strip data-* → oxfmt) on every top-level board in one go, with shared
+ * class state so identical declarations across boards collapse to a single
+ * rule. Used when the MCP caller asks for the whole page.
+ */
+export async function convertPageToCode(
+  token: string,
+  fileId: string,
+  pageId: string,
+  options: ShapeCodeOptions = {},
+): Promise<PageCodeBundle> {
+  const page = await fetchPage(token, fileId, pageId);
+  const tokens = extractTokens(page.objects);
+  const ctx: ConverterContext = {
+    resolveImageUrl: imageUrlFor,
+    tokens,
+  };
+  const rules = await readSemanticsFromDisk(fileId);
+  const format = options.format ?? 'html';
+  const styling = options.styling ?? 'css';
+  const { code, css, fonts } = await pageToCode(page, ctx, {
+    format,
+    styling,
+    includeDataAttrs: options.includeDataAttrs,
+    rules,
+  });
+  return {
+    pageName: page.name,
     code,
     css,
     fontsUsed: summariseFonts(fonts),

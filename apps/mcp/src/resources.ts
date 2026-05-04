@@ -1,4 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { SUPPORTED_PROPS } from '@penpot-tools/converter';
 
 /**
  * Long-form guides that used to live in `SERVER_INSTRUCTIONS`. The instructions
@@ -265,6 +266,33 @@ tool returns \`# update-file conflict\` — call \`get_current_selection\` and
 retry with the fresh revn, never the stale one.
 `;
 
+/**
+ * Render the converter's runtime CSS-property registry as a markdown list.
+ * The mapping camelCase → kebab-case is what an agent needs when checking
+ * "does the converter emit `transform`? what about `mask`?". Built on every
+ * call so it always reflects the live `SUPPORTED_PROPS` array (no stale
+ * doc to keep in sync).
+ */
+function buildSupportedCssGuide(): string {
+  const camelToKebab = (s: string): string =>
+    s.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+  const lines = [...SUPPORTED_PROPS]
+    .sort((a, b) => a.localeCompare(b))
+    .map((prop) => `- \`${camelToKebab(prop)}\` (\`decl.${prop}\`)`);
+  return [
+    '# CSS properties the converter emits',
+    '',
+    'Every inline `style="…"` in `get_html` output picks from this list.',
+    'When authoring HTML for `create_design_from_html` /',
+    '`update_selection_from_html`, only declarations in this set survive the',
+    'round-trip; anything else is dropped (and reported under `## Warnings`).',
+    '',
+    `Total: ${SUPPORTED_PROPS.length} properties.`,
+    '',
+    ...lines,
+  ].join('\n');
+}
+
 export function registerGuideResources(
   server: McpServer,
   options: { writable: boolean },
@@ -284,6 +312,26 @@ export function registerGuideResources(
           uri: 'penpot://convert-guide',
           mimeType: 'text/markdown',
           text: CONVERT_GUIDE,
+        },
+      ],
+    }),
+  );
+
+  server.registerResource(
+    'supported-css',
+    'penpot://supported-css',
+    {
+      title: 'CSS properties the converter emits',
+      description:
+        'Authoritative list (camelCase / kebab-case pairs) of every CSS declaration the converter ever produces. Useful when round-tripping designs into the write tools — `create_design_from_html` only honours this subset.',
+      mimeType: 'text/markdown',
+    },
+    async () => ({
+      contents: [
+        {
+          uri: 'penpot://supported-css',
+          mimeType: 'text/markdown',
+          text: buildSupportedCssGuide(),
         },
       ],
     }),
