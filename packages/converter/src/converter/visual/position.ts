@@ -3,6 +3,7 @@ import type { ConverterContext } from '../types';
 import { isIdentityMatrix, matrixToCss } from '../utils/transform';
 import { mergeStyles } from '../utils/style';
 import { px } from '../utils/css';
+import { decl } from '../decl';
 
 export function combinedTransformStyle(shape: ShapeCommon): string {
   const hasRotation = !!shape.rotation;
@@ -14,7 +15,7 @@ export function combinedTransformStyle(shape: ShapeCommon): string {
   if (hasRotation) parts.push(`rotate(${-(shape.rotation ?? 0)}deg)`);
   if (hasMatrix) parts.push(matrixToCss(shape.transform!));
 
-  return `transform: ${parts.join(' ')};`;
+  return decl.transform(parts.join(' '));
 }
 
 export function absolutePositionStyle(
@@ -27,16 +28,20 @@ export function absolutePositionStyle(
   const x = (shape.x ?? 0) - offsetX;
   const y = (shape.y ?? 0) - offsetY;
   return [
-    `position: ${position};`,
-    `left: ${px(x)};`,
-    `top: ${px(y)};`,
-    `width: ${px(shape.width ?? 0)};`,
-    `height: ${px(shape.height ?? 0)};`,
+    decl.position(position),
+    decl.left(x),
+    decl.top(y),
+    decl.width(shape.width ?? 0),
+    decl.height(shape.height ?? 0),
   ].join(' ');
 }
 
 function relativePositionStyle(shape: ShapeCommon): string {
-  return `position: relative; width: ${px(shape.width ?? 0)}; height: ${px(shape.height ?? 0)};`;
+  return [
+    decl.position('relative'),
+    decl.width(shape.width ?? 0),
+    decl.height(shape.height ?? 0),
+  ].join(' ');
 }
 
 export function topLevelPositionStyle(shape: ShapeCommon, isChildOfRoot = false): string {
@@ -44,12 +49,12 @@ export function topLevelPositionStyle(shape: ShapeCommon, isChildOfRoot = false)
   const x = shape.x ?? 0;
   const y = shape.y ?? 0;
   return mergeStyles(
-    `position: ${position};`,
-    'top: 0px;',
-    'left: 0px;',
-    `width: ${px(shape.width ?? 0)};`,
-    `height: ${px(shape.height ?? 0)};`,
-    `transform: translate(${px(x)}, ${px(y)});`,
+    decl.position(position),
+    decl.top(0),
+    decl.left(0),
+    decl.width(shape.width ?? 0),
+    decl.height(shape.height ?? 0),
+    decl.transform(`translate(${px(x)}, ${px(y)})`),
   );
 }
 
@@ -62,10 +67,10 @@ export function resolvePositionOutput(shape: ShapeCommon, ctx: ConverterContext)
 
     const parts: string[] = [];
     if (!itemHasWidth) {
-      parts.push(ctx._parentIsLayoutAutoW ? `width: ${px(shape.width ?? 0)};` : 'width: 100%;');
+      parts.push(ctx._parentIsLayoutAutoW ? decl.width(shape.width ?? 0) : decl.width('100%'));
     }
     if (!itemHasHeight) {
-      parts.push(ctx._parentIsLayoutAutoH ? `height: ${px(shape.height ?? 0)};` : 'height: 100%;');
+      parts.push(ctx._parentIsLayoutAutoH ? decl.height(shape.height ?? 0) : decl.height('100%'));
     }
     positionStyle = parts.join(' ');
   } else if (ctx._forceRelative) {

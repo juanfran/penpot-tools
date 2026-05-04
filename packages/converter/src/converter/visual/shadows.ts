@@ -1,5 +1,6 @@
 import type { Shadow } from '../../penpot.types';
 import { hexOpacityToCss } from '../utils/color';
+import { decl } from '../decl';
 
 export function shadowToStyle(shadow: Shadow): string {
   if (shadow.hidden) return '';
@@ -17,5 +18,5 @@ export function shadowsToStyle(shadows: Shadow[] | undefined): string {
   const values = shadows.map(shadowToStyle).filter(Boolean);
   if (values.length === 0) return '';
 
-  return `box-shadow: ${values.join(', ')};`;
+  return decl.boxShadow(values.join(', '));
 }

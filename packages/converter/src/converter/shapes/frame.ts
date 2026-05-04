@@ -1,7 +1,6 @@
 import type { FrameShape, Shape } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 import { tag } from '../utils/html';
-import { px } from '../utils/css';
 import { mergeStyles } from '../utils/style';
 import { baseStyles } from '../visual/base';
 import { fillsToOutput } from '../visual/fills';
@@ -17,6 +16,7 @@ import {
   layoutItemAbsoluteStyle,
 } from '../layout/layout-item';
 import { gridTracksToStyle, gridCellStyle, findCellForShape } from '../layout/grid';
+import { decl } from '../decl';
 import { renderShape } from './dispatch';
 
 function shadowBorderRadiusFromChildren(shape: FrameShape, children: Shape[]): string {
@@ -40,7 +40,7 @@ function shadowBorderRadiusFromChildren(shape: FrameShape, children: Shape[]): s
     const r = child.r1 ?? 0;
     if (r === 0) continue;
     if ((child.r2 ?? 0) !== r || (child.r3 ?? 0) !== r || (child.r4 ?? 0) !== r) continue;
-    return `border-radius: ${r}px;`;
+    return decl.borderRadius(r);
   }
   return '';
 }
@@ -57,7 +57,8 @@ export function renderFrame(
   const isGrid = shape.layoutType === 'grid' || rawLayout === 'grid';
   const base = baseStyles(shape, ctx);
   const fills = fillsToOutput(shape.fills, ctx, shape.appliedTokens?.fill);
-  const clipStyle = shape.clipContent !== false && !shape.showContent ? 'overflow: hidden;' : '';
+  const clipStyle =
+    shape.clipContent !== false && !shape.showContent ? decl.overflow('hidden') : '';
   const firstStroke = (shape.strokes ?? [])[0];
   const stroke = firstStroke
     ? solidStrokeToStyle(firstStroke, shape.appliedTokens?.strokeColor, ctx.tokens)
@@ -65,7 +66,11 @@ export function renderFrame(
 
   let positionStyle = '';
   if (isRoot) {
-    positionStyle = `position: relative; width: ${px(shape.width)}; height: ${px(shape.height)};`;
+    positionStyle = mergeStyles(
+      decl.position('relative'),
+      decl.width(shape.width),
+      decl.height(shape.height),
+    );
   } else {
     positionStyle = resolvePositionOutput(shape, ctx);
   }
@@ -77,10 +82,10 @@ export function renderFrame(
     const spacing = flexSpacingStyle(shape);
     const colStyle = gridTracksToStyle(shape.layoutGridColumns ?? [], 'columns');
     const rowStyle = gridTracksToStyle(shape.layoutGridRows ?? [], 'rows');
-    layoutStyle = mergeStyles('display: grid;', colStyle, rowStyle, spacing);
+    layoutStyle = mergeStyles(decl.display('grid'), colStyle, rowStyle, spacing);
   }
 
-  const bgStyle = isRoot && ctx._pageBackground ? `background-color: ${ctx._pageBackground};` : '';
+  const bgStyle = isRoot && ctx._pageBackground ? decl.backgroundColor(ctx._pageBackground) : '';
 
   const hasAbsoluteChild =
     (isFlex || isGrid) &&
@@ -100,7 +105,7 @@ export function renderFrame(
     !shape.layoutItemAbsolute &&
     (plainFrameNeedsRelative || (hasAbsoluteChild && ctx._parentIsLayout));
 
-  const extraPositionStyle = needsContainingBlock ? 'position: relative;' : '';
+  const extraPositionStyle = needsContainingBlock ? decl.position('relative') : '';
 
   // When a frame has a shadow but no border-radius of its own and is visually
   // transparent (no fills / strokes), CSS box-shadow renders a square shadow —

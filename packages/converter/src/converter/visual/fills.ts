@@ -2,6 +2,7 @@ import type { Fill, Gradient, GradientStop } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 import { hexOpacityToCss } from '../utils/color';
 import { tokenToCssVar } from '../tokens';
+import { decl } from '../decl';
 
 function gradientStopToCss(stop: GradientStop): string {
   const color = hexOpacityToCss(stop.color, stop.opacity);
@@ -17,7 +18,7 @@ export function linearGradientToStyle(gradient: Gradient): string {
   const normalizedAngle = ((angleDeg % 360) + 360) % 360;
 
   const stops = gradient.stops.map(gradientStopToCss).join(', ');
-  return `background: linear-gradient(${normalizedAngle}deg, ${stops});`;
+  return decl.background(`linear-gradient(${normalizedAngle}deg, ${stops})`);
 }
 
 export function radialGradientToStyle(gradient: Gradient): string {
@@ -31,23 +32,28 @@ export function radialGradientToStyle(gradient: Gradient): string {
   const stops = gradient.stops.map(gradientStopToCss).join(', ');
 
   if (radius === 0) {
-    return `background: radial-gradient(circle at 50% 50%, ${stops});`;
+    return decl.background(`radial-gradient(circle at 50% 50%, ${stops})`);
   }
 
-  return `background: radial-gradient(circle at ${centerX}% ${centerY}%, ${stops});`;
+  return decl.background(`radial-gradient(circle at ${centerX}% ${centerY}%, ${stops})`);
 }
 
 export function solidFillToStyle(fill: Fill): string {
   if (!fill.fillColor) return '';
   const cssColor = hexOpacityToCss(fill.fillColor, fill.fillOpacity);
-  return `background-color: ${cssColor};`;
+  return decl.backgroundColor(cssColor);
 }
 
 export function imageFillToStyle(fill: Fill, ctx: ConverterContext): string {
   if (!fill.fillImage) return '';
   const url = ctx.resolveImageUrl(fill.fillImage.id);
   const safeUrl = url.replace(/'/g, '%27');
-  return `background-image: url('${safeUrl}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
+  return [
+    decl.backgroundImage(`url('${safeUrl}')`),
+    decl.backgroundSize('cover'),
+    decl.backgroundPosition('center'),
+    decl.backgroundRepeat('no-repeat'),
+  ].join(' ');
 }
 
 function gradientToImageValue(gradient: Gradient): string {
@@ -138,7 +144,7 @@ export function fillsToOutput(
       fillColor === tokenColor &&
       opacity === 1;
     if (tokenStillApplies) {
-      return `background-color: ${tokenToCssVar(fillTokenName, ctx.tokens)};`;
+      return decl.backgroundColor(tokenToCssVar(fillTokenName, ctx.tokens));
     }
   }
 
@@ -165,11 +171,10 @@ export function fillsToOutput(
 
   if (layers.length === 0) return '';
 
-  const parts = [
-    `background-image: ${layers.map((l) => l.image).join(', ')}`,
-    `background-size: ${layers.map((l) => l.size).join(', ')}`,
-    `background-position: ${layers.map((l) => l.position).join(', ')}`,
-    `background-repeat: ${layers.map((l) => l.repeat).join(', ')}`,
-  ];
-  return parts.join('; ') + ';';
+  return [
+    decl.backgroundImage(layers.map((l) => l.image).join(', ')),
+    decl.backgroundSize(layers.map((l) => l.size).join(', ')),
+    decl.backgroundPosition(layers.map((l) => l.position).join(', ')),
+    decl.backgroundRepeat(layers.map((l) => l.repeat).join(', ')),
+  ].join(' ');
 }

@@ -1,4 +1,5 @@
 import type { ShapeCommon } from '../../penpot.types';
+import { decl } from '../decl';
 
 export function radiusToStyle(shape: ShapeCommon): string {
   const r1 = shape.r1 ?? 0;
@@ -16,8 +17,8 @@ export function radiusToStyle(shape: ShapeCommon): string {
   }
 
   if (r1 === r2 && r2 === r3 && r3 === r4) {
-    return `border-radius: ${r1}px;`;
+    return decl.borderRadius(r1);
   }
 
-  return `border-radius: ${r1}px ${r2}px ${r3}px ${r4}px;`;
+  return decl.borderRadius([r1, r2, r3, r4]);
 }

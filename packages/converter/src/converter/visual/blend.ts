@@ -1,4 +1,5 @@
 import type { BlendMode } from '../../penpot.types';
+import { decl } from '../decl';
 
 const BLEND_MODE_VALUE: Record<Exclude<BlendMode, 'normal'>, string> = {
   multiply: 'multiply',
@@ -20,14 +21,16 @@ const BLEND_MODE_VALUE: Record<Exclude<BlendMode, 'normal'>, string> = {
 
 export function blendModeToStyle(mode: BlendMode | undefined): string {
   if (!mode || mode === 'normal') return '';
-  return `mix-blend-mode: ${BLEND_MODE_VALUE[mode]};`;
+  return decl.mixBlendMode(
+    BLEND_MODE_VALUE[mode] as Parameters<typeof decl.mixBlendMode>[0],
+  );
 }
 
 export function opacityToStyle(opacity: number | undefined): string {
   if (opacity === undefined || opacity === 1) return '';
-  return `opacity: ${opacity};`;
+  return decl.opacity(opacity);
 }
 
 export function hiddenToStyle(hidden: boolean | undefined): string {
-  return hidden === true ? 'display: none;' : '';
+  return hidden === true ? decl.display('none') : '';
 }

@@ -1,7 +1,7 @@
 import type { FrameShape, FlexAlign, FlexDirection, Shape } from '../../penpot.types';
-import { px } from '../utils/css';
+import { decl } from '../decl';
 
-const FLEX_DIR_VALUE: Record<FlexDirection, string> = {
+const FLEX_DIR_VALUE: Record<FlexDirection, 'row' | 'column'> = {
   row: 'row',
   column: 'column',
   // Penpot's reverse directions store children in visual order (leftmost/topmost first),
@@ -11,7 +11,9 @@ const FLEX_DIR_VALUE: Record<FlexDirection, string> = {
   'column-reverse': 'column',
 };
 
-const ALIGN_ITEMS_VALUE: Partial<Record<FlexAlign, string>> = {
+const ALIGN_ITEMS_VALUE: Partial<
+  Record<FlexAlign, Parameters<typeof decl.alignItems>[0]>
+> = {
   start: 'flex-start',
   center: 'center',
   end: 'flex-end',
@@ -21,7 +23,9 @@ const ALIGN_ITEMS_VALUE: Partial<Record<FlexAlign, string>> = {
   'space-evenly': 'space-evenly',
 };
 
-const JUSTIFY_CONTENT_VALUE: Partial<Record<FlexAlign, string>> = {
+const JUSTIFY_CONTENT_VALUE: Partial<
+  Record<FlexAlign, Parameters<typeof decl.justifyContent>[0]>
+> = {
   start: 'flex-start',
   center: 'center',
   end: 'flex-end',
@@ -67,24 +71,24 @@ function childrenIndicateWrap(shape: FrameShape, children: Shape[]): boolean {
 }
 
 export function flexContainerStyle(shape: FrameShape, children: Shape[] = []): string {
-  const parts: string[] = ['display: flex;'];
+  const parts: string[] = [decl.display('flex')];
 
   if (shape.layoutFlexDir) {
-    parts.push(`flex-direction: ${FLEX_DIR_VALUE[shape.layoutFlexDir]};`);
+    parts.push(decl.flexDirection(FLEX_DIR_VALUE[shape.layoutFlexDir]));
   }
   const alignValue = shape.layoutAlignItems ? ALIGN_ITEMS_VALUE[shape.layoutAlignItems] : undefined;
-  if (alignValue) parts.push(`align-items: ${alignValue};`);
+  if (alignValue) parts.push(decl.alignItems(alignValue));
 
   const justifyValue = shape.layoutJustifyContent
     ? JUSTIFY_CONTENT_VALUE[shape.layoutJustifyContent]
     : undefined;
-  if (justifyValue) parts.push(`justify-content: ${justifyValue};`);
+  if (justifyValue) parts.push(decl.justifyContent(justifyValue));
 
   // Penpot's data sometimes keeps `layoutWrapType: 'nowrap'` even when its
   // canvas laid the children across multiple rows/columns, so trust the
   // stored positions over the flag.
   if (frameWillWrap(shape, children)) {
-    parts.push('flex-wrap: wrap;');
+    parts.push(decl.flexWrap('wrap'));
   }
 
   return parts.join(' ');
@@ -100,24 +104,24 @@ export function flexSpacingStyle(shape: FrameShape): string {
 
   if (rowGap !== undefined && colGap !== undefined) {
     if (rowGap === colGap) {
-      parts.push(`gap: ${px(rowGap)};`);
+      parts.push(decl.gap(rowGap));
     } else {
-      parts.push(`row-gap: ${px(rowGap)};`);
-      parts.push(`column-gap: ${px(colGap)};`);
+      parts.push(decl.rowGap(rowGap));
+      parts.push(decl.columnGap(colGap));
     }
   } else if (rowGap !== undefined) {
-    parts.push(`row-gap: ${px(rowGap)};`);
+    parts.push(decl.rowGap(rowGap));
   } else if (colGap !== undefined) {
-    parts.push(`column-gap: ${px(colGap)};`);
+    parts.push(decl.columnGap(colGap));
   }
 
   const pad = shape.layoutPadding;
   if (pad) {
     const { p1, p2, p3, p4 } = pad;
     if (p1 === p2 && p2 === p3 && p3 === p4) {
-      parts.push(`padding: ${px(p1)};`);
+      parts.push(decl.padding(p1));
     } else {
-      parts.push(`padding: ${p1}px ${p2}px ${p3}px ${p4}px;`);
+      parts.push(decl.padding([p1, p2, p3, p4]));
     }
   }
 

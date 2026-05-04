@@ -1,6 +1,7 @@
 import type { Stroke } from '../../penpot.types';
 import { hexOpacityToCss } from '../utils/color';
 import { tokenToCssVar } from '../tokens';
+import { decl } from '../decl';
 
 const STROKE_STYLE_VALUE: Record<string, string> = {
   solid: 'solid',
@@ -25,7 +26,7 @@ export function solidStrokeToStyle(
   const alignment = stroke.strokeAlignment ?? 'center';
 
   if (alignment === 'outer') {
-    return `box-shadow: 0 0 0 ${width}px ${color};`;
+    return decl.boxShadow(`0 0 0 ${width}px ${color}`);
   }
 
   // inner and center alignment — border is drawn inside the element's dimensions
@@ -33,5 +34,5 @@ export function solidStrokeToStyle(
   const borderStyle = stroke.strokeStyle
     ? (STROKE_STYLE_VALUE[stroke.strokeStyle] ?? 'solid')
     : 'solid';
-  return `border: ${width}px ${borderStyle} ${color};`;
+  return decl.border(`${width}px ${borderStyle} ${color}`);
 }

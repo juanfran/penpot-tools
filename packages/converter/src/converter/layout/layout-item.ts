@@ -1,6 +1,6 @@
 import type { ShapeCommon, FrameShape, LayoutItemAlignSelf } from '../../penpot.types';
-import { px } from '../utils/css';
 import { mergeStyles } from '../utils/style';
+import { decl } from '../decl';
 
 export function layoutItemSizingStyle(
   shape: ShapeCommon,
@@ -28,9 +28,9 @@ export function layoutItemSizingStyle(
     // Main axis (row → h-fill): flex: 1 to grow within the flow.
     // Cross axis (column → h-fill): explicit px to prevent content overflow
     // from inflating the flex container's cross-axis size.
-    parts.push(isRowDir ? 'flex: 1;' : `width: ${px(w)};`);
+    parts.push(isRowDir ? decl.flex('1') : decl.width(w));
   } else if (hSizing !== 'auto') {
-    parts.push(`width: ${px(w)};`);
+    parts.push(decl.width(w));
     hIsExplicit = true;
   }
 
@@ -39,12 +39,12 @@ export function layoutItemSizingStyle(
     // to the parent's inner height, not the per-line height, so the child
     // would inflate well beyond the wrapped row Penpot laid it on.
     if (isRowDir) {
-      parts.push(parentWraps ? `height: ${px(h)};` : 'height: 100%;');
+      parts.push(parentWraps ? decl.height(h) : decl.height('100%'));
     } else {
-      parts.push('flex: 1;');
+      parts.push(decl.flex('1'));
     }
   } else if (vSizing !== 'auto') {
-    parts.push(`height: ${px(h)};`);
+    parts.push(decl.height(h));
     vIsExplicit = true;
   }
 
@@ -54,7 +54,7 @@ export function layoutItemSizingStyle(
   // and the default `flex-shrink: 1` collapses the item to min-content (0),
   // making it invisible.
   const mainExplicit = isRowDir ? hIsExplicit : vIsExplicit;
-  if (mainExplicit) parts.push('flex-shrink: 0;');
+  if (mainExplicit) parts.push(decl.flexShrink(0));
 
   return parts.join(' ');
 }
@@ -69,13 +69,13 @@ export function layoutItemMarginStyle(shape: ShapeCommon): string {
   const m4 = margin.m4 ?? 0;
 
   if (m1 === m2 && m2 === m3 && m3 === m4) {
-    return `margin: ${px(m1)};`;
+    return decl.margin(m1);
   }
 
-  return `margin: ${m1}px ${m2}px ${m3}px ${m4}px;`;
+  return decl.margin([m1, m2, m3, m4]);
 }
 
-const ALIGN_SELF_VALUE: Record<LayoutItemAlignSelf, string> = {
+const ALIGN_SELF_VALUE: Record<LayoutItemAlignSelf, Parameters<typeof decl.alignSelf>[0]> = {
   start: 'flex-start',
   center: 'center',
   end: 'flex-end',
@@ -84,7 +84,7 @@ const ALIGN_SELF_VALUE: Record<LayoutItemAlignSelf, string> = {
 
 export function layoutItemAlignSelfStyle(shape: ShapeCommon): string {
   if (shape.layoutItemAlignSelf === undefined) return '';
-  return `align-self: ${ALIGN_SELF_VALUE[shape.layoutItemAlignSelf]};`;
+  return decl.alignSelf(ALIGN_SELF_VALUE[shape.layoutItemAlignSelf]);
 }
 
 export function layoutItemMinMaxStyle(shape: ShapeCommon): string {
@@ -97,24 +97,24 @@ export function layoutItemMinMaxStyle(shape: ShapeCommon): string {
 
   const parts: string[] = [];
   if (!hFixed) {
-    if (shape.layoutItemMinW !== undefined) parts.push(`min-width: ${px(shape.layoutItemMinW)};`);
-    if (shape.layoutItemMaxW !== undefined) parts.push(`max-width: ${px(shape.layoutItemMaxW)};`);
+    if (shape.layoutItemMinW !== undefined) parts.push(decl.minWidth(shape.layoutItemMinW));
+    if (shape.layoutItemMaxW !== undefined) parts.push(decl.maxWidth(shape.layoutItemMaxW));
   }
   if (!vFixed) {
-    if (shape.layoutItemMinH !== undefined) parts.push(`min-height: ${px(shape.layoutItemMinH)};`);
-    if (shape.layoutItemMaxH !== undefined) parts.push(`max-height: ${px(shape.layoutItemMaxH)};`);
+    if (shape.layoutItemMinH !== undefined) parts.push(decl.minHeight(shape.layoutItemMinH));
+    if (shape.layoutItemMaxH !== undefined) parts.push(decl.maxHeight(shape.layoutItemMaxH));
   }
   return parts.join(' ');
 }
 
 export function layoutItemZIndexStyle(shape: ShapeCommon): string {
   if (shape.layoutItemZIndex === undefined || shape.layoutItemZIndex === 0) return '';
-  return `z-index: ${shape.layoutItemZIndex};`;
+  return decl.zIndex(shape.layoutItemZIndex);
 }
 
 export function layoutItemAbsoluteStyle(shape: ShapeCommon, offsetX = 0, offsetY = 0): string {
   if (!shape.layoutItemAbsolute) return '';
   const x = (shape.x ?? 0) - offsetX;
   const y = (shape.y ?? 0) - offsetY;
-  return mergeStyles('position: absolute;', `left: ${px(x)};`, `top: ${px(y)};`);
+  return mergeStyles(decl.position('absolute'), decl.left(x), decl.top(y));
 }

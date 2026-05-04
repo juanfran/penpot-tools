@@ -1,12 +1,12 @@
 import type { TextLeaf, ParagraphNode, TextShape, Typography } from '../../penpot.types';
 import type { ConverterContext, FontInfo } from '../types';
 import { tag, escapeHtml } from '../utils/html';
-import { px } from '../utils/css';
 import { mergeStyles } from '../utils/style';
 import { hexOpacityToCss } from '../utils/color';
 import { tokenToCssVar } from '../tokens';
 import { resolvePositionOutput } from '../visual/position';
 import { baseStyles } from '../visual/base';
+import { decl } from '../decl';
 
 export function textLeafToStyles(
   leaf: TextLeaf,
@@ -21,20 +21,26 @@ export function textLeafToStyles(
 
   const parts: string[] = [];
 
-  if (resolved.fontSize) parts.push(`font-size: ${px(Number(resolved.fontSize))};`);
-  if (resolved.fontWeight) parts.push(`font-weight: ${resolved.fontWeight};`);
+  if (resolved.fontSize) parts.push(decl.fontSize(Number(resolved.fontSize)));
+  if (resolved.fontWeight) parts.push(decl.fontWeight(resolved.fontWeight));
   if (resolved.fontFamily) {
     const fontFamily = resolved.fontFamily.replace(/^["']|["']$/g, '');
-    parts.push(`font-family: '${fontFamily}';`);
+    parts.push(decl.fontFamily(`'${fontFamily}'`));
   }
-  if (resolved.lineHeight) parts.push(`line-height: ${resolved.lineHeight};`);
-  if (resolved.textAlign) parts.push(`text-align: ${resolved.textAlign};`);
-  if (resolved.fontStyle === 'italic') parts.push('font-style: italic;');
-  if (resolved.textDecoration === 'underline') parts.push('text-decoration: underline;');
-  if (resolved.textDecoration === 'line-through') parts.push('text-decoration: line-through;');
-  if (resolved.textTransform) parts.push(`text-transform: ${resolved.textTransform};`);
+  if (resolved.lineHeight) parts.push(decl.lineHeight(resolved.lineHeight));
+  if (resolved.textAlign) {
+    parts.push(decl.textAlign(resolved.textAlign as Parameters<typeof decl.textAlign>[0]));
+  }
+  if (resolved.fontStyle === 'italic') parts.push(decl.fontStyle('italic'));
+  if (resolved.textDecoration === 'underline') parts.push(decl.textDecoration('underline'));
+  if (resolved.textDecoration === 'line-through') parts.push(decl.textDecoration('line-through'));
+  if (resolved.textTransform) {
+    parts.push(
+      decl.textTransform(resolved.textTransform as Parameters<typeof decl.textTransform>[0]),
+    );
+  }
   if (resolved.letterSpacing && resolved.letterSpacing !== '0') {
-    parts.push(`letter-spacing: ${resolved.letterSpacing}px;`);
+    parts.push(decl.letterSpacing(Number(resolved.letterSpacing)));
   }
 
   return parts.join(' ');
@@ -46,15 +52,15 @@ export function textLeafColorStyle(
   tokens?: Map<string, string>,
   fallbackColor?: string,
 ): string {
-  if (fillTokenName) return `color: ${tokenToCssVar(fillTokenName, tokens)};`;
+  if (fillTokenName) return decl.color(tokenToCssVar(fillTokenName, tokens));
   const fills = leaf.fills;
   if (!fills || fills.length === 0) {
-    return fallbackColor ? `color: ${fallbackColor};` : '';
+    return fallbackColor ? decl.color(fallbackColor) : '';
   }
   const first = fills[0];
-  if (!first.fillColor) return fallbackColor ? `color: ${fallbackColor};` : '';
+  if (!first.fillColor) return fallbackColor ? decl.color(fallbackColor) : '';
   const cssColor = hexOpacityToCss(first.fillColor, first.fillOpacity);
-  return `color: ${cssColor};`;
+  return decl.color(cssColor);
 }
 
 export function renderParagraph(
@@ -136,18 +142,22 @@ export function renderText(shape: TextShape, ctx: ConverterContext): string {
   const posStyle = resolvePositionOutput(shape, ctx);
 
   const sizeParts: string[] = [];
-  if (shape.width !== undefined) sizeParts.push(`width: ${px(shape.width)};`);
-  if (shape.height !== undefined) sizeParts.push(`height: ${px(shape.height)};`);
+  if (shape.width !== undefined) sizeParts.push(decl.width(shape.width));
+  if (shape.height !== undefined) sizeParts.push(decl.height(shape.height));
   const sizeStyle = sizeParts.join(' ');
 
-  const noWrapStyle = shape.growType === 'auto-width' ? 'white-space: nowrap;' : '';
+  const noWrapStyle = shape.growType === 'auto-width' ? decl.whiteSpace('nowrap') : '';
 
   const verticalAlign = shape.content?.verticalAlign;
   const verticalAlignStyle =
     verticalAlign === 'center'
-      ? 'display: flex; flex-direction: column; justify-content: center;'
+      ? [decl.display('flex'), decl.flexDirection('column'), decl.justifyContent('center')].join(
+          ' ',
+        )
       : verticalAlign === 'bottom'
-        ? 'display: flex; flex-direction: column; justify-content: flex-end;'
+        ? [decl.display('flex'), decl.flexDirection('column'), decl.justifyContent('flex-end')].join(
+            ' ',
+          )
         : '';
 
   const style = ctx._parentIsLayout

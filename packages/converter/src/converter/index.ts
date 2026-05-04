@@ -5,6 +5,8 @@ import { renderPage } from './page';
 import { buildTree, getChildren } from './tree';
 export { buildPenpotFontsCss } from './utils/fonts';
 export type { BuildPenpotFontsCssOptions } from './utils/fonts';
+export { decl, SUPPORTED_PROPS } from './decl';
+export type { Length, Box4 } from './decl';
 
 async function formatHtml(html: string): Promise<string> {
   const oxfmt = await import('oxfmt');

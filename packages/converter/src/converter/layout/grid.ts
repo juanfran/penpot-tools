@@ -1,4 +1,5 @@
 import type { GridTrack, GridCell, GridCellAlign, FrameShape, Uuid } from '../../penpot.types';
+import { decl } from '../decl';
 
 function trackValue(track: GridTrack): string {
   switch (track.type) {
@@ -15,12 +16,21 @@ function trackValue(track: GridTrack): string {
 
 export function gridTracksToStyle(tracks: GridTrack[], axis: 'columns' | 'rows'): string {
   if (tracks.length === 0) return '';
-  const prop = axis === 'columns' ? 'grid-template-columns' : 'grid-template-rows';
   const value = tracks.map(trackValue).join(' ');
-  return `${prop}: ${value};`;
+  return axis === 'columns' ? decl.gridTemplateColumns(value) : decl.gridTemplateRows(value);
 }
 
-const ALIGN_MAP: Partial<Record<GridCellAlign, string>> = {
+// Grid cells use the grid-spec values for align-self (`start` / `end`),
+// not the flex-spec aliases — `align-self: start;` is the canonical CSS Grid
+// keyword and is what the converter has emitted historically.
+const ALIGN_MAP: Partial<Record<GridCellAlign, Parameters<typeof decl.alignSelf>[0]>> = {
+  start: 'start',
+  center: 'center',
+  end: 'end',
+  stretch: 'stretch',
+};
+
+const JUSTIFY_MAP: Partial<Record<GridCellAlign, Parameters<typeof decl.justifySelf>[0]>> = {
   start: 'start',
   center: 'center',
   end: 'end',
@@ -30,16 +40,16 @@ const ALIGN_MAP: Partial<Record<GridCellAlign, string>> = {
 export function gridCellStyle(cell: GridCell): string {
   const parts: string[] = [];
 
-  parts.push(`grid-row-start: ${cell.row};`);
-  if (cell.rowSpan > 1) parts.push(`grid-row-end: span ${cell.rowSpan};`);
-  parts.push(`grid-column-start: ${cell.column};`);
-  if (cell.columnSpan > 1) parts.push(`grid-column-end: span ${cell.columnSpan};`);
+  parts.push(decl.gridRowStart(cell.row));
+  if (cell.rowSpan > 1) parts.push(decl.gridRowEnd(`span ${cell.rowSpan}`));
+  parts.push(decl.gridColumnStart(cell.column));
+  if (cell.columnSpan > 1) parts.push(decl.gridColumnEnd(`span ${cell.columnSpan}`));
 
   if (cell.alignSelf && ALIGN_MAP[cell.alignSelf]) {
-    parts.push(`align-self: ${ALIGN_MAP[cell.alignSelf]};`);
+    parts.push(decl.alignSelf(ALIGN_MAP[cell.alignSelf]!));
   }
-  if (cell.justifySelf && ALIGN_MAP[cell.justifySelf]) {
-    parts.push(`justify-self: ${ALIGN_MAP[cell.justifySelf]};`);
+  if (cell.justifySelf && JUSTIFY_MAP[cell.justifySelf]) {
+    parts.push(decl.justifySelf(JUSTIFY_MAP[cell.justifySelf]!));
   }
 
   return parts.join(' ');

@@ -11,6 +11,7 @@ packages/converter/src/
 
   converter/
     index.ts                # convertPage(), convertShape(), convertPageShapes()
+    decl.ts                 # `decl.<prop>(value)` — single source of truth for every CSS declaration the converter emits
     render.ts               # renderShape() — adds data-penpot-* attrs
     page.ts                 # renderPage()
     types.ts                # ConverterContext, ConvertResult, FontInfo
@@ -41,6 +42,7 @@ packages/converter/src/
 
 All styling is emitted as inline `style=` attributes.
 
+- `decl.<prop>(value)` (in `decl.ts`) returns a single `prop: value;` string. **Every** CSS declaration the converter emits goes through this registry — visual / layout / shape modules build their composite output by calling it instead of writing template literals. Adding a new property means extending `decl` and using it from the relevant module; consumers (MCP, html-to-penpot's tailwind mapper, future codegen) introspect `decl` / `SUPPORTED_PROPS` to know what CSS the converter ever produces.
 - `mergeStyles(...parts)` joins CSS declaration strings. It splits each part by `;`, merges multiple `box-shadow` values into one comma-separated declaration, and merges multiple `transform` values with spaces.
 - `px(value)` formats a number as `"120px"`.
 
@@ -120,6 +122,13 @@ Always `border-radius: 50%;` regardless of whether width equals height.
 1. Create `shapes/<type>.ts` exporting `render<Type>(shape, ctx): string`.
 2. Add `case '<type>':` in `shapes/dispatch.ts`.
 3. Add `shapes/<type>.test.ts`.
+
+## Adding a new CSS property
+
+1. Add an entry in `decl.ts` with a typed value parameter. Use `Length` / `Box4` for length-shaped domains; raw `string` for values whose shape is too open to enumerate (gradients, transforms, font-family).
+2. Use `decl.<newProp>(...)` from the relevant visual / layout / shape module instead of writing a template literal.
+3. Cover the new entry in `decl.test.ts`.
+4. `SUPPORTED_PROPS` updates automatically.
 
 ## Integration tests (visual regression)
 
