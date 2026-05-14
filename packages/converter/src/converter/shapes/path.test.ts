@@ -296,6 +296,36 @@ describe('renderPath', () => {
     expect(html).toContain('<marker');
   });
 
+  it('emits overflow:visible inline so the UA svg{overflow:hidden} cannot clip strokes/markers', () => {
+    // Repro: a strictly vertical path (start.x === end.x) lands in an svg with
+    // width = 0.01 CSS px. Without `overflow: visible` in the inline style the
+    // browser UA rule `svg:not(:root){overflow:hidden}` (origin: user-agent)
+    // overrides the SVG presentation attribute (origin: author, specificity 0)
+    // and clips the stroke + marker-end, making the arrow vanish. The inline
+    // declaration is author-origin with the highest priority and wins.
+    const html = renderPath(
+      makePath({
+        x: null as unknown as number,
+        y: null as unknown as number,
+        width: null as unknown as number,
+        height: null as unknown as number,
+        selrect: { x: 100, y: 50, width: 0.01, height: 200 },
+        content: 'M100,50L100,250',
+        strokes: [
+          {
+            strokeColor: '#1f8a4f' as HexColor,
+            strokeWidth: 3,
+            strokeCapEnd: 'line-arrow',
+          },
+        ],
+      }),
+      ctx,
+    );
+    const styleMatch = /style="([^"]*)"/.exec(html);
+    expect(styleMatch).not.toBeNull();
+    expect(styleMatch![1]).toMatch(/overflow:\s*visible/);
+  });
+
   it('canvas-top-level rotated path uses only translate, no CSS rotation', () => {
     // Path content coordinates are already in page-absolute space — rotation is
     // baked into the path data. Only a translate is needed for placement; applying

@@ -1,0 +1,250 @@
+{
+  "id": "group-vertical-arrow-page",
+  "name": "Card with vertical arrow",
+  "objects": {
+    "00000000-0000-0000-0000-000000000000": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "frame",
+      "name": "Root Frame",
+      "x": 0,
+      "y": 0,
+      "width": 360,
+      "height": 320,
+      "rotation": 0,
+      "selrect": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 320,
+        "x1": 0,
+        "y1": 0,
+        "x2": 360,
+        "y2": 320
+      },
+      "points": [
+        { "x": 0, "y": 0 },
+        { "x": 360, "y": 0 },
+        { "x": 360, "y": 320 },
+        { "x": 0, "y": 320 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": null,
+      "flipY": null,
+      "fills": [{ "fillColor": "#ffffff", "fillOpacity": 1 }],
+      "strokes": [],
+      "shapes": ["pointer-group"]
+    },
+    "pointer-group": {
+      "id": "pointer-group",
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "group",
+      "name": "Card with pointer",
+      "x": 40,
+      "y": 40,
+      "width": 274,
+      "height": 220.1787109375,
+      "rotation": 0,
+      "selrect": {
+        "x": 40,
+        "y": 40,
+        "width": 274,
+        "height": 220.1787109375,
+        "x1": 40,
+        "y1": 40,
+        "x2": 314,
+        "y2": 260.1787109375
+      },
+      "points": [
+        { "x": 40, "y": 40 },
+        { "x": 314, "y": 40 },
+        { "x": 314, "y": 260.1787109375 },
+        { "x": 40, "y": 260.1787109375 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": false,
+      "flipY": false,
+      "fills": [],
+      "strokes": [],
+      "shapes": ["pointer-arrow", "pointer-card", "pointer-text"]
+    },
+    "pointer-arrow": {
+      "id": "pointer-arrow",
+      "parentId": "pointer-group",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "path",
+      "name": "Arrow",
+      "x": null,
+      "y": null,
+      "width": null,
+      "height": null,
+      "rotation": 180,
+      "flipX": true,
+      "flipY": true,
+      "growType": "fixed",
+      "selrect": {
+        "x": 116.01,
+        "y": 85.79,
+        "width": 0.01,
+        "height": 174.39,
+        "x1": 116.01,
+        "y1": 85.79,
+        "x2": 116.02,
+        "y2": 260.18
+      },
+      "points": [
+        { "x": 116.01, "y": 85.79 },
+        { "x": 116.02, "y": 85.79 },
+        { "x": 116.02, "y": 260.18 },
+        { "x": 116.01, "y": 260.18 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "content": "M116.01,85.79L116.01,260.18",
+      "strokes": [
+        {
+          "strokeStyle": "solid",
+          "strokeAlignment": "inner",
+          "strokeWidth": 3,
+          "strokeColor": "#1f8a4f",
+          "strokeOpacity": 1,
+          "strokeCapEnd": "line-arrow"
+        }
+      ],
+      "fills": []
+    },
+    "pointer-card": {
+      "id": "pointer-card",
+      "parentId": "pointer-group",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "rect",
+      "name": "Card",
+      "x": 40,
+      "y": 40,
+      "width": 274,
+      "height": 73,
+      "rotation": 0,
+      "selrect": {
+        "x": 40,
+        "y": 40,
+        "width": 274,
+        "height": 73,
+        "x1": 40,
+        "y1": 40,
+        "x2": 314,
+        "y2": 113
+      },
+      "points": [
+        { "x": 40, "y": 40 },
+        { "x": 314, "y": 40 },
+        { "x": 314, "y": 113 },
+        { "x": 40, "y": 113 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": null,
+      "flipY": null,
+      "rx": 8,
+      "ry": 8,
+      "fills": [{ "fillColor": "#d6f1de", "fillOpacity": 1 }],
+      "strokes": [
+        {
+          "strokeStyle": "solid",
+          "strokeAlignment": "inner",
+          "strokeWidth": 3,
+          "strokeColor": "#1f8a4f",
+          "strokeOpacity": 1
+        }
+      ]
+    },
+    "pointer-text": {
+      "id": "pointer-text",
+      "parentId": "pointer-group",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "type": "text",
+      "name": "Card text",
+      "x": 59.15,
+      "y": 54,
+      "width": 235,
+      "height": 34,
+      "rotation": 0,
+      "selrect": {
+        "x": 59.15,
+        "y": 54,
+        "width": 235,
+        "height": 34,
+        "x1": 59.15,
+        "y1": 54,
+        "x2": 294.15,
+        "y2": 88
+      },
+      "points": [
+        { "x": 59.15, "y": 54 },
+        { "x": 294.15, "y": 54 },
+        { "x": 294.15, "y": 88 },
+        { "x": 59.15, "y": 88 }
+      ],
+      "transform": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "transformInverse": { "a": 1, "b": 0, "c": 0, "d": 1, "e": 0, "f": 0 },
+      "flipX": null,
+      "flipY": null,
+      "growType": "fixed",
+      "content": {
+        "type": "root",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "type": "paragraph",
+                "key": "p1",
+                "textAlign": "left",
+                "fontSize": "14",
+                "fontWeight": "400",
+                "fontFamily": "sans-serif",
+                "lineHeight": "1.2",
+                "children": [
+                  {
+                    "text": "The pipeline starts here ",
+                    "fontSize": "14",
+                    "fontWeight": "400",
+                    "fontFamily": "sans-serif",
+                    "lineHeight": "1.2",
+                    "textAlign": "left",
+                    "fills": [{ "fillColor": "#155f33", "fillOpacity": 1 }]
+                  }
+                ]
+              },
+              {
+                "type": "paragraph",
+                "key": "p2",
+                "textAlign": "left",
+                "fontSize": "14",
+                "fontWeight": "400",
+                "fontFamily": "sans-serif",
+                "lineHeight": "1.2",
+                "children": [
+                  {
+                    "text": "and continues downstream",
+                    "fontSize": "14",
+                    "fontWeight": "400",
+                    "fontFamily": "sans-serif",
+                    "lineHeight": "1.2",
+                    "textAlign": "left",
+                    "fills": [{ "fillColor": "#155f33", "fillOpacity": 1 }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "fills": [],
+      "strokes": []
+    }
+  }
+}

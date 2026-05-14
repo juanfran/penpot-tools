@@ -171,6 +171,20 @@ describe('integration', () => {
     await expect(el).toMatchScreenshot('group-text-arrow');
   });
 
+  it('vertical-only arrow path (degenerate width) still paints stroke + arrow tip', async () => {
+    // Penpot stores a strictly vertical line as a path with selrect width = 0.01
+    // (start.x === end.x). The svg ends up 0.01 CSS-px wide; without
+    // overflow:visible in inline CSS the UA stylesheet's
+    // svg:not(:root){overflow:hidden} clips the entire stroke and the
+    // marker-end arrowhead, so the arrow vanishes from the render.
+    const page = getPage('group-vertical-arrow');
+    const shape = page.objects['00000000-0000-0000-0000-000000000000'];
+    const { html, fonts } = await convertShape(shape, page.objects, ctx);
+    expect(html).toMatch(/<svg[^>]*style="[^"]*overflow:\s*visible/);
+    const el = await mount({ html, fonts });
+    await expect(el).toMatchScreenshot('group-vertical-arrow');
+  });
+
   it('flex column path line with null width/height and hSizing fill renders at selrect width', async () => {
     const page = getPage('flex-column-path-line');
     const shape = page.objects['00000000-0000-0000-0000-000000000000'];

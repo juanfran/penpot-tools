@@ -2,6 +2,7 @@ import type { PathShape, StrokeCap } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 import { tag } from '../utils/html';
 import { mergeStyles } from '../utils/style';
+import { decl } from '../decl';
 import { resolvePositionOutput } from '../visual/position';
 import { blendModeToStyle, opacityToStyle, hiddenToStyle } from '../visual/blend';
 import { blurToStyle } from '../visual/blur';
@@ -102,6 +103,21 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
   const width = shape.width ?? shape.selrect?.width ?? 0;
   const height = shape.height ?? shape.selrect?.height ?? 0;
 
+  // A strictly vertical or horizontal line (start.x === end.x or
+  // start.y === end.y) lands here with selrect.width or selrect.height ≈ 0.
+  // The natural svg viewport — width="0.01" height="174" — collapses in
+  // Chromium: even with `overflow: visible`, a sub-pixel-wide viewport is not
+  // painted at all and the stroke/marker disappear. Inflate the box (and shift
+  // it back the same amount) so the viewport has actual paint area while the
+  // path coordinates still land where the design expects.
+  const DEGENERATE_PAD = 16;
+  const inflateX = width < 1 ? DEGENERATE_PAD : 0;
+  const inflateY = height < 1 ? DEGENERATE_PAD : 0;
+  const svgX = x - inflateX;
+  const svgY = y - inflateY;
+  const svgWidth = width + 2 * inflateX;
+  const svgHeight = height + 2 * inflateY;
+
   let fillAttr: string;
   let defsInner = '';
   if (firstFill?.fillImage) {
@@ -187,7 +203,17 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
     style: pathStyle,
   });
 
-  const effectiveShape = { ...shape, x, y, width, height };
+  // Use the (possibly inflated) box for positioning so left/top/width/height
+  // match the svg viewport that gets painted. The path's `d` is unchanged and
+  // its absolute page coordinates still land at the same visual position
+  // because the viewBox is shifted by the same amount.
+  const effectiveShape = {
+    ...shape,
+    x: svgX,
+    y: svgY,
+    width: svgWidth,
+    height: svgHeight,
+  };
   const posStyle = resolvePositionOutput(effectiveShape, ctx);
 
   // Path coordinates in `content` are already in page-absolute space — rotation
@@ -202,7 +228,12 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
     shadowsToStyle(shape.shadow),
   );
 
-  const style = mergeStyles(posStyle, baseNoTransform);
+  // The svg presentation attribute `overflow="visible"` is overridden by the
+  // UA stylesheet `svg:not(:root) { overflow: hidden }` (presentation attrs
+  // have specificity 0). Setting it inline ensures stroke/marker painted
+  // beyond the viewport (e.g. an arrowhead extending past the path endpoint)
+  // stay visible.
+  const style = mergeStyles(posStyle, baseNoTransform, decl.overflow('visible'));
 
   const defs = defsInner ? tag('defs', {}, defsInner) : '';
 
@@ -211,9 +242,9 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
     {
       'data-id': shape.id,
       'data-type': shape.type,
-      width: String(width),
-      height: String(height),
-      viewBox: `${x} ${y} ${width} ${height}`,
+      width: String(svgWidth),
+      height: String(svgHeight),
+      viewBox: `${svgX} ${svgY} ${svgWidth} ${svgHeight}`,
       overflow: 'visible',
       xmlns: 'http://www.w3.org/2000/svg',
       style: style || undefined,

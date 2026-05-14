@@ -39,9 +39,3 @@ pnpm penpot-to-html ...   # shortcut to the converter CLI (see its README)
 
 - [`packages/converter`](packages/converter/README.md) — CLI usage, auth, preview, integration tests, dev scripts.
 - [`apps/mcp`](apps/mcp/README.md) — MCP server: tools, configuration snippets for Claude Code / Desktop / Cursor.
-
-## How to run Ralph
-
-```
-/ralph-loop:ralph-loop "READ PROMPT.md a follow instructions" --completion-promise "DONE" --max-iterations 10
-```
