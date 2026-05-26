@@ -18,7 +18,7 @@ import {
   type ReactZoomPanPinchRef,
 } from 'react-zoom-pan-pinch';
 
-import { findNodeById } from './tree-utils';
+import { findFirstBoard, findNodeById } from './tree-utils';
 import { loadTransform, saveTransform, type SavedTransform } from './transform-storage';
 import { ZoomControls } from './zoom-controls';
 import { ShapeNode } from './shape-node';
@@ -130,24 +130,29 @@ export const Render = ({
 
   const initialTransform = useMemo<SavedTransform | null | undefined>(() => {
     if (!containerSize.width || !containerSize.height) return undefined;
+    const W = containerSize.width;
+    const H = containerSize.height;
+    const fitTransform = (node: { x: number; y: number; width: number; height: number }) => {
+      const margin = 0.9;
+      const scaleFit = Math.min(W / node.width, H / node.height) * margin;
+      const scale = Math.min(Math.max(scaleFit, 0.05), 2);
+      const cx = node.x + node.width / 2;
+      const cy = node.y + node.height / 2;
+      return {
+        positionX: W / 2 - scale * cx,
+        positionY: H / 2 - scale * cy,
+        scale,
+      };
+    };
     if (initialShapeId) {
       const node = findNodeById(data.tree, initialShapeId);
-      if (node && node.width && node.height) {
-        const W = containerSize.width;
-        const H = containerSize.height;
-        const margin = 0.9;
-        const scaleFit = Math.min(W / node.width, H / node.height) * margin;
-        const scale = Math.min(Math.max(scaleFit, 0.05), 2);
-        const cx = node.x + node.width / 2;
-        const cy = node.y + node.height / 2;
-        return {
-          positionX: W / 2 - scale * cx,
-          positionY: H / 2 - scale * cy,
-          scale,
-        };
-      }
+      if (node && node.width && node.height) return fitTransform(node);
     }
-    return loadTransform(fileId, pageId);
+    const saved = loadTransform(fileId, pageId);
+    if (saved) return saved;
+    const firstBoard = findFirstBoard(data.tree);
+    if (firstBoard && firstBoard.width && firstBoard.height) return fitTransform(firstBoard);
+    return null;
   }, [containerSize.width, containerSize.height, data.tree, fileId, pageId, initialShapeId]);
 
   const saveDebouncer = useMemo(

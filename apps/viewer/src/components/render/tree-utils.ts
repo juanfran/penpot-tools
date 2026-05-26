@@ -9,6 +9,17 @@ export function findNodeById(nodes: ShapeTreeNode[], id: string): ShapeTreeNode 
   return null;
 }
 
+export function findFirstBoard(nodes: ShapeTreeNode[]): ShapeTreeNode | null {
+  for (const node of nodes) {
+    if (node.type === 'frame') return node;
+  }
+  for (const node of nodes) {
+    const found = findFirstBoard(node.children);
+    if (found) return found;
+  }
+  return null;
+}
+
 export function hitTest(node: ShapeTreeNode, x: number, y: number): boolean {
   return x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height;
 }
