@@ -125,6 +125,25 @@ describe('renderGroup', () => {
     expect(outerOpen).not.toContain('position: absolute');
   });
 
+  // See frame.test.ts → "skips CSS transform on flipped / matrix-transformed
+  // frames" for the original regression. Groups follow the same model:
+  // children sit at post-transform world coordinates, so applying the group's
+  // own matrix on top would double the transformation.
+  it('skips `transform: matrix(...)` for a group with flipY transform (no double-flip)', () => {
+    const flipYMatrix = { a: 1, b: 0, c: 0, d: -1, e: 0, f: 0 };
+    const html = renderGroup(
+      makeGroup({
+        flipY: true,
+        transform: flipYMatrix,
+        transformInverse: flipYMatrix,
+      }),
+      [],
+      {},
+      ctx,
+    );
+    expect(html).not.toMatch(/transform:\s*matrix\(/);
+  });
+
   it('does not add position: relative when it is a flex child with no children', () => {
     const flexCtx: ConverterContext = {
       ...ctx,

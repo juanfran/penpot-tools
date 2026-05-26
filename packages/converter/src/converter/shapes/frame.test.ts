@@ -369,6 +369,111 @@ describe('renderFrame', () => {
     });
   });
 
+  // Regression — anonymised from a real bug report on a file where a Board
+  // frame stored `flipY: true` and the converter emitted
+  // `transform: matrix(1, 0, 0, -1, 0, 0)` on the frame div. The frame's
+  // children already sit at their post-flip world coordinates (their
+  // selrects encode the flip), so the extra CSS transform doubled it and
+  // the icons inside rendered visibly mirrored.
+  describe('skips CSS transform on flipped / matrix-transformed frames', () => {
+    const flipYMatrix = { a: 1, b: 0, c: 0, d: -1, e: 0, f: 0 } as const;
+    const rotationMatrix = {
+      a: 0.7071067811865476,
+      b: 0.7071067811865475,
+      c: -0.7071067811865475,
+      d: 0.7071067811865476,
+      e: 0,
+      f: 0,
+    } as const;
+
+    it('does not emit `transform: matrix(...)` for a frame with flipY transform', () => {
+      const frame = makeFrame({
+        parentId: 'parent-frame' as Uuid,
+        flipY: true,
+        transform: { ...flipYMatrix },
+        transformInverse: { ...flipYMatrix },
+      });
+      const html = renderFrame(frame, [], {}, ctx);
+      expect(html).not.toMatch(/transform:\s*matrix\(/);
+      expect(html).not.toContain('0, -1');
+    });
+
+    it('does not emit `transform: matrix(...)` for a frame with flipX transform', () => {
+      const flipXMatrix = { a: -1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+      const frame = makeFrame({
+        parentId: 'parent-frame' as Uuid,
+        flipX: true,
+        transform: flipXMatrix,
+        transformInverse: flipXMatrix,
+      });
+      const html = renderFrame(frame, [], {}, ctx);
+      expect(html).not.toMatch(/transform:\s*matrix\(/);
+    });
+
+    it('does not propagate the frame matrix to a child path (no double-flip)', () => {
+      const frame = makeFrame({
+        parentId: 'parent-frame' as Uuid,
+        id: 'icon-board' as Uuid,
+        width: 200,
+        height: 80,
+        x: 0,
+        y: 0,
+        flipY: true,
+        transform: { ...flipYMatrix },
+        transformInverse: { ...flipYMatrix },
+      });
+      // A path child whose selrect is in post-flip world coords — its `x`/`y`
+      // are null and `resolvePositionOutput` falls back to selrect.
+      const pathChild: Shape = {
+        id: 'icon-path' as Uuid,
+        name: 'icon',
+        type: 'path',
+        x: null as unknown as number,
+        y: null as unknown as number,
+        width: 30,
+        height: 40,
+        selrect: { x: 50, y: 20, width: 30, height: 40 },
+        points: [],
+        // The child's own transform also includes a flipY (inherited).
+        transform: { ...flipYMatrix },
+        transformInverse: { ...flipYMatrix },
+        parentId: 'icon-board' as Uuid,
+        frameId: 'icon-board' as Uuid,
+        content: 'M50 20 L80 20 L80 60 L50 60 Z',
+        fills: [{ fillColor: '#123456' as HexColor }],
+        flipY: true,
+      } as unknown as Shape;
+      const objects: Record<string, Shape> = { 'icon-path': pathChild };
+
+      const html = renderFrame(frame, [pathChild], objects, ctx);
+
+      // The frame's own div must not carry a matrix transform.
+      const frameOpen = html.match(/^<div [^>]*data-id="icon-board"[^>]*>/)?.[0] ?? '';
+      expect(frameOpen).not.toMatch(/transform:\s*matrix\(/);
+
+      // The child path renders at its world-space selrect (offset by the frame's x/y == 0).
+      expect(html).toContain('left: 50px;');
+      expect(html).toContain('top: 20px;');
+    });
+
+    it('does not emit `transform: matrix(...)` for a frame with a 45° rotation matrix either', () => {
+      const frame = makeFrame({
+        parentId: 'parent-frame' as Uuid,
+        transform: { ...rotationMatrix },
+        transformInverse: {
+          a: rotationMatrix.a,
+          b: -rotationMatrix.b,
+          c: -rotationMatrix.c,
+          d: rotationMatrix.d,
+          e: 0,
+          f: 0,
+        },
+      });
+      const html = renderFrame(frame, [], {}, ctx);
+      expect(html).not.toMatch(/transform:\s*matrix\(/);
+    });
+  });
+
   describe('shadow border-radius propagation', () => {
     const makeRoundedRect = (overrides: Partial<Shape> = {}): Shape =>
       ({

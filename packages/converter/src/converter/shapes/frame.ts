@@ -2,7 +2,7 @@ import type { FrameShape, Shape } from '../../penpot.types';
 import type { ConverterContext } from '../types';
 import { tag } from '../utils/html';
 import { mergeStyles } from '../utils/style';
-import { baseStyles } from '../visual/base';
+import { baseStylesNoTransform } from '../visual/base';
 import { fillsToOutput } from '../visual/fills';
 import { solidStrokeToStyle } from '../visual/strokes';
 import { resolvePositionOutput } from '../visual/position';
@@ -55,7 +55,7 @@ export function renderFrame(
   const rawLayout = (shape as unknown as { layout?: string }).layout;
   const isFlex = shape.layoutType === 'flex' || rawLayout === 'flex';
   const isGrid = shape.layoutType === 'grid' || rawLayout === 'grid';
-  const base = baseStyles(shape, ctx);
+  const base = baseStylesNoTransform(shape, ctx);
   const fills = fillsToOutput(shape.fills, ctx, shape.appliedTokens?.fill);
   const clipStyle =
     shape.clipContent !== false && !shape.showContent ? decl.overflow('hidden') : '';

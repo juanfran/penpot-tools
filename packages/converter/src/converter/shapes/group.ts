@@ -3,7 +3,7 @@ import type { ConverterContext } from '../types';
 import { tag } from '../utils/html';
 import { mergeStyles } from '../utils/style';
 import { resolvePositionOutput } from '../visual/position';
-import { baseStyles } from '../visual/base';
+import { baseStylesNoTransform } from '../visual/base';
 import { hexOpacityToCss } from '../utils/color';
 import { renderShape } from './dispatch';
 
@@ -106,7 +106,7 @@ function renderGroupAsSvg(shape: GroupShape, children: Shape[], ctx: ConverterCo
   const vw = shape.width;
   const vh = shape.height;
 
-  const base = baseStyles(shape, ctx);
+  const base = baseStylesNoTransform(shape, ctx);
   const posStyle = resolvePositionOutput(shape, ctx);
 
   const style = mergeStyles(posStyle, base);
@@ -147,7 +147,7 @@ export function renderGroup(
     return renderGroupAsSvg(shape, children, ctx);
   }
 
-  const base = baseStyles(shape, ctx);
+  const base = baseStylesNoTransform(shape, ctx);
   const posStyle = resolvePositionOutput(shape, ctx);
   const maskStyle = shape.maskedGroup ? 'overflow: hidden;' : '';
 
