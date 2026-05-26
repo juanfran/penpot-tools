@@ -2,7 +2,7 @@ import { type ReactNode } from 'react';
 
 import { COLOR_REGEX } from './format-prefs';
 
-function renderValue(value: string): ReactNode[] {
+function renderWithSwatches(value: string): ReactNode[] {
   const parts: ReactNode[] = [];
   let lastIndex = 0;
   let i = 0;
@@ -29,8 +29,14 @@ export function StyleDecl({ prop, value }: { prop: string; value: string }) {
     <div className="flex min-w-0 gap-0.5 py-0.5">
       <span className="shrink-0 text-violet-600">{prop}</span>
       <span className="text-gray-400">:</span>
-      <span className="min-w-0 break-all text-amber-700">{renderValue(value)}</span>
+      <span className="min-w-0 break-all text-amber-700">{renderWithSwatches(value)}</span>
       <span className="shrink-0 text-gray-400">;</span>
     </div>
+  );
+}
+
+export function TailwindDecl({ utility }: { utility: string }) {
+  return (
+    <div className="min-w-0 py-0.5 break-all text-sky-700">{renderWithSwatches(utility)}</div>
   );
 }

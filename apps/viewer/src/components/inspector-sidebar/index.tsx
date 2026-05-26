@@ -1,6 +1,7 @@
 import { getPageShapesOptions } from '#/components/render';
 import { findNodeById, findParent } from '#/components/render/tree-utils';
 import { type ShapeTreeNode } from '#/lib/server/penpot-api';
+import { declToTailwind } from '@penpot-tools/converter/shape-code';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Check, ChevronRight, Copy } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -15,7 +16,7 @@ import { transformValue } from './format-prefs';
 import { FormatPrefsPopover } from './format-prefs-popover';
 import { INSPECTOR_MAX_WIDTH, INSPECTOR_MIN_WIDTH, useInspectorPrefs } from './prefs-store';
 import { shapeIcon } from './shape-icon';
-import { StyleDecl } from './style-decl';
+import { StyleDecl, TailwindDecl } from './style-decl';
 import { type ExtractedText, extractStyles, extractText, groupStyles } from './styles';
 
 // Returns the top-level tree node that contains (or is) the given id
@@ -59,6 +60,7 @@ export function InspectorSidebar({
   const [margins, setMargins] = useState<Margins>(EMPTY_MARGINS);
   const colorFormat = useInspectorPrefs((s) => s.colorFormat);
   const unitFormat = useInspectorPrefs((s) => s.unitFormat);
+  const styleSyntax = useInspectorPrefs((s) => s.styleSyntax);
   const width = useInspectorPrefs((s) => s.width);
   const setWidth = useInspectorPrefs((s) => s.setWidth);
   const asideRef = useRef<HTMLElement>(null);
@@ -102,8 +104,17 @@ export function InspectorSidebar({
     prop,
     value: transformValue(value, colorFormat, unitFormat),
   }));
-  const sections = groupStyles(decls);
+  const declsWithUtility = decls.map((d) => ({
+    ...d,
+    utility: declToTailwind(d.prop, d.value),
+  }));
+  const sections = groupStyles(declsWithUtility);
   const cssText = decls.map(({ prop, value }) => `${prop}: ${value};`).join('\n');
+  const tailwindText = declsWithUtility
+    .map((d) => d.utility)
+    .filter((u): u is string => u !== null)
+    .join(' ');
+  const copyText = styleSyntax === 'tailwind' ? tailwindText : cssText;
   const boxModel = extractBoxModel(rootShape.html, selectedShapeId, node.width, node.height);
   const textContent = node.type === 'text' ? extractText(rootShape.html, selectedShapeId) : null;
 
@@ -234,7 +245,7 @@ export function InspectorSidebar({
               <FormatPrefsPopover />
               {decls.length > 0 && (
                 <button
-                  onClick={() => handleCopyCss(cssText)}
+                  onClick={() => handleCopyCss(copyText)}
                   className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
                   title="Copy all styles"
                 >
@@ -255,9 +266,15 @@ export function InspectorSidebar({
                     {section.label}
                   </p>
                   <div className="rounded-md bg-gray-50 px-3 py-2 font-mono text-xs leading-relaxed">
-                    {section.decls.map((d) => (
-                      <StyleDecl key={d.prop} prop={d.prop} value={d.value} />
-                    ))}
+                    {section.decls.map((d) =>
+                      styleSyntax === 'tailwind' ? (
+                        d.utility ? (
+                          <TailwindDecl key={d.prop} utility={d.utility} />
+                        ) : null
+                      ) : (
+                        <StyleDecl key={d.prop} prop={d.prop} value={d.value} />
+                      ),
+                    )}
                   </div>
                 </div>
               ))}

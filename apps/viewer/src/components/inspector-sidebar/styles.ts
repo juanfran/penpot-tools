@@ -105,14 +105,14 @@ const SECTION_ORDER: Array<{ label: string; prefixes: string[] }> = [
   },
 ];
 
-export interface StyleSection {
+export interface StyleSection<T extends StyleDeclaration = StyleDeclaration> {
   label: string;
-  decls: StyleDeclaration[];
+  decls: T[];
 }
 
-export function groupStyles(decls: StyleDeclaration[]): StyleSection[] {
+export function groupStyles<T extends StyleDeclaration>(decls: T[]): StyleSection<T>[] {
   const assigned = new Set<number>();
-  const sections: StyleSection[] = [];
+  const sections: StyleSection<T>[] = [];
 
   for (const section of SECTION_ORDER) {
     const matched = decls
