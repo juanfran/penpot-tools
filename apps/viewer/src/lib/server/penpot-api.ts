@@ -145,15 +145,27 @@ export interface ShapeTreeNode {
   width: number;
   height: number;
   children: ShapeTreeNode[];
+  layout?: string;
+  layoutType?: string;
+  layoutFlexDir?: string;
+  layoutItemZIndex?: number;
   componentRoot?: boolean;
   componentId?: string;
   componentFile?: string;
   shapeRef?: string;
 }
 
+type ShapeTreeLayoutFields = {
+  layout?: string;
+  layoutType?: string;
+  layoutFlexDir?: string;
+  layoutItemZIndex?: number;
+};
+
 function buildShapeTree(objects: Page['objects'], id: string): ShapeTreeNode | null {
   const shape = objects[id];
   if (!shape) return null;
+  const layoutShape = shape as ShapeTreeLayoutFields;
   const childIds: string[] =
     'shapes' in shape && Array.isArray((shape as { shapes?: unknown }).shapes)
       ? (shape as { shapes: string[] }).shapes
@@ -168,6 +180,11 @@ function buildShapeTree(objects: Page['objects'], id: string): ShapeTreeNode | n
     height: shape.selrect.height,
     children: childIds.flatMap((cid) => buildShapeTree(objects, cid) ?? []),
   };
+  if (layoutShape.layout) node.layout = layoutShape.layout;
+  if (layoutShape.layoutType) node.layoutType = layoutShape.layoutType;
+  if (layoutShape.layoutFlexDir) node.layoutFlexDir = layoutShape.layoutFlexDir;
+  if (layoutShape.layoutItemZIndex !== undefined)
+    node.layoutItemZIndex = layoutShape.layoutItemZIndex;
   if (shape.componentRoot) node.componentRoot = true;
   if (shape.componentId) node.componentId = shape.componentId;
   if (shape.componentFile) node.componentFile = shape.componentFile;

@@ -102,7 +102,7 @@ export function ShapeHitZone({
         while (currentId) {
           const parent = findParent(tree, currentId);
           const pool = parent ? parent.children : tree;
-          const hit = topChildAt(pool, cx, cy);
+          const hit = topChildAt(pool, cx, cy, parent ?? undefined);
           if (hit) {
             onShapeSelect(hit.id);
             return;
@@ -119,7 +119,7 @@ export function ShapeHitZone({
         const parentNode = selectedShapeId
           ? (findNodeById([topShape], selectedShapeId) ?? topShape)
           : topShape;
-        const child = topChildAt(parentNode.children, cx, cy);
+        const child = topChildAt(parentNode.children, cx, cy, parentNode);
         if (child) onShapeSelect(child.id);
       }}
     />
