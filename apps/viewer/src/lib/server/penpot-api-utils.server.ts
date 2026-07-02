@@ -6,6 +6,7 @@ import { parser } from 'stream-json';
 import { pick } from 'stream-json/filters/pick.js';
 import { streamValues } from 'stream-json/streamers/stream-values.js';
 import transit from 'transit-js';
+import { extractTokenSetsFromTokensLib, type FileTokenSet } from './token-sets';
 
 const reader = transit.reader('json');
 
@@ -218,6 +219,7 @@ export interface FileSummary {
     pages: string[];
     pagesIndex: Record<string, { id: string; name: string }>;
   };
+  tokenSets: FileTokenSet[];
 }
 
 export const getFileSummary = createServerOnlyFn(
@@ -241,6 +243,22 @@ export const getFileSummary = createServerOnlyFn(
     const fileData = result.get(transit.keyword('data'));
     const pages = fileData?.get<unknown[]>(transit.keyword('pages'));
     const pagesIndex = fileData?.get(transit.keyword('pages-index'));
+    const tokensLib =
+      fileData?.get(transit.keyword('tokens-lib')) ?? fileData?.get(transit.keyword('tokensLib'));
+    let tokenSets: FileTokenSet[] = [];
+
+    try {
+      tokenSets = extractTokenSetsFromTokensLib(tokensLib).map((set) => ({
+        id: set.id,
+        name: set.name,
+        css: set.css,
+        tokenCount: set.tokenCount,
+        kind: set.kind,
+        active: set.active,
+      }));
+    } catch (err) {
+      console.warn('Could not read Penpot token sets', err);
+    }
 
     return {
       name: result.get<string>(transit.keyword('name')) ?? '',
@@ -261,6 +279,7 @@ export const getFileSummary = createServerOnlyFn(
             )
           : {},
       },
+      tokenSets,
     };
   },
 );

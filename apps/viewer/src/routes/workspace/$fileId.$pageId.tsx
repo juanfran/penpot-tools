@@ -11,7 +11,7 @@ import { recordFileAccessFn } from '#/lib/server/file-access';
 import { setSelectionFn } from '#/lib/server/penpot-api';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState, type Ref } from 'react';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
 
@@ -140,6 +140,36 @@ function SidebarWrapper({
   );
 }
 
+function RenderWrapper({
+  fileId,
+  pageId,
+  selectedShapeId,
+  onShapeSelect,
+  initialShapeId,
+  renderRef,
+}: {
+  fileId: string;
+  pageId: string;
+  selectedShapeId: string | undefined;
+  onShapeSelect: (id: string | undefined) => void;
+  initialShapeId: string | undefined;
+  renderRef: Ref<RenderHandle>;
+}) {
+  const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
+
+  return (
+    <Render
+      ref={renderRef}
+      fileId={fileId}
+      pageId={pageId}
+      tokenSets={file.tokenSets}
+      selectedShapeId={selectedShapeId}
+      onShapeSelect={onShapeSelect}
+      initialShapeId={initialShapeId}
+    />
+  );
+}
+
 function RouteComponent() {
   const { fileId, pageId } = Route.useParams();
   const { teamId, shapeId } = Route.useSearch();
@@ -192,8 +222,8 @@ function RouteComponent() {
           </Suspense>
           <main className="relative flex-1 overflow-auto">
             <Suspense fallback={<RenderFallback />}>
-              <Render
-                ref={renderRef}
+              <RenderWrapper
+                renderRef={renderRef}
                 fileId={fileId}
                 pageId={pageId}
                 selectedShapeId={selectedShapeId}
