@@ -9,12 +9,8 @@ import {
   useReducer,
 } from 'react';
 import { Debouncer } from '@tanstack/pacer';
-import {
-  getFileTokenSetsFn,
-  getPageShapesFn,
-  type FileTokenSet,
-} from '#/lib/server/penpot-api';
-import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { getPageShapesFn, type FileTokenSet } from '#/lib/server/penpot-api';
+import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import {
   TransformWrapper,
   TransformComponent,
@@ -43,25 +39,12 @@ export type RenderHandle = {
 
 const VISIBILITY_MARGIN = 500;
 const CURRENT_TOKEN_SET_ID = '__current__';
+const EMPTY_TOKEN_SETS: FileTokenSet[] = [];
 
 export const getPageShapesOptions = (fileId: string, pageId: string) =>
   queryOptions({
     queryKey: ['get-page-shapes', fileId, pageId],
     queryFn: () => getPageShapesFn({ data: { fileId, pageId } }),
-  });
-
-export const getFileTokenSetsOptions = (fileId: string) =>
-  queryOptions({
-    queryKey: ['get-file-token-sets', fileId],
-    queryFn: async () => {
-      try {
-        return await getFileTokenSetsFn({ data: { fileId } });
-      } catch (err) {
-        console.warn('Could not load Penpot token sets', err);
-        return [];
-      }
-    },
-    staleTime: 60_000,
   });
 
 function tokenSetStorageKey(fileId: string): string {
@@ -144,6 +127,7 @@ export const Render = ({
   selectedShapeId,
   onShapeSelect,
   initialShapeId,
+  tokenSets: providedTokenSets,
   ref,
 }: {
   pageId: string;
@@ -151,10 +135,11 @@ export const Render = ({
   selectedShapeId?: string;
   onShapeSelect?: (id: string | undefined) => void;
   initialShapeId?: string;
+  tokenSets?: FileTokenSet[];
   ref?: React.Ref<RenderHandle>;
 }) => {
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
-  const { data: tokenSets = [] } = useQuery(getFileTokenSetsOptions(fileId));
+  const tokenSets = providedTokenSets ?? EMPTY_TOKEN_SETS;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
