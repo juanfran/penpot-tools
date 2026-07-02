@@ -1,25 +1,7 @@
-import { Download } from 'lucide-react';
-import { useState } from 'react';
-
-import { type Asset, downloadImageAsset, downloadSvgAsset } from './assets';
+import { type Asset } from './assets';
+import { AssetDownloadDialog } from './asset-download-dialog';
 
 export function AssetItem({ asset }: { asset: Asset }) {
-  const [busy, setBusy] = useState(false);
-
-  const onDownload = async () => {
-    setBusy(true);
-    try {
-      if (asset.kind === 'image' && asset.src) {
-        await downloadImageAsset(asset.src, asset.name);
-      } else if (asset.kind === 'svg' && asset.svg) {
-        downloadSvgAsset(asset.svg, asset.name);
-      }
-    } catch (error) {
-      console.error('Failed to download asset', error);
-    }
-    setBusy(false);
-  };
-
   return (
     <div className="flex items-center gap-2 rounded-md border border-gray-100 bg-gray-50 p-2">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded border border-gray-200 bg-white">
@@ -41,14 +23,7 @@ export function AssetItem({ asset }: { asset: Asset }) {
           {asset.kind === 'image' ? 'Image' : 'SVG'}
         </p>
       </div>
-      <button
-        onClick={onDownload}
-        disabled={busy}
-        className="flex items-center rounded px-1.5 py-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:opacity-50"
-        title="Download"
-      >
-        <Download size={12} />
-      </button>
+      <AssetDownloadDialog asset={asset} />
     </div>
   );
 }

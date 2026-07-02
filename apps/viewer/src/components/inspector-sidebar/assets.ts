@@ -1,4 +1,5 @@
 import { type ShapeTreeNode } from '#/lib/server/penpot-api';
+import type { AssetDownloadResult } from '#/lib/asset-download-types';
 
 export interface Asset {
   id: string;
@@ -140,11 +141,6 @@ export function collectAssetsFromDom(
   return out;
 }
 
-function sanitizeFilename(name: string): string {
-  const cleaned = name.replace(/[\\/:*?"<>|]/g, '_').trim();
-  return cleaned.slice(0, 200) || 'asset';
-}
-
 function triggerBlobDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -156,23 +152,7 @@ function triggerBlobDownload(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export async function downloadImageAsset(src: string, baseName: string) {
-  try {
-    const res = await fetch(src);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const blob = await res.blob();
-    const ext = (blob.type.split('/')[1] || 'png').split(';')[0];
-    triggerBlobDownload(blob, `${sanitizeFilename(baseName)}.${ext}`);
-  } catch {
-    // CORS or network failure — fall back to opening the asset in a new tab
-    window.open(src, '_blank', 'noopener');
-  }
-}
-
-export function downloadSvgAsset(markup: string, baseName: string) {
-  const trimmed = markup.trim();
-  const hasSvgRoot = /^<svg[\s>]/i.test(trimmed);
-  const content = hasSvgRoot ? trimmed : `<svg xmlns="http://www.w3.org/2000/svg">${trimmed}</svg>`;
-  const blob = new Blob([content], { type: 'image/svg+xml' });
-  triggerBlobDownload(blob, `${sanitizeFilename(baseName)}.svg`);
+export function downloadPreparedAsset(result: AssetDownloadResult) {
+  const bytes = Uint8Array.from(atob(result.base64), (char) => char.charCodeAt(0));
+  triggerBlobDownload(new Blob([bytes], { type: result.mimeType }), result.filename);
 }
