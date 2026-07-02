@@ -7,6 +7,7 @@ import {
   PageHeaderFallback,
   getFileSummaryQueryOptions,
 } from '#/components/page-header';
+import { recordFileAccessFn } from '#/lib/server/file-access';
 import { setSelectionFn } from '#/lib/server/penpot-api';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
@@ -157,6 +158,10 @@ function RouteComponent() {
       replace: true,
     });
   }, [shapeId, navigate, fileId, pageId, teamId]);
+
+  useEffect(() => {
+    void recordFileAccessFn({ data: { fileId, teamId } });
+  }, [fileId, teamId]);
 
   useEffect(() => {
     void setSelectionFn({

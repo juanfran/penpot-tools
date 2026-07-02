@@ -1,7 +1,14 @@
 import { createFileRoute, redirect, Link, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { isAuthenticatedFn } from '#/lib/auth';
-import { getTeamsFn, getRecentFilesFn, getThumbnailUrl, type Team } from '#/lib/server/penpot-api';
+import {
+  getTeamsFn,
+  getRecentFilesFn,
+  getThumbnailUrl,
+  type PenpotFile,
+  type Team,
+} from '#/lib/server/penpot-api';
+import { getFileAccessesFn } from '#/lib/server/file-access';
 import {
   Select,
   SelectContent,
@@ -9,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '#/components/ui/select';
+import { useEffect, useMemo, useState } from 'react';
 
 export const Route = createFileRoute('/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -23,9 +31,72 @@ export const Route = createFileRoute('/')({
   component: App,
 });
 
+type FileSort =
+  | 'modified-desc'
+  | 'modified-asc'
+  | 'created-desc'
+  | 'created-asc'
+  | 'name-asc'
+  | 'name-desc'
+  | 'last-accessed-desc';
+
+const DEFAULT_FILE_SORT: FileSort = 'modified-desc';
+const FILE_SORT_STORAGE_KEY = 'penpot-tools:file-sort';
+
+const FILE_SORT_OPTIONS: Array<{ value: FileSort; label: string }> = [
+  { value: 'modified-desc', label: 'Recently modified' },
+  { value: 'modified-asc', label: 'Oldest modified' },
+  { value: 'created-desc', label: 'Recently created' },
+  { value: 'created-asc', label: 'Oldest created' },
+  { value: 'name-asc', label: 'Name A-Z' },
+  { value: 'name-desc', label: 'Name Z-A' },
+  { value: 'last-accessed-desc', label: 'Last opened' },
+];
+
+function isFileSort(value: string): value is FileSort {
+  return FILE_SORT_OPTIONS.some((option) => option.value === value);
+}
+
+function compareDateDesc(a?: string, b?: string): number {
+  const aTime = a ? new Date(a).getTime() : Number.NEGATIVE_INFINITY;
+  const bTime = b ? new Date(b).getTime() : Number.NEGATIVE_INFINITY;
+  return bTime - aTime;
+}
+
+function sortFiles(
+  files: PenpotFile[],
+  sort: FileSort,
+  lastAccessedAtByFileId: Record<string, string> | undefined,
+): PenpotFile[] {
+  return [...files].sort((a, b) => {
+    switch (sort) {
+      case 'modified-asc':
+        return compareDateDesc(b.modifiedAt, a.modifiedAt) || a.name.localeCompare(b.name);
+      case 'created-desc':
+        return compareDateDesc(a.createdAt, b.createdAt) || a.name.localeCompare(b.name);
+      case 'created-asc':
+        return compareDateDesc(b.createdAt, a.createdAt) || a.name.localeCompare(b.name);
+      case 'name-asc':
+        return a.name.localeCompare(b.name) || compareDateDesc(a.modifiedAt, b.modifiedAt);
+      case 'name-desc':
+        return b.name.localeCompare(a.name) || compareDateDesc(a.modifiedAt, b.modifiedAt);
+      case 'last-accessed-desc':
+        return (
+          compareDateDesc(lastAccessedAtByFileId?.[a.id], lastAccessedAtByFileId?.[b.id]) ||
+          compareDateDesc(a.modifiedAt, b.modifiedAt) ||
+          a.name.localeCompare(b.name)
+        );
+      case 'modified-desc':
+      default:
+        return compareDateDesc(a.modifiedAt, b.modifiedAt) || a.name.localeCompare(b.name);
+    }
+  });
+}
+
 function App() {
   const { teamId: selectedTeamId } = Route.useSearch();
   const navigate = useNavigate({ from: '/' });
+  const [fileSort, setFileSort] = useState<FileSort>(DEFAULT_FILE_SORT);
 
   const teamsQuery = useQuery({
     queryKey: ['teams'],
@@ -38,11 +109,38 @@ function App() {
     enabled: !!selectedTeamId,
   });
 
+  const fileIds = useMemo(() => filesQuery.data?.map((file) => file.id) ?? [], [filesQuery.data]);
+
+  const fileAccessesQuery = useQuery({
+    queryKey: ['file-accesses', fileIds],
+    queryFn: () => getFileAccessesFn({ data: { fileIds } }),
+    enabled: fileIds.length > 0,
+  });
+
+  const sortedFiles = useMemo(
+    () => sortFiles(filesQuery.data ?? [], fileSort, fileAccessesQuery.data),
+    [fileAccessesQuery.data, filesQuery.data, fileSort],
+  );
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(FILE_SORT_STORAGE_KEY);
+    if (stored && isFileSort(stored)) {
+      setFileSort(stored);
+    }
+  }, []);
+
+  const handleFileSortChange = (value: FileSort | null) => {
+    if (!value) return;
+    if (!isFileSort(value)) return;
+    setFileSort(value);
+    window.localStorage.setItem(FILE_SORT_STORAGE_KEY, value);
+  };
+
   return (
     <main className="mx-auto max-w-4xl px-4 pt-14 pb-8">
       <h1 className="text-foreground mb-6 text-2xl font-semibold">Penpot Files</h1>
 
-      <div className="mb-6 w-2xs space-y-4">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="team-select" className="text-foreground mb-1.5 block text-sm font-medium">
             Team
@@ -79,6 +177,29 @@ function App() {
             </Select>
           )}
         </div>
+
+        <div>
+          <label
+            htmlFor="file-sort-select"
+            className="text-foreground mb-1.5 block text-sm font-medium"
+          >
+            Sort by
+          </label>
+          <Select value={fileSort} onValueChange={handleFileSortChange}>
+            <SelectTrigger id="file-sort-select" className="w-full">
+              <SelectValue>
+                {FILE_SORT_OPTIONS.find((option) => option.value === fileSort)?.label}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {FILE_SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {filesQuery.isLoading && <p className="text-muted-foreground text-sm">Loading files...</p>}
@@ -90,9 +211,9 @@ function App() {
         <p className="text-muted-foreground text-sm">No files found.</p>
       )}
 
-      {filesQuery.data && filesQuery.data.length > 0 && (
+      {filesQuery.data && sortedFiles.length > 0 && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {filesQuery.data.map((file) => (
+          {sortedFiles.map((file) => (
             <Link
               key={file.id}
               to="/workspace/$fileId/$pageId"
