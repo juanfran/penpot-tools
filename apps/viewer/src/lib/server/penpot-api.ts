@@ -12,7 +12,11 @@ import {
 } from '@penpot-tools/converter/tokens';
 import type { Page, Uuid } from '@penpot-tools/penpot-types';
 import type { ConverterContext } from '@penpot-tools/converter';
-import { getFileSummary, rpc } from './penpot-api-utils.server';
+import { getFileSummary, rpc, rpcTransit } from './penpot-api-utils.server';
+import transit from 'transit-js';
+import { extractTokenSetsFromTokensLib, type FileTokenSet } from './token-sets';
+
+export type { FileTokenSet } from './token-sets';
 
 const BASE_URL = 'https://design.penpot.app';
 
@@ -225,6 +229,53 @@ export const getPageShapesFn = createServerFn({ method: 'GET' })
 
     console.timeEnd(`convertPageShapes ${data.pageId}`);
     return result;
+  });
+
+function transitGet(value: unknown, key: string): unknown {
+  if (!value || typeof (value as { get?: unknown }).get !== 'function') return undefined;
+  const map = value as { get: (k: unknown) => unknown };
+  return (
+    map.get(transit.keyword(key)) ??
+    map.get(transit.keyword(key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`))) ??
+    map.get(key)
+  );
+}
+
+export const getFileTokenSetsFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ fileId: z.uuid() }))
+  .middleware([authMiddleware])
+  .handler(async ({ data, context }): Promise<FileTokenSet[]> => {
+    try {
+      const result = await rpcTransit(context.token, 'get-file', {
+        params: {
+          id: data.fileId,
+          features: [
+            'fdata/path-data',
+            'design-tokens/v1',
+            'variants/v1',
+            'layout/grid',
+            'styles/v2',
+            'fdata/objects-map',
+            'components/v2',
+            'fdata/shape-data-type',
+          ],
+        },
+      });
+
+      const fileData = result.get(transit.keyword('data'));
+      const tokensLib = transitGet(fileData, 'tokens-lib') ?? transitGet(fileData, 'tokensLib');
+      return extractTokenSetsFromTokensLib(tokensLib).map((set) => ({
+        id: set.id,
+        name: set.name,
+        css: set.css,
+        tokenCount: set.tokenCount,
+        kind: set.kind,
+        active: set.active,
+      }));
+    } catch (err) {
+      console.warn('Could not read Penpot token sets', err);
+      return [];
+    }
   });
 
 export interface PageTokens {

@@ -9,14 +9,19 @@ import {
   useReducer,
 } from 'react';
 import { Debouncer } from '@tanstack/pacer';
-import { getPageShapesFn } from '#/lib/server/penpot-api';
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  getFileTokenSetsFn,
+  getPageShapesFn,
+  type FileTokenSet,
+} from '#/lib/server/penpot-api';
+import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import {
   TransformWrapper,
   TransformComponent,
   Virtualize,
   type ReactZoomPanPinchRef,
 } from 'react-zoom-pan-pinch';
+import { Palette } from 'lucide-react';
 
 import { findFirstBoard, findNodeById } from './tree-utils';
 import { loadTransform, saveTransform, type SavedTransform } from './transform-storage';
@@ -24,18 +29,114 @@ import { ZoomControls } from './zoom-controls';
 import { ShapeNode } from './shape-node';
 import { SelectionHighlights, ShapeHitZone } from './shape-overlays';
 import { useInspectorPrefs } from '#/components/inspector-sidebar/prefs-store';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select';
 
 export type RenderHandle = {
   goToShape: (shapeId: string) => void;
 };
 
 const VISIBILITY_MARGIN = 500;
+const CURRENT_TOKEN_SET_ID = '__current__';
 
 export const getPageShapesOptions = (fileId: string, pageId: string) =>
   queryOptions({
     queryKey: ['get-page-shapes', fileId, pageId],
     queryFn: () => getPageShapesFn({ data: { fileId, pageId } }),
   });
+
+export const getFileTokenSetsOptions = (fileId: string) =>
+  queryOptions({
+    queryKey: ['get-file-token-sets', fileId],
+    queryFn: async () => {
+      try {
+        return await getFileTokenSetsFn({ data: { fileId } });
+      } catch (err) {
+        console.warn('Could not load Penpot token sets', err);
+        return [];
+      }
+    },
+    staleTime: 60_000,
+  });
+
+function tokenSetStorageKey(fileId: string): string {
+  return `penpot-tools:token-set:${fileId}`;
+}
+
+function loadSelectedTokenSet(fileId: string): string {
+  if (typeof window === 'undefined') return CURRENT_TOKEN_SET_ID;
+  return window.localStorage.getItem(tokenSetStorageKey(fileId)) ?? CURRENT_TOKEN_SET_ID;
+}
+
+function defaultTokenSetId(tokenSets: FileTokenSet[]): string {
+  return (
+    tokenSets.find((set) => set.active)?.id ??
+    tokenSets[0]?.id ??
+    CURRENT_TOKEN_SET_ID
+  );
+}
+
+function saveSelectedTokenSet(fileId: string, value: string): void {
+  if (typeof window === 'undefined') return;
+  const key = tokenSetStorageKey(fileId);
+  if (value === CURRENT_TOKEN_SET_ID) {
+    window.localStorage.removeItem(key);
+  } else {
+    window.localStorage.setItem(key, value);
+  }
+}
+
+function TokenSetPicker({
+  value,
+  tokenSets,
+  onChange,
+}: {
+  value: string;
+  tokenSets: FileTokenSet[];
+  onChange: (value: string) => void;
+}) {
+  const handleValueChange = (next: string | null) => {
+    if (next) onChange(next);
+  };
+  const hasTokenSets = tokenSets.length > 0;
+  const selectedLabel =
+    tokenSets.find((set) => set.id === value)?.name ??
+    (hasTokenSets ? tokenSets[0]!.name : 'Current');
+
+  return (
+    <div
+      className="absolute top-4 right-4 z-50"
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <Select value={value} onValueChange={handleValueChange}>
+        <SelectTrigger className="h-8 max-w-64 border-white/10 bg-black/60 px-2.5 text-xs text-white shadow-xl backdrop-blur-sm hover:bg-black/70">
+          <Palette className="size-3.5 text-white/70" />
+          <SelectValue>{selectedLabel}</SelectValue>
+        </SelectTrigger>
+        <SelectContent align="end" alignItemWithTrigger={false} className="min-w-52">
+          {!hasTokenSets && <SelectItem value={CURRENT_TOKEN_SET_ID}>Current</SelectItem>}
+          {!hasTokenSets ? (
+            <SelectItem value="__none__" disabled>
+              No token sets found
+            </SelectItem>
+          ) : (
+            tokenSets.map((set) => (
+              <SelectItem key={set.id} value={set.id}>
+                <span className="truncate">{set.name}</span>
+              </SelectItem>
+            ))
+          )}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 export const Render = ({
   pageId,
@@ -53,11 +154,13 @@ export const Render = ({
   ref?: React.Ref<RenderHandle>;
 }) => {
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
+  const { data: tokenSets = [] } = useQuery(getFileTokenSetsOptions(fileId));
 
   const containerRef = useRef<HTMLDivElement>(null);
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
   const justPannedRef = useRef(false);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [selectedTokenSetId, setSelectedTokenSetId] = useState(() => loadSelectedTokenSet(fileId));
   const [isSpacePressed, dispatchSpace] = useReducer(
     (_state: boolean, next: boolean) => next,
     false,
@@ -65,6 +168,23 @@ export const Render = ({
   const [isPanning, setIsPanning] = useState(false);
   const [hoveredShapeId, setHoveredShapeId] = useState<string | undefined>(undefined);
   const unitFormat = useInspectorPrefs((s) => s.unitFormat);
+  const selectedTokenSet = useMemo(
+    () => tokenSets.find((set) => set.id === selectedTokenSetId),
+    [selectedTokenSetId, tokenSets],
+  );
+
+  useEffect(() => {
+    setSelectedTokenSetId(loadSelectedTokenSet(fileId));
+  }, [fileId]);
+
+  useEffect(() => {
+    if (tokenSets.length === 0) return;
+    if (!tokenSets.some((set) => set.id === selectedTokenSetId)) {
+      const next = defaultTokenSetId(tokenSets);
+      setSelectedTokenSetId(next);
+      saveSelectedTokenSet(fileId, next);
+    }
+  }, [fileId, selectedTokenSetId, tokenSets]);
 
   useLayoutEffect(() => {
     const el = containerRef.current;
@@ -181,6 +301,7 @@ export const Render = ({
       <title>{data.name}</title>
       {data.fontsCss && <style>{data.fontsCss}</style>}
       {data.tokensCss && <style>{data.tokensCss}</style>}
+      {selectedTokenSet?.css && <style>{selectedTokenSet.css}</style>}
 
       <div
         ref={containerRef}
@@ -201,6 +322,14 @@ export const Render = ({
           if (e.key === 'Escape') onShapeSelect?.(undefined);
         }}
       >
+        <TokenSetPicker
+          value={selectedTokenSetId}
+          tokenSets={tokenSets}
+          onChange={(value) => {
+            setSelectedTokenSetId(value);
+            saveSelectedTokenSet(fileId, value);
+          }}
+        />
         {initialTransform !== undefined && (
           <TransformWrapper
             key={pageId}
