@@ -9,7 +9,7 @@ import {
   type ShapeCodeStyling,
 } from '@penpot-tools/converter/shape-code';
 import { readSemanticsFromDisk } from '@penpot-tools/converter/semantics-store';
-import type { Shape } from '@penpot-tools/converter/types';
+import type { Page, Shape, ShapeType } from '@penpot-tools/converter/types';
 import { fetchPage, getPenpotBase, imageUrlFor } from './penpot-api.ts';
 
 /** Compact list of (family, weight, italic) tuples used by the page. Used to
@@ -256,10 +256,39 @@ export interface OverviewNode {
   id: string;
   name: string;
   type: string;
+  x: number;
+  y: number;
   width: number;
   height: number;
+  childCount: number;
+  descendantCount: number;
   text?: string;
-  children?: OverviewNode[];
+  layout?: string;
+  flags?: string[];
+}
+
+/** Compact recursive node used by the page tree. Bounds are [x, y, width, height]. */
+export interface PageTreeNode {
+  id: string;
+  name: string;
+  type: ShapeType | 'page';
+  bounds?: [number, number, number, number];
+  childCount: number;
+  descendantCount: number;
+  text?: string;
+  layout?: string;
+  flags?: string[];
+  childrenOmitted?: number;
+  children?: PageTreeNode[];
+}
+
+export interface OverviewMatch extends OverviewNode {
+  parentId: string;
+  /** Name-based breadcrumb. IDs remain the stable lookup key. */
+  path: string;
+  componentId?: string;
+  mediaId?: string;
+  tokens?: string[];
 }
 
 export interface PageOverview {
@@ -267,10 +296,33 @@ export interface PageOverview {
   pageId: string;
   fileId: string;
   totalShapes: number;
-  topLevelBoards: OverviewNode[];
+  typeCounts: Partial<Record<ShapeType, number>>;
+  commonNames: { name: string; count: number }[];
+  tree?: PageTreeNode;
+  treeMeta?: {
+    maxDepth: number;
+    maxNodes: number;
+    returnedNodes: number;
+    totalNodes: number;
+    truncated: boolean;
+    truncatedByDepth: boolean;
+    truncatedByNodeLimit: boolean;
+  };
   fontsUsed: string[];
   tokenSummary: { name: string; category: string; usageCount: number }[];
+  search?: {
+    query?: string;
+    queryFields?: OverviewQueryField[];
+    types?: ShapeType[];
+    scopeId?: string;
+    matched: number;
+    returned: number;
+    truncated: boolean;
+  };
+  matches?: OverviewMatch[];
 }
+
+export type OverviewQueryField = 'name' | 'text' | 'path';
 
 /** Truncate to N chars and append `…` so the response stays compact. */
 function truncate(text: string, max: number): string {
@@ -293,77 +345,244 @@ function collectText(shape: Shape, max: number): string | undefined {
   return joined ? truncate(joined, max) : undefined;
 }
 
-const DEFAULT_OVERVIEW_DEPTH = 1;
+const DEFAULT_TREE_DEPTH = 4;
+const DEFAULT_TREE_MAX_NODES = 500;
 const TEXT_PREVIEW_CHARS = 80;
 
-function buildOverview(
-  objects: Record<string, Shape>,
-  id: string,
-  depth: number,
-  maxDepth: number,
-): OverviewNode | null {
-  const shape = objects[id];
-  if (!shape) return null;
-  const childIds: string[] =
-    'shapes' in shape && Array.isArray((shape as Shape & { shapes?: unknown }).shapes)
-      ? (shape as Shape & { shapes: string[] }).shapes
-      : [];
+function childIds(shape: Shape): string[] {
+  return 'shapes' in shape && Array.isArray(shape.shapes) ? shape.shapes : [];
+}
 
+function descendantCount(objects: Record<string, Shape>, shape: Shape): number {
+  let count = 0;
+  const visit = (id: string): void => {
+    const child = objects[id];
+    if (!child) return;
+    count += 1;
+    childIds(child).forEach(visit);
+  };
+  childIds(shape).forEach(visit);
+  return count;
+}
+
+function shapeFlags(shape: Shape): string[] | undefined {
+  const flags: string[] = [];
+  if (shape.hidden) flags.push('hidden');
+  if (shape.locked) flags.push('locked');
+  if (shape.blocked) flags.push('blocked');
+  if (shape.componentRoot) flags.push('component-root');
+  if (shape.mainInstance) flags.push('main-instance');
+  if (shape.remoteSynced) flags.push('remote-synced');
+  return flags.length > 0 ? flags : undefined;
+}
+
+function shapeLayout(shape: Shape): string | undefined {
+  if (shape.type !== 'frame' || !shape.layoutType) return undefined;
+  return shape.layoutType === 'flex' ? `flex:${shape.layoutFlexDir ?? 'row'}` : 'grid';
+}
+
+function baseOverviewNode(objects: Record<string, Shape>, shape: Shape): OverviewNode {
+  const children = childIds(shape);
   const node: OverviewNode = {
     id: shape.id,
     name: shape.name,
     type: shape.type,
+    x: Math.round(shape.selrect.x),
+    y: Math.round(shape.selrect.y),
     width: Math.round(shape.selrect.width),
     height: Math.round(shape.selrect.height),
+    childCount: children.length,
+    descendantCount: descendantCount(objects, shape),
   };
   const text = collectText(shape, TEXT_PREVIEW_CHARS);
   if (text) node.text = text;
-  if (depth < maxDepth && childIds.length > 0) {
-    const children = childIds.flatMap(
-      (cid) => buildOverview(objects, cid, depth + 1, maxDepth) ?? [],
-    );
-    if (children.length > 0) node.children = children;
+  const layout = shapeLayout(shape);
+  if (layout) node.layout = layout;
+  const flags = shapeFlags(shape);
+  if (flags) node.flags = flags;
+  return node;
+}
+
+interface TreeBuildState {
+  returnedNodes: number;
+  truncatedByDepth: boolean;
+  truncatedByNodeLimit: boolean;
+}
+
+function buildTreeNode(
+  objects: Record<string, Shape>,
+  id: string,
+  depth: number,
+  maxDepth: number,
+  maxNodes: number,
+  state: TreeBuildState,
+): PageTreeNode | null {
+  if (state.returnedNodes >= maxNodes) {
+    state.truncatedByNodeLimit = true;
+    return null;
+  }
+  const shape = objects[id];
+  if (!shape) return null;
+  state.returnedNodes += 1;
+  const childrenIds = childIds(shape);
+  const node: PageTreeNode = {
+    id: shape.id,
+    name: shape.name,
+    type: shape.type,
+    bounds: [
+      Math.round(shape.selrect.x),
+      Math.round(shape.selrect.y),
+      Math.round(shape.selrect.width),
+      Math.round(shape.selrect.height),
+    ],
+    childCount: childrenIds.length,
+    descendantCount: descendantCount(objects, shape),
+  };
+  const text = collectText(shape, TEXT_PREVIEW_CHARS);
+  if (text) node.text = text;
+  const layout = shapeLayout(shape);
+  if (layout) node.layout = layout;
+  const flags = shapeFlags(shape);
+  if (flags) node.flags = flags;
+
+  if (childrenIds.length === 0) return node;
+  if (depth >= maxDepth) {
+    node.childrenOmitted = childrenIds.length;
+    state.truncatedByDepth = true;
+    return node;
+  }
+
+  const children: PageTreeNode[] = [];
+  for (const childId of childrenIds) {
+    const child = buildTreeNode(objects, childId, depth + 1, maxDepth, maxNodes, state);
+    if (child) children.push(child);
+    else if (state.returnedNodes >= maxNodes) break;
+  }
+  if (children.length > 0) node.children = children;
+  if (children.length < childrenIds.length) {
+    node.childrenOmitted = childrenIds.length - children.length;
+    state.truncatedByNodeLimit = true;
   }
   return node;
 }
 
 export interface OverviewOptions {
-  /**
-   * Tree depth for `topLevelBoards`. Defaults to 1 (only the boards themselves,
-   * no children). Use a larger value when you need to reason about nested
-   * structure.
-   */
-  depth?: number;
-  /**
-   * When true, return only counts / fonts / token summary — no `topLevelBoards`
-   * tree. Cheapest possible response for "what's on this page roughly?".
-   */
-  summary?: boolean;
+  /** Maximum tree depth. Page root is depth 0; top-level canvas nodes are depth 1. */
+  maxDepth?: number;
+  /** Hard cap on shape nodes in the tree, independent of depth. */
+  maxNodes?: number;
+  /** Set false for a search-only follow-up call. Defaults to true. */
+  includeTree?: boolean;
+  /** Case-insensitive AND search across the selected query fields. */
+  query?: string;
+  /** Fields searched by `query`. Defaults to layer name and text. */
+  queryFields?: OverviewQueryField[];
+  /** Return only these Penpot node types. */
+  types?: ShapeType[];
+  /** Limit search to this node and its descendants. */
+  scopeId?: string;
+  /** Maximum number of flat search matches returned. Defaults to 50. */
+  maxResults?: number;
 }
 
-export async function getPageOverview(
-  token: string,
+function normaliseFontFamily(value: string): string {
+  return value.trim().replace(/^(["'])(.*)\1$/, '$2');
+}
+
+function collectDocumentOrder(objects: Record<string, Shape>, root: Shape | undefined): string[] {
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+  const visit = (id: string): void => {
+    if (seen.has(id)) return;
+    const shape = objects[id];
+    if (!shape) return;
+    seen.add(id);
+    ordered.push(id);
+    childIds(shape).forEach(visit);
+  };
+  if (root) childIds(root).forEach(visit);
+  for (const id of Object.keys(objects)) {
+    if (id !== root?.id) visit(id);
+  }
+  return ordered;
+}
+
+function ancestorNames(objects: Record<string, Shape>, shape: Shape, rootId?: string): string[] {
+  const names: string[] = [];
+  const seen = new Set<string>([shape.id]);
+  let parentId: string | undefined = shape.parentId;
+  while (parentId && parentId !== rootId && !seen.has(parentId)) {
+    seen.add(parentId);
+    const parent: Shape | undefined = objects[parentId];
+    if (!parent) break;
+    names.unshift(parent.name);
+    parentId = parent.parentId;
+  }
+  return names;
+}
+
+function tokenNames(shape: Shape): string[] | undefined {
+  if (!shape.appliedTokens) return undefined;
+  const names = [
+    ...new Set(
+      Object.values(shape.appliedTokens).filter((v): v is string => typeof v === 'string'),
+    ),
+  ];
+  return names.length > 0 ? names.sort() : undefined;
+}
+
+function buildMatch(objects: Record<string, Shape>, shape: Shape, rootId?: string): OverviewMatch {
+  const node = baseOverviewNode(objects, shape);
+  const match: OverviewMatch = {
+    ...node,
+    parentId: shape.parentId,
+    path: [...ancestorNames(objects, shape, rootId), shape.name].join(' > '),
+  };
+  if (shape.componentId) match.componentId = shape.componentId;
+  if (shape.type === 'image' && shape.metadata?.id) match.mediaId = shape.metadata.id;
+  const tokens = tokenNames(shape);
+  if (tokens) match.tokens = tokens;
+  return match;
+}
+
+/** Pure page summariser, exported so the context-budget behaviour is unit-testable. */
+export function buildPageOverview(
+  page: Page,
   fileId: string,
   pageId: string,
   options: OverviewOptions = {},
-): Promise<PageOverview> {
-  const depth = Math.max(0, Math.min(options.depth ?? DEFAULT_OVERVIEW_DEPTH, 6));
-  const page = await fetchPage(token, fileId, pageId);
+): PageOverview {
   const root = Object.values(page.objects).find((s) => s.parentId === s.id);
-  const rootChildIds: string[] =
-    root && 'shapes' in root && Array.isArray((root as Shape & { shapes?: unknown }).shapes)
-      ? (root as Shape & { shapes: string[] }).shapes
-      : [];
-  const topLevelBoards = options.summary
-    ? []
-    : rootChildIds.flatMap((id) => buildOverview(page.objects, id, 0, depth) ?? []);
+  const rootChildIds = root ? childIds(root) : [];
 
-  const tokens = extractAllTokens(page.objects);
-  const tokenSummary = tokens
-    .slice()
-    .sort((a, b) => b.usageCount - a.usageCount)
-    .slice(0, 30)
-    .map((t) => ({ name: t.name, category: t.category, usageCount: t.usageCount }));
+  const typeCounts: Partial<Record<ShapeType, number>> = {};
+  const nameCounts = new Map<string, number>();
+  for (const shape of Object.values(page.objects)) {
+    if (shape.id === root?.id) continue;
+    typeCounts[shape.type] = (typeCounts[shape.type] ?? 0) + 1;
+    nameCounts.set(shape.name, (nameCounts.get(shape.name) ?? 0) + 1);
+  }
+  const commonNames = [...nameCounts]
+    .filter(([, count]) => count > 1)
+    .sort(([nameA, countA], [nameB, countB]) => countB - countA || nameA.localeCompare(nameB))
+    .slice(0, 15)
+    .map(([name, count]) => ({ name, count }));
+
+  const aggregateTokens = new Map<string, { name: string; category: string; usageCount: number }>();
+  for (const token of extractAllTokens(page.objects)) {
+    const key = `${token.category}\0${token.name}`;
+    const current = aggregateTokens.get(key);
+    if (current) current.usageCount += token.usageCount;
+    else
+      aggregateTokens.set(key, {
+        name: token.name,
+        category: token.category,
+        usageCount: token.usageCount,
+      });
+  }
+  const tokenSummary = [...aggregateTokens.values()]
+    .sort((a, b) => b.usageCount - a.usageCount || a.name.localeCompare(b.name))
+    .slice(0, 30);
 
   const fontSet = new Set<string>();
   for (const shape of Object.values(page.objects)) {
@@ -372,19 +591,138 @@ export async function getPageOverview(
     const walk = (node: unknown): void => {
       if (!node || typeof node !== 'object') return;
       const n = node as { fontFamily?: string; children?: unknown[] };
-      if (typeof n.fontFamily === 'string' && n.fontFamily) fontSet.add(n.fontFamily);
+      if (typeof n.fontFamily === 'string' && n.fontFamily) {
+        fontSet.add(normaliseFontFamily(n.fontFamily));
+      }
       if (Array.isArray(n.children)) n.children.forEach(walk);
     };
     walk(content);
   }
 
-  return {
+  const result: PageOverview = {
     pageName: page.name,
     pageId,
     fileId,
-    totalShapes: Object.keys(page.objects).length,
-    topLevelBoards,
-    fontsUsed: Array.from(fontSet).sort(),
+    totalShapes: Math.max(0, Object.keys(page.objects).length - (root ? 1 : 0)),
+    typeCounts,
+    commonNames,
+    fontsUsed: Array.from(fontSet).filter(Boolean).sort(),
     tokenSummary,
   };
+
+  if (options.includeTree !== false) {
+    const maxDepth = Math.max(0, Math.min(options.maxDepth ?? DEFAULT_TREE_DEPTH, 8));
+    const maxNodes = Math.max(1, Math.min(options.maxNodes ?? DEFAULT_TREE_MAX_NODES, 2000));
+    const state: TreeBuildState = {
+      returnedNodes: 0,
+      truncatedByDepth: false,
+      truncatedByNodeLimit: false,
+    };
+    const tree: PageTreeNode = {
+      id: pageId,
+      name: page.name,
+      type: 'page',
+      childCount: rootChildIds.length,
+      descendantCount: result.totalShapes,
+    };
+    if (rootChildIds.length > 0) {
+      if (maxDepth === 0) {
+        tree.childrenOmitted = rootChildIds.length;
+        state.truncatedByDepth = true;
+      } else {
+        const children: PageTreeNode[] = [];
+        for (const childId of rootChildIds) {
+          const child = buildTreeNode(page.objects, childId, 1, maxDepth, maxNodes, state);
+          if (child) children.push(child);
+          else if (state.returnedNodes >= maxNodes) break;
+        }
+        if (children.length > 0) tree.children = children;
+        if (children.length < rootChildIds.length) {
+          tree.childrenOmitted = rootChildIds.length - children.length;
+          state.truncatedByNodeLimit = true;
+        }
+      }
+    }
+    result.tree = tree;
+    result.treeMeta = {
+      maxDepth,
+      maxNodes,
+      returnedNodes: state.returnedNodes,
+      totalNodes: result.totalShapes,
+      truncated: state.returnedNodes < result.totalShapes,
+      truncatedByDepth: state.truncatedByDepth,
+      truncatedByNodeLimit: state.truncatedByNodeLimit,
+    };
+  }
+
+  const query = options.query?.trim();
+  const queryFields: OverviewQueryField[] = options.queryFields?.length
+    ? [...new Set(options.queryFields)]
+    : ['name', 'text'];
+  const types = options.types?.length ? [...new Set(options.types)] : undefined;
+  const searchRequested = !!query || !!types || !!options.scopeId;
+  if (!searchRequested) return result;
+
+  if (options.scopeId && !page.objects[options.scopeId]) {
+    throw new Error(
+      `Overview scope ${options.scopeId} not found on page ${pageId}. Call get_page_overview without scopeId to discover valid node ids.`,
+    );
+  }
+
+  const documentOrder = collectDocumentOrder(page.objects, root);
+  let allowedIds: Set<string> | undefined;
+  if (options.scopeId) {
+    allowedIds = new Set<string>();
+    const visit = (id: string): void => {
+      const shape = page.objects[id];
+      if (!shape || allowedIds!.has(id)) return;
+      allowedIds!.add(id);
+      childIds(shape).forEach(visit);
+    };
+    visit(options.scopeId);
+  }
+  const queryTerms = query?.toLocaleLowerCase().split(/\s+/).filter(Boolean) ?? [];
+  const typeSet = types ? new Set<ShapeType>(types) : undefined;
+  const matchedShapes = documentOrder
+    .filter((id) => !allowedIds || allowedIds.has(id))
+    .map((id) => page.objects[id]!)
+    .filter((shape) => !typeSet || typeSet.has(shape.type))
+    .filter((shape) => {
+      if (queryTerms.length === 0) return true;
+      const fields: Record<OverviewQueryField, string> = {
+        name: shape.name,
+        text: collectText(shape, Number.POSITIVE_INFINITY) ?? '',
+        path: [...ancestorNames(page.objects, shape, root?.id), shape.name].join(' > '),
+      };
+      const haystack = queryFields
+        .map((field) => fields[field])
+        .join(' ')
+        .toLocaleLowerCase();
+      return queryTerms.every((term) => haystack.includes(term));
+    });
+  const maxResults = Math.max(1, Math.min(options.maxResults ?? 50, 200));
+  const matches = matchedShapes
+    .slice(0, maxResults)
+    .map((shape) => buildMatch(page.objects, shape, root?.id));
+  result.search = {
+    ...(query ? { query } : {}),
+    ...(query ? { queryFields } : {}),
+    ...(types ? { types } : {}),
+    ...(options.scopeId ? { scopeId: options.scopeId } : {}),
+    matched: matchedShapes.length,
+    returned: matches.length,
+    truncated: matchedShapes.length > matches.length,
+  };
+  result.matches = matches;
+  return result;
+}
+
+export async function getPageOverview(
+  token: string,
+  fileId: string,
+  pageId: string,
+  options: OverviewOptions = {},
+): Promise<PageOverview> {
+  const page = await fetchPage(token, fileId, pageId);
+  return buildPageOverview(page, fileId, pageId, options);
 }

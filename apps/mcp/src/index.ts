@@ -45,7 +45,7 @@ file/page/shape selection is tracked by the viewer — call
 
 Read tools: \`get_html\` (clean HTML/JSX with extracted CSS classes or
 Tailwind utilities + optional inline screenshot), \`get_page_overview\`
-(boards/fonts/top tokens), \`get_page_tokens\` (full tokens + \`:root\`
+(bounded page tree + filtered node lookup), \`get_page_tokens\` (full tokens + \`:root\`
 CSS), \`get_screenshot\` (image only), \`list_assets\` / \`download_asset\`
 (image media). \`get_html\` defaults to \`format:'html'\` +
 \`styling:'css'\` (class names slugified from layer names — "Icons /
@@ -80,7 +80,7 @@ viewer — call \`get_current_selection\` if unsure; do NOT ask the user for IDs
 
 Read tools: \`get_html\` (clean HTML/JSX with extracted CSS classes or
 Tailwind utilities + optional inline screenshot), \`get_page_overview\`
-(boards/fonts/top tokens), \`get_page_tokens\` (full tokens + \`:root\`
+(bounded page tree + filtered node lookup), \`get_page_tokens\` (full tokens + \`:root\`
 CSS), \`get_screenshot\` (image only), \`list_assets\` / \`download_asset\`
 (image media). \`get_html\` defaults to \`format:'html'\` +
 \`styling:'css'\` (class names slugified from layer names — "Icons /
@@ -438,44 +438,128 @@ server.registerTool(
 server.registerTool(
   'get_page_overview',
   {
-    title: 'Structural overview of the current page',
+    title: 'Bounded page tree and node finder',
     description:
-      'Page name, board count, fonts, and top tokens. Defaults to top-level boards only — pass depth>1 to recurse, or summary=true to skip the tree entirely.',
+      'Returns the Penpot page as a recursive, context-bounded tree so callers can understand parent/child structure and identify nodes by stable id, name, type, bounds, text preview, layout, and flags. maxDepth bounds recursion (page root is depth 0) and maxNodes provides a hard response cap; treeMeta and childrenOmitted report truncation. Optional query/types/scopeId filters also return a flat matches list. Set includeTree=false only for search-only follow-up calls. Use get_html with a returned id for full design detail.',
     inputSchema: {
-      fileId: z.string().uuid().optional(),
-      pageId: z.string().uuid().optional(),
-      depth: z
+      fileId: z
+        .string()
+        .uuid()
+        .optional()
+        .describe("Override the file id; defaults to the viewer's current selection."),
+      pageId: z
+        .string()
+        .uuid()
+        .optional()
+        .describe("Override the page id; defaults to the viewer's current selection."),
+      maxDepth: z
         .number()
         .int()
         .min(0)
-        .max(6)
+        .max(8)
         .optional()
-        .describe('Tree depth (default 1: top-level boards only).'),
-      summary: z
+        .describe(
+          'Maximum recursive depth. The page root is depth 0 and top-level canvas nodes are depth 1. Default 4; maximum 8.',
+        ),
+      maxNodes: z
+        .number()
+        .int()
+        .min(1)
+        .max(2000)
+        .optional()
+        .describe('Hard cap on shape nodes returned in the tree. Default 500; maximum 2000.'),
+      includeTree: z
         .boolean()
         .optional()
-        .describe('Skip the boards tree entirely. Cheapest response.'),
+        .describe('Include the recursive page tree. Default true; use false for search-only follow-ups.'),
+      query: z
+        .string()
+        .min(1)
+        .max(200)
+        .optional()
+        .describe(
+          'Case-insensitive terms to find. All whitespace-separated terms must match within the selected queryFields.',
+        ),
+      queryFields: z
+        .array(z.enum(['name', 'text', 'path']))
+        .min(1)
+        .max(3)
+        .optional()
+        .describe(
+          'Fields searched by query. Default ["name","text"]. Add "path" to match ancestor layer names.',
+        ),
+      types: z
+        .array(
+          z.enum(['frame', 'group', 'rect', 'circle', 'path', 'bool', 'image', 'text', 'svg-raw']),
+        )
+        .min(1)
+        .max(9)
+        .optional()
+        .describe(
+          'Only return matching Penpot node types, for example ["text"] or ["frame","group"].',
+        ),
+      scopeId: z
+        .string()
+        .optional()
+        .describe(
+          'Search only this node and its descendants. Obtain the id from an overview or earlier search.',
+        ),
+      maxResults: z
+        .number()
+        .int()
+        .min(1)
+        .max(200)
+        .optional()
+        .describe('Maximum flat matches to return. Default 50; hard cap 200.'),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
     },
   },
-  async ({ fileId, pageId, depth, summary }) => {
+  async ({
+    fileId,
+    pageId,
+    maxDepth,
+    maxNodes,
+    includeTree,
+    query,
+    queryFields,
+    types,
+    scopeId,
+    maxResults,
+  }) => {
     const token = await requireToken();
     const page = await resolvePage(fileId, pageId);
     const overview = await getPageOverview(token, page.fileId, page.pageId, {
-      depth,
-      summary,
+      maxDepth,
+      maxNodes,
+      includeTree,
+      query,
+      queryFields,
+      types,
+      scopeId,
+      maxResults,
     });
-    const lines = [
-      `# Page "${overview.pageName}"`,
-      `- shapes: ${overview.totalShapes}, boards: ${overview.topLevelBoards.length}`,
-      `- fonts: ${overview.fontsUsed.join(', ') || '(none)'}`,
-    ];
-    if (!summary) {
-      lines.push('', '## Boards', '```json', JSON.stringify(overview.topLevelBoards), '```');
-    }
-    if (overview.tokenSummary.length > 0) {
-      lines.push('', '## Top tokens', '```json', JSON.stringify(overview.tokenSummary), '```');
-    }
-    return ok(lines.join('\n'));
+    const {
+      pageName,
+      pageId: resolvedPageId,
+      fileId: resolvedFileId,
+      tree,
+      treeMeta,
+      ...indexAndMatches
+    } = overview;
+    return ok(
+      JSON.stringify({
+        pageName,
+        pageId: resolvedPageId,
+        fileId: resolvedFileId,
+        ...(tree ? { tree, treeMeta } : {}),
+        ...indexAndMatches,
+      }),
+    );
   },
 );
 
