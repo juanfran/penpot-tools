@@ -32,9 +32,13 @@ export function PageHeader({
 }) {
   const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
 
-  const penpotParams = new URLSearchParams({ 'file-id': fileId, 'page-id': pageId });
+  const penpotParams = new URLSearchParams({
+    screen: 'workspace',
+    'file-id': fileId,
+    'page-id': pageId,
+  });
   if (teamId) penpotParams.set('team-id', teamId);
-  const penpotUrl = `https://design.penpot.app/#/workspace?${penpotParams.toString()}`;
+  const penpotUrl = `https://design.penpot.app/?${penpotParams.toString()}`;
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4">

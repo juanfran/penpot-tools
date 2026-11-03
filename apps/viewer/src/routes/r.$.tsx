@@ -1,29 +1,15 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+import { parsePenpotLocation } from '#/lib/penpot-location';
 
 export const Route = createFileRoute('/r/$')({ component: RedirectPage });
-
-function parsePenpotHash(hash: string) {
-  const queryIndex = hash.indexOf('?');
-  if (queryIndex === -1) return null;
-  const params = new URLSearchParams(hash.slice(queryIndex + 1));
-  const fileId = params.get('file-id');
-  const pageId = params.get('page-id');
-  if (!fileId || !pageId) return null;
-  return {
-    fileId,
-    pageId,
-    teamId: params.get('team-id') ?? undefined,
-    shapeId: params.get('board-id') ?? undefined,
-  };
-}
 
 function RedirectPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const parsed = parsePenpotHash(window.location.hash);
+    const parsed = parsePenpotLocation(window.location);
     if (!parsed) {
       setError('Could not find file-id and page-id in the Penpot URL.');
       return;
