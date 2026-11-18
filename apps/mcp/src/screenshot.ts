@@ -38,11 +38,17 @@ img, video { max-width: 100%; height: auto; }
 [hidden] { display: none; }
 `.trim();
 
+// Headless Chromium hints fonts by default, which rounds every glyph advance to
+// a whole pixel. Penpot lays text out with fractional advances, so a line that
+// fits its box in Penpot (e.g. 291.1px in 294px) measures 298px here and wraps.
+// Disabling hinting keeps advances fractional and line breaks match Penpot.
+export const CHROMIUM_ARGS = ['--font-render-hinting=none'];
+
 let browserPromise: Promise<Browser> | null = null;
 
 function getBrowser(): Promise<Browser> {
   if (!browserPromise) {
-    browserPromise = chromium.launch({ headless: true });
+    browserPromise = chromium.launch({ headless: true, args: CHROMIUM_ARGS });
     const cleanup = () => {
       const p = browserPromise;
       browserPromise = null;
@@ -106,10 +112,7 @@ export type McpContentBlock = McpTextBlock | McpImageBlock;
  * the optional `includeScreenshot` path on the write tools so they format the
  * same way.
  */
-export function buildScreenshotContent(
-  shot: ScreenshotOutput,
-  caption: string,
-): McpContentBlock[] {
+export function buildScreenshotContent(shot: ScreenshotOutput, caption: string): McpContentBlock[] {
   const sizeNote = shot.trimmed
     ? `${caption} (${shot.width}×${shot.height} px — trimmed from ${shot.fullWidth}×${shot.fullHeight}; pass maxWidth/maxHeight to see more)`
     : `${caption} (${shot.width}×${shot.height} px)`;
@@ -183,7 +186,10 @@ export async function renderScreenshot(input: ScreenshotInput): Promise<Screensh
       for (const el of Array.from(document.querySelectorAll<HTMLElement>('*'))) {
         const cs = getComputedStyle(el);
         if (!cs.fontFamily) continue;
-        const family = cs.fontFamily.split(',')[0]!.trim().replace(/^['"]|['"]$/g, '');
+        const family = cs.fontFamily
+          .split(',')[0]!
+          .trim()
+          .replace(/^['"]|['"]$/g, '');
         if (!family) continue;
         const weight = cs.fontWeight || '400';
         const style = cs.fontStyle || 'normal';
