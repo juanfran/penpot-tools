@@ -63,6 +63,41 @@ export function textLeafColorStyle(
   return decl.color(cssColor);
 }
 
+const DEFAULT_LINE_HEIGHT = 1.2;
+
+// Font metrics that size the paragraph's CSS line-box "strut".
+const STRUT_KEYS = [
+  'fontId',
+  'fontFamily',
+  'fontSize',
+  'fontWeight',
+  'fontStyle',
+  'lineHeight',
+] as const;
+
+/**
+ * Picks the leaf whose font metrics the `<p>` should carry.
+ *
+ * Penpot keeps stale typography on the paragraph node (e.g. `fontSize: 21`
+ * while every leaf is 16px) and ignores it when laying out lines — only the
+ * leaves size each line. In CSS, though, the `<p>`'s own font-size and
+ * line-height define a strut that every line box must contain, so a stale
+ * 21px paragraph inflates 16px lines and the text overflows its box.
+ *
+ * Returns the text-bearing leaf (any leaf for an empty paragraph) with the
+ * smallest line box, so the strut never makes a line taller than its leaves.
+ */
+function strutLeaf(para: ParagraphNode): TextLeaf {
+  const withText = para.children.filter((leaf) => leaf.text !== '');
+  const candidates = withText.length > 0 ? withText : para.children;
+  const lineBox = (leaf: TextLeaf): number => {
+    const size = Number(leaf.fontSize ?? para.fontSize);
+    const lh = Number(leaf.lineHeight ?? para.lineHeight ?? DEFAULT_LINE_HEIGHT);
+    return Number.isFinite(size) && size > 0 ? size * lh : Infinity;
+  };
+  return candidates.reduce((best, leaf) => (lineBox(leaf) < lineBox(best) ? leaf : best));
+}
+
 export function renderParagraph(
   para: ParagraphNode,
   fillTokenName?: string,
@@ -70,6 +105,10 @@ export function renderParagraph(
   fallbackColor?: string,
 ): string {
   const paraLeaf: TextLeaf = { text: '', ...para };
+  const strut = strutLeaf(para);
+  for (const key of STRUT_KEYS) {
+    if (strut[key] !== undefined) paraLeaf[key] = strut[key];
+  }
   const paraBaseStyle = textLeafToStyles(paraLeaf);
   const firstLeaf = para.children[0];
   const paraColorStyle = firstLeaf
@@ -155,9 +194,11 @@ export function renderText(shape: TextShape, ctx: ConverterContext): string {
           ' ',
         )
       : verticalAlign === 'bottom'
-        ? [decl.display('flex'), decl.flexDirection('column'), decl.justifyContent('flex-end')].join(
-            ' ',
-          )
+        ? [
+            decl.display('flex'),
+            decl.flexDirection('column'),
+            decl.justifyContent('flex-end'),
+          ].join(' ')
         : '';
 
   const style = ctx._parentIsLayout

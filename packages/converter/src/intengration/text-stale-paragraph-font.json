@@ -1,0 +1,551 @@
+{
+  "id": "33945807-1d98-801e-8008-9cd6adb75073",
+  "name": "Chip",
+  "objects": {
+    "00000000-0000-0000-0000-000000000000": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "name": "Root Frame",
+      "type": "frame",
+      "x": 0,
+      "y": 0,
+      "width": 0.01,
+      "height": 0.01,
+      "rotation": 0,
+      "selrect": {
+        "x": 0,
+        "y": 0,
+        "width": 0.01,
+        "height": 0.01,
+        "x1": 0,
+        "y1": 0,
+        "x2": 0.01,
+        "y2": 0.01
+      },
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0.01,
+          "y": 0
+        },
+        {
+          "x": 0.01,
+          "y": 0.01
+        },
+        {
+          "x": 0,
+          "y": 0.01
+        }
+      ],
+      "transform": {
+        "a": 1,
+        "b": 0,
+        "c": 0,
+        "d": 1,
+        "e": 0,
+        "f": 0
+      },
+      "transformInverse": {
+        "a": 1,
+        "b": 0,
+        "c": 0,
+        "d": 1,
+        "e": 0,
+        "f": 0
+      },
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "flipX": null,
+      "flipY": null,
+      "hideFillOnExport": false,
+      "r2": 0,
+      "proportionLock": false,
+      "r3": 0,
+      "r1": 0,
+      "strokes": [],
+      "proportion": 1,
+      "r4": 0,
+      "fills": [
+        {
+          "fillColor": "#FFFFFF",
+          "fillOpacity": 1
+        }
+      ],
+      "shapes": ["0bd8b953-af75-808e-8008-ad4bc037b969"]
+    },
+    "0bd8b953-af75-808e-8008-ad4bc037b969": {
+      "id": "0bd8b953-af75-808e-8008-ad4bc037b969",
+      "name": "Board",
+      "type": "frame",
+      "x": 10.000001733303893,
+      "y": -3.9999998807906962,
+      "width": 419.99999626160155,
+      "height": 119.00000706066201,
+      "rotation": 0,
+      "selrect": {
+        "x": 10.000001733303893,
+        "y": -3.9999998807906962,
+        "width": 419.99999626160155,
+        "height": 119.00000706066201,
+        "x1": 10.000001733303893,
+        "y1": -3.9999998807906962,
+        "x2": 429.99999799490547,
+        "y2": 115.00000717987132
+      },
+      "points": [
+        {
+          "x": 10.000001733303865,
+          "y": -3.9999998807906962
+        },
+        {
+          "x": 429.99999799490547,
+          "y": -3.9999998807906962
+        },
+        {
+          "x": 429.99999799490547,
+          "y": 115.00000717987132
+        },
+        {
+          "x": 10.000001733303865,
+          "y": 115.00000717987132
+        }
+      ],
+      "transform": {
+        "a": 1,
+        "b": 0,
+        "c": 0,
+        "d": 1,
+        "e": 0,
+        "f": 0
+      },
+      "transformInverse": {
+        "a": 1,
+        "b": 0,
+        "c": 0,
+        "d": 1,
+        "e": 0,
+        "f": 0
+      },
+      "parentId": "00000000-0000-0000-0000-000000000000",
+      "frameId": "00000000-0000-0000-0000-000000000000",
+      "flipX": null,
+      "flipY": null,
+      "hideFillOnExport": false,
+      "layoutGapType": "multiple",
+      "layoutPadding": {
+        "p1": 12,
+        "p2": 16,
+        "p3": 12,
+        "p4": 16
+      },
+      "layoutWrapType": "nowrap",
+      "layout": "flex",
+      "hideInViewer": true,
+      "layoutAlignItems": "start",
+      "layoutPaddingType": "simple",
+      "r2": 8,
+      "showContent": true,
+      "layoutItemHSizing": "auto",
+      "proportionLock": false,
+      "layoutGap": {
+        "rowGap": 12,
+        "columnGap": 0
+      },
+      "layoutItemVSizing": "auto",
+      "r3": 8,
+      "layoutJustifyContent": "start",
+      "constraintsV": "top",
+      "constraintsH": "left",
+      "r1": 8,
+      "layoutFlexDir": "column",
+      "layoutAlignContent": "stretch",
+      "strokes": [
+        {
+          "strokeStyle": "solid",
+          "strokeAlignment": "inner",
+          "strokeWidth": 1,
+          "strokeColor": "#d900ea",
+          "strokeOpacity": 0.5
+        }
+      ],
+      "proportion": 1,
+      "r4": 8,
+      "fills": [
+        {
+          "fillColor": "#fef7ff",
+          "fillOpacity": 1
+        }
+      ],
+      "shapes": ["0bd8b953-af75-808e-8008-ad4bc037b96a"]
+    },
+    "0bd8b953-af75-808e-8008-ad4bc037b96a": {
+      "id": "0bd8b953-af75-808e-8008-ad4bc037b96a",
+      "name": "Due to a Penpot bug, this dashed line could become large, but the values should be:Dash: 2, Gap: 3",
+      "type": "text",
+      "x": 25.999999850197582,
+      "y": 7.999999743284022,
+      "width": 387.9999997738504,
+      "height": 95.00000238415244,
+      "rotation": 0,
+      "selrect": {
+        "x": 25.999999850197582,
+        "y": 7.999999743284022,
+        "width": 387.9999997738504,
+        "height": 95.00000238415244,
+        "x1": 25.999999850197582,
+        "y1": 7.999999743284022,
+        "x2": 413.999999624048,
+        "y2": 103.00000212743646
+      },
+      "points": [
+        {
+          "x": 25.999999850197604,
+          "y": 7.999999743284022
+        },
+        {
+          "x": 413.999999624048,
+          "y": 7.999999743284022
+        },
+        {
+          "x": 413.999999624048,
+          "y": 103.00000212743646
+        },
+        {
+          "x": 25.999999850197604,
+          "y": 103.00000212743646
+        }
+      ],
+      "transform": {
+        "a": 1,
+        "b": 0,
+        "c": 0,
+        "d": 1,
+        "e": 0,
+        "f": 0
+      },
+      "transformInverse": {
+        "a": 1,
+        "b": 0,
+        "c": 0,
+        "d": 1,
+        "e": 0,
+        "f": 0
+      },
+      "parentId": "0bd8b953-af75-808e-8008-ad4bc037b969",
+      "frameId": "0bd8b953-af75-808e-8008-ad4bc037b969",
+      "flipX": null,
+      "flipY": null,
+      "lastResizeDirection": "horizontal",
+      "growType": "auto-height",
+      "content": {
+        "type": "root",
+        "key": "5m16c7zf5l",
+        "children": [
+          {
+            "type": "paragraph-set",
+            "children": [
+              {
+                "lineHeight": "1.2",
+                "fontStyle": "normal",
+                "children": [
+                  {
+                    "fontStyle": "normal",
+                    "textTransform": "none",
+                    "fontId": "gfont-inclusive-sans",
+                    "key": "y7dc0cqrev",
+                    "fontSize": "16",
+                    "fontWeight": "400",
+                    "fontVariantId": "regular",
+                    "textDecoration": "none",
+                    "letterSpacing": "0",
+                    "fills": [
+                      {
+                        "fillColor": "#000",
+                        "fillOpacity": 1
+                      }
+                    ],
+                    "fontFamily": "Inclusive Sans",
+                    "text": "Due to a Penpot bug, this dashed line could become large, but the values should be:"
+                  }
+                ],
+                "textTransform": "none",
+                "textAlign": "left",
+                "fontId": "gfont-inclusive-sans",
+                "key": "dgmqd",
+                "fontSize": "21",
+                "fontWeight": "600",
+                "textDirection": "ltr",
+                "type": "paragraph",
+                "fontVariantId": "600",
+                "textDecoration": "none",
+                "letterSpacing": "0",
+                "fills": [
+                  {
+                    "fillColor": "#d900ea",
+                    "fillOpacity": 1
+                  }
+                ],
+                "fontFamily": "Inclusive Sans"
+              },
+              {
+                "lineHeight": "1.2",
+                "fontStyle": "normal",
+                "children": [
+                  {
+                    "fontStyle": "normal",
+                    "textTransform": "none",
+                    "fontId": "gfont-inclusive-sans",
+                    "key": "1bdqno5uejl",
+                    "fontSize": "16",
+                    "fontWeight": "400",
+                    "fontVariantId": "regular",
+                    "textDecoration": "none",
+                    "letterSpacing": "0",
+                    "fills": [
+                      {
+                        "fillColor": "#000",
+                        "fillOpacity": 1
+                      }
+                    ],
+                    "fontFamily": "Inclusive Sans",
+                    "text": ""
+                  }
+                ],
+                "textTransform": "none",
+                "textAlign": "left",
+                "fontId": "gfont-inclusive-sans",
+                "key": "dl8obg14lt",
+                "fontSize": "16",
+                "fontWeight": "400",
+                "textDirection": "ltr",
+                "type": "paragraph",
+                "fontVariantId": "regular",
+                "textDecoration": "none",
+                "letterSpacing": "0",
+                "fills": [
+                  {
+                    "fillColor": "#000",
+                    "fillOpacity": 1
+                  }
+                ],
+                "fontFamily": "Inclusive Sans"
+              },
+              {
+                "lineHeight": "1.2",
+                "fontStyle": "normal",
+                "children": [
+                  {
+                    "fontStyle": "normal",
+                    "textTransform": "none",
+                    "fontId": "gfont-inclusive-sans",
+                    "key": "1lce3734bdq",
+                    "fontSize": "16",
+                    "fontWeight": "400",
+                    "fontVariantId": "regular",
+                    "textDecoration": "none",
+                    "letterSpacing": "0",
+                    "fills": [
+                      {
+                        "fillColor": "#000",
+                        "fillOpacity": 1
+                      }
+                    ],
+                    "fontFamily": "Inclusive Sans",
+                    "text": "Dash: 2"
+                  }
+                ],
+                "textTransform": "none",
+                "textAlign": "left",
+                "fontId": "gfont-inclusive-sans",
+                "key": "223v86ny2or",
+                "fontSize": "16",
+                "fontWeight": "400",
+                "textDirection": "ltr",
+                "type": "paragraph",
+                "fontVariantId": "regular",
+                "textDecoration": "none",
+                "letterSpacing": "0",
+                "fills": [
+                  {
+                    "fillColor": "#000",
+                    "fillOpacity": 1
+                  }
+                ],
+                "fontFamily": "Inclusive Sans"
+              },
+              {
+                "lineHeight": "1.2",
+                "fontStyle": "normal",
+                "children": [
+                  {
+                    "fontStyle": "normal",
+                    "textTransform": "none",
+                    "fontId": "gfont-inclusive-sans",
+                    "key": "wrquf56vww",
+                    "fontSize": "16",
+                    "fontWeight": "400",
+                    "fontVariantId": "regular",
+                    "textDecoration": "none",
+                    "letterSpacing": "0",
+                    "fills": [
+                      {
+                        "fillColor": "#000",
+                        "fillOpacity": 1
+                      }
+                    ],
+                    "fontFamily": "Inclusive Sans",
+                    "text": "Gap: 3"
+                  }
+                ],
+                "textTransform": "none",
+                "textAlign": "left",
+                "fontId": "gfont-inclusive-sans",
+                "key": "s2qu9u7kre",
+                "fontSize": "0",
+                "fontWeight": "400",
+                "textDirection": "ltr",
+                "type": "paragraph",
+                "fontVariantId": "regular",
+                "textDecoration": "none",
+                "letterSpacing": "0",
+                "fills": [
+                  {
+                    "fillColor": "#000",
+                    "fillOpacity": 1
+                  }
+                ],
+                "fontFamily": "Inclusive Sans"
+              }
+            ]
+          }
+        ],
+        "verticalAlign": "top"
+      },
+      "hideInViewer": false,
+      "layoutItemHSizing": "fix",
+      "positionData": [
+        {
+          "y": 27.760000705718994,
+          "lineHeight": "1.2",
+          "fontStyle": "normal",
+          "typographyRefId": null,
+          "textTransform": "none",
+          "textAlign": "left",
+          "fontId": "gfont-inclusive-sans",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "typographyRefFile": null,
+          "textDirection": "ltr",
+          "width": 389.1499938964844,
+          "fontVariantId": "regular",
+          "textDecoration": "none",
+          "letterSpacing": "0px",
+          "x": 26,
+          "fills": [
+            {
+              "fillColor": "#000",
+              "fillOpacity": 1
+            }
+          ],
+          "direction": "ltr",
+          "fontFamily": "Inclusive Sans",
+          "height": 20.720001220703125,
+          "text": "Due to a Penpot bug, this dashed line could become large, "
+        },
+        {
+          "y": 46.7599983215332,
+          "lineHeight": "1.2",
+          "fontStyle": "normal",
+          "typographyRefId": null,
+          "textTransform": "none",
+          "textAlign": "left",
+          "fontId": "gfont-inclusive-sans",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "typographyRefFile": null,
+          "textDirection": "ltr",
+          "width": 167.1999969482422,
+          "fontVariantId": "regular",
+          "textDecoration": "none",
+          "letterSpacing": "0px",
+          "x": 26,
+          "fills": [
+            {
+              "fillColor": "#000",
+              "fillOpacity": 1
+            }
+          ],
+          "direction": "ltr",
+          "fontFamily": "Inclusive Sans",
+          "height": 20.71999740600586,
+          "text": "but the values should be:"
+        },
+        {
+          "y": 84.76000213623047,
+          "lineHeight": "1.2",
+          "fontStyle": "normal",
+          "typographyRefId": null,
+          "textTransform": "none",
+          "textAlign": "left",
+          "fontId": "gfont-inclusive-sans",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "typographyRefFile": null,
+          "textDirection": "ltr",
+          "width": 48.58000183105469,
+          "fontVariantId": "regular",
+          "textDecoration": "none",
+          "letterSpacing": "0px",
+          "x": 26,
+          "fills": [
+            {
+              "fillColor": "#000",
+              "fillOpacity": 1
+            }
+          ],
+          "direction": "ltr",
+          "fontFamily": "Inclusive Sans",
+          "height": 20.720001220703125,
+          "text": "Dash: 2"
+        },
+        {
+          "y": 103.76000213623047,
+          "lineHeight": "1.2",
+          "fontStyle": "normal",
+          "typographyRefId": null,
+          "textTransform": "none",
+          "textAlign": "left",
+          "fontId": "gfont-inclusive-sans",
+          "fontSize": "16px",
+          "fontWeight": "400",
+          "typographyRefFile": null,
+          "textDirection": "ltr",
+          "width": 42.08000183105469,
+          "fontVariantId": "regular",
+          "textDecoration": "none",
+          "letterSpacing": "0px",
+          "x": 26,
+          "fills": [
+            {
+              "fillColor": "#000",
+              "fillOpacity": 1
+            }
+          ],
+          "direction": "ltr",
+          "fontFamily": "Inclusive Sans",
+          "height": 20.720001220703125,
+          "text": "Gap: 3"
+        }
+      ],
+      "strokes": [],
+      "fills": [
+        {
+          "fillColor": "#000",
+          "fillOpacity": 1
+        }
+      ]
+    }
+  }
+}

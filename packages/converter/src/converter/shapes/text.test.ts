@@ -192,6 +192,57 @@ describe('renderParagraph', () => {
     expect(html).toContain('font-size: 20px;');
   });
 
+  it('takes font metrics from the leaves, not stale paragraph typography', () => {
+    // Repro: Penpot annotation boards whose paragraph node keeps 21px/600
+    // while the only leaf is 16px/400. Penpot ignores the paragraph values;
+    // emitting them on the <p> sets a 25.2px CSS strut that inflates every
+    // 16px line and pushes the last lines out of the auto-height box.
+    const html = renderParagraph(
+      makeParagraph({
+        fontSize: '21',
+        fontWeight: '600',
+        fontFamily: 'Inclusive Sans',
+        lineHeight: '1.2',
+        children: [makeLeaf({ fontSize: '16', fontWeight: '400', fontFamily: 'Inclusive Sans' })],
+      }),
+    );
+    const pStyle = html.match(/^<p style="([^"]*)"/)?.[1] ?? '';
+    expect(pStyle).toContain('font-size: 16px;');
+    expect(pStyle).toContain('font-weight: 400;');
+    expect(pStyle).toContain('line-height: 1.2;');
+    expect(html).not.toContain('21px');
+  });
+
+  it('sizes the paragraph strut from the smallest text leaf', () => {
+    const html = renderParagraph(
+      makeParagraph({
+        fontSize: '30',
+        children: [
+          makeLeaf({ text: 'Big', fontSize: '24' }),
+          makeLeaf({ text: 'small', fontSize: '12' }),
+        ],
+      }),
+    );
+    expect(html.match(/^<p style="([^"]*)"/)?.[1]).toContain('font-size: 12px;');
+  });
+
+  it('ignores empty leaves when picking the paragraph strut', () => {
+    const html = renderParagraph(
+      makeParagraph({
+        children: [makeLeaf({ text: '', fontSize: '8' }), makeLeaf({ text: 'A', fontSize: '16' })],
+      }),
+    );
+    expect(html.match(/^<p style="([^"]*)"/)?.[1]).toContain('font-size: 16px;');
+  });
+
+  it('sizes an empty paragraph from its leaf so blank lines match Penpot', () => {
+    const html = renderParagraph(
+      makeParagraph({ fontSize: '0', children: [makeLeaf({ text: '', fontSize: '16' })] }),
+    );
+    expect(html).toContain('font-size: 16px;');
+    expect(html).toContain('<br />');
+  });
+
   it('has no class attribute', () => {
     const html = renderParagraph(makeParagraph());
     expect(html).not.toContain('class=');

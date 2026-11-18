@@ -122,6 +122,18 @@ describe('integration', () => {
     await expect(el).toMatchScreenshot('text-grow-type');
   });
 
+  it('stale paragraph font-size does not inflate lines past the auto-height text box', async () => {
+    // Annotation board whose paragraph node says 21px/600 while its leaves are
+    // 16px/400. Penpot sizes lines from the leaves only (5 lines × 19.2px ≈ 95px).
+    const page = getPage('text-stale-paragraph-font');
+    const shape = page.objects['0bd8b953-af75-808e-8008-ad4bc037b969'];
+    const { html, fonts } = await convertShape(shape, page.objects, ctx);
+    const el = await mount({ html, fonts });
+    const text = el.querySelector<HTMLElement>('[data-id="0bd8b953-af75-808e-8008-ad4bc037b96a"]')!;
+    expect(text.scrollHeight).toBeLessThanOrEqual(text.clientHeight + 1);
+    await expect(el).toMatchScreenshot('text-stale-paragraph-font');
+  });
+
   it('row-reverse and column-reverse emit flex-row/flex-col and preserve visual child order', async () => {
     const page = getPage('flex-reverse-direction');
 
