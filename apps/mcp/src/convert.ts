@@ -11,13 +11,8 @@ import {
 import { readSemanticsFromDisk } from '@penpot-tools/converter/semantics-store';
 import type { Page, Shape, ShapeType } from '@penpot-tools/converter/types';
 import { fetchPage, getPenpotBase, imageUrlFor } from './penpot-api.ts';
-import {
-  anchorThreads,
-  commentCountsBySubtree,
-  fetchPageCommentData,
-  settleCommentData,
-  type DesignCommentThread,
-} from './comments.ts';
+import { commentCountsBySubtree, type DesignCommentThread } from '@penpot-tools/converter/comments';
+import { loadPageThreads, resolveDesignComments } from './comments.ts';
 
 /** Compact list of (family, weight, italic) tuples used by the page. Used to
  *  let the LLM know which fonts are involved without paying the ~35 KB
@@ -665,9 +660,7 @@ export function buildPageOverview(
     tokenSummary,
   };
 
-  const commentCounts = options.comments
-    ? commentCountsBySubtree(page.objects, options.comments)
-    : undefined;
+  const commentCounts = options.comments ? commentCountsBySubtree(options.comments) : undefined;
   if (options.comments && options.comments.length > 0) {
     result.comments = options.comments.map((t) => ({
       seqn: t.seqn,
@@ -800,18 +793,16 @@ export async function getPageOverview(
 ): Promise<PageOverview> {
   // Replies aren't fetched: the overview only previews each thread's first
   // comment, which already travels on the thread itself.
-  const [page, commentData] = await Promise.all([
+  const [page, loaded] = await Promise.all([
     fetchPage(token, fileId, pageId),
-    settleCommentData(fetchPageCommentData(token, fileId, pageId, { withReplies: false })),
+    loadPageThreads(token, fileId, pageId),
   ]);
-  if ('error' in commentData) {
+  const comments = await resolveDesignComments(token, page, loaded, { withReplies: false });
+  if ('error' in comments) {
     return {
       ...buildPageOverview(page, fileId, pageId, options),
-      commentsError: commentData.error,
+      commentsError: comments.error,
     };
   }
-  return buildPageOverview(page, fileId, pageId, {
-    ...options,
-    comments: anchorThreads(page, commentData.data),
-  });
+  return buildPageOverview(page, fileId, pageId, { ...options, comments: comments.threads });
 }

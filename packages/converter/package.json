@@ -11,7 +11,8 @@
     "./tokens": "./src/converter/tokens.ts",
     "./types": "./src/penpot.types.ts",
     "./shape-code": "./src/converter/shape-code.ts",
-    "./semantics-store": "./src/converter/semantics-store.ts"
+    "./semantics-store": "./src/converter/semantics-store.ts",
+    "./comments": "./src/converter/comments.ts"
   },
   "scripts": {
     "test": "vitest",

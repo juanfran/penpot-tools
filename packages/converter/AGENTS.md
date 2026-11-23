@@ -16,6 +16,7 @@ packages/converter/src/
     page.ts                 # renderPage()
     types.ts                # ConverterContext, ConvertResult, FontInfo
     tokens.ts               # extractTokens(), tokensToCss(), tokenToCssVarName()
+    comments.ts             # anchorThreads() — maps Penpot comment pins onto layers (shared by MCP + viewer)
 
     shapes/                 # dispatch.ts + frame/rect/circle/group/text/image/path/bool/svg-raw
     visual/                 # base/fills/strokes/shadows/radius/blur/blend/position
