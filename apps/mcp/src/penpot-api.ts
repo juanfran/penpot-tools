@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { basename, isAbsolute, resolve as resolvePath } from 'node:path';
-import type { FileChange, Page } from '@penpot-tools/converter/types';
+import type { Comment, CommentThread, FileChange, Page } from '@penpot-tools/converter/types';
 import { tk, toTransitJson, tu } from './transit.ts';
 
 const DEFAULT_BASE = 'https://design.penpot.app';
@@ -63,6 +63,19 @@ export async function fetchPage(token: string, fileId: string, pageId: string): 
     throw new Error(`Penpot get-page failed (${res.status}): ${text}`);
   }
   return (await res.json()) as Page;
+}
+
+/**
+ * Every comment thread on a file (all pages, resolved included). Each thread
+ * carries its first comment as `content`; call `fetchComments` for replies.
+ */
+export async function fetchCommentThreads(token: string, fileId: string): Promise<CommentThread[]> {
+  return rpcJson<CommentThread[]>(token, 'get-comment-threads', { fileId });
+}
+
+/** All comments of one thread, oldest first. */
+export async function fetchComments(token: string, threadId: string): Promise<Comment[]> {
+  return rpcJson<Comment[]>(token, 'get-comments', { threadId });
 }
 
 export function imageUrlFor(id: string): string {

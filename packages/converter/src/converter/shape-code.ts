@@ -89,6 +89,13 @@ export interface ShapeCodeResult {
   css: string;
   /** Fonts referenced by the rendered shape — pass to `buildPenpotFontsCss` if you need the CSS. */
   fonts: FontInfo[];
+  /**
+   * Class each rendered Penpot shape ended up with, keyed by shape id. Only
+   * populated for `styling: 'css'` (tailwind output has no per-shape class).
+   * Lets callers point at "the element with `.card-header`" when they need to
+   * reference a shape inside the generated code (e.g. design comments).
+   */
+  classByShapeId: Record<string, string>;
 }
 
 /**
@@ -146,16 +153,19 @@ async function finishCode(
   html: string,
   allObjects: Record<string, Shape>,
   options: ShapeCodeOptions,
-): Promise<{ code: string; css: string }> {
+): Promise<{ code: string; css: string; classByShapeId: Record<string, string> }> {
   const classAttr = options.format === 'jsx' ? 'className' : 'class';
   const names = new Map<string, string>();
   for (const [id, s] of Object.entries(allObjects)) {
     if (s.name) names.set(id, s.name);
   }
-  const { html: classed, css } =
-    options.styling === 'tailwind'
-      ? { html: stylesToTailwind(html, classAttr), css: '' }
-      : stylesToCssClasses(html, classAttr, names);
+  const {
+    html: classed,
+    css,
+    classByShapeId,
+  } = options.styling === 'tailwind'
+    ? { html: stylesToTailwind(html, classAttr), css: '', classByShapeId: {} }
+    : stylesToCssClasses(html, classAttr, names);
 
   // Class extraction depends on `data-id`; only strip after.
   const stripped = options.includeDataAttrs ? classed : stripDataAttrs(classed);
@@ -175,7 +185,7 @@ async function finishCode(
   const code = options.format === 'jsx' ? formatted.replace(/;\s*$/, '\n') : formatted;
   const cssOut = css ? (await oxfmt.format('shape.css', css)).code : '';
 
-  return { code, css: cssOut };
+  return { code, css: cssOut, classByShapeId };
 }
 
 /**
@@ -242,8 +252,9 @@ export function stylesToCssClasses(
   html: string,
   classAttr: 'class' | 'className',
   names: Map<string, string>,
-): { html: string; css: string } {
+): { html: string; css: string; classByShapeId: Record<string, string> } {
   const classByDecls = new Map<string, string>();
+  const classByShapeId: Record<string, string> = {};
   const usedSlugs = new Map<string, number>();
   const rules: string[] = [];
   let fallbackCounter = 0;
@@ -266,6 +277,7 @@ export function stylesToCssClasses(
       const decoded = decodeHtmlEntities(declarations).trim();
       if (!decoded) return prefix;
       const cls = take(decoded, slugifyName(names.get(shapeId)));
+      classByShapeId[shapeId] = cls;
       return `${prefix} ${classAttr}="${cls}"`;
     },
   );
@@ -284,7 +296,7 @@ export function stylesToCssClasses(
     return ` ${classAttr}="${cls}"`;
   });
 
-  return { html: next, css: rules.join('\n') };
+  return { html: next, css: rules.join('\n'), classByShapeId };
 }
 
 const CLASS_ATTR_RE = /class(?:Name)?="([^"]+)"/g;

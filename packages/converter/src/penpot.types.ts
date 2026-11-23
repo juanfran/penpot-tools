@@ -1075,28 +1075,52 @@ export interface AccessToken {
 // Comment Thread & Comment
 // ============================================================
 
+/**
+ * Shape returned by the `get-comment-threads` RPC (JSON, camelCased). A thread
+ * is pinned to a canvas point — Penpot does NOT link it to a layer; `frameId`
+ * is the board under the pin at creation time and is often the root
+ * (`00000000-…`). `content` is the first comment's text.
+ */
 export interface CommentThread {
   id: Uuid;
   fileId: Uuid;
   pageId: Uuid;
+  pageName?: string;
+  fileName?: string;
+  projectId?: Uuid;
+  teamId?: Uuid;
   seqn: number;
   position: GeomPoint;
+  frameId?: Uuid | null;
   createdAt: Instant;
   modifiedAt: Instant;
-  resolvedAt?: Instant | null;
+  isResolved: boolean;
   ownerId: Uuid;
-  frameId?: Uuid | null;
-  count: number;
-  unreadCount?: number;
+  ownerFullname?: string;
+  ownerEmail?: string;
+  ownerPhotoId?: Uuid | null;
+  content: string;
+  countComments: number;
+  countUnreadComments?: number;
+  /** Profile ids mentioned in the thread. */
+  mentions?: Uuid[];
+  participants?: unknown;
 }
 
+/** Shape returned by the `get-comments` RPC (one entry per comment in a thread). */
 export interface Comment {
   id: Uuid;
   threadId: Uuid;
-  profileId: Uuid;
+  fileId?: Uuid;
+  ownerId: Uuid;
+  ownerFullname?: string;
+  ownerEmail?: string;
+  ownerPhotoId?: Uuid | null;
   createdAt: Instant;
   modifiedAt: Instant;
+  /** Mentions are encoded inline as `@[Full Name](profile-uuid)`. */
   content: string;
+  mentions?: Uuid[];
 }
 
 // ============================================================

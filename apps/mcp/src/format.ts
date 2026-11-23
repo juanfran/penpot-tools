@@ -5,6 +5,7 @@ import type {
   ShapeCodeBundle,
   ShapeHtmlBundle,
 } from './convert.ts';
+import type { DesignCommentThread } from './comments.ts';
 
 /**
  * The "do not paste verbatim, convert to the user's framework" guidance lives
@@ -46,6 +47,8 @@ export interface DescribeOptions {
    *  rendering a screenshot). Avoids a second fetch. Required if
    *  `includeFontsCss` is true. */
   fontsCss?: string;
+  /** Pre-rendered `commentsSection(...)` block, placed right under the title. */
+  comments?: string;
 }
 
 export function describePageBundle(
@@ -107,6 +110,7 @@ export function describeShapeCodeBundle(
   return (
     `# Shape "${bundle.shapeName}" (${bundle.shapeType}, id ${bundle.shapeId}) — page "${bundle.pageName}"` +
     `\n_format: ${bundle.format} · styling: ${bundle.styling}_` +
+    (opts.comments ?? '') +
     section('tokensCss', 'css', bundle.tokensCss) +
     fontsUsedSection(bundle.fontsUsed) +
     (opts.includeFontsCss ? section('fontsCss', 'css', opts.fontsCss ?? '') : '') +
@@ -121,6 +125,7 @@ export function describePageCodeBundle(bundle: PageCodeBundle, opts: DescribeOpt
   return (
     `# Page "${bundle.pageName}"` +
     `\n_format: ${bundle.format} · styling: ${bundle.styling}_` +
+    (opts.comments ?? '') +
     section('tokensCss', 'css', bundle.tokensCss) +
     fontsUsedSection(bundle.fontsUsed) +
     (opts.includeFontsCss ? section('fontsCss', 'css', opts.fontsCss ?? '') : '') +
@@ -128,4 +133,73 @@ export function describePageCodeBundle(bundle: PageCodeBundle, opts: DescribeOpt
     (bundle.styling === 'css' ? section('css', 'css', bundle.css) : '') +
     `\n${CLEANUP_NOTES}`
   );
+}
+
+export interface CommentsSectionOptions {
+  /** Shape id → class in the generated code (css styling). */
+  classByShapeId?: Record<string, string>;
+  /** Set when loading comments failed — rendered instead of the thread list. */
+  error?: string;
+  /** What the threads were scoped to, for the empty-state line. */
+  scopeLabel?: string;
+}
+
+const COMMENTS_PREAMBLE =
+  'Notes the team pinned on this design. They often carry implementation requirements the layers ' +
+  "can't express (behaviour, states, validation, copy, responsive rules, open decisions). Apply " +
+  'them while implementing. Resolved threads are included — they may still record decisions that hold.';
+
+function indentContinuation(text: string, indent: string): string {
+  return text.replace(/\n/g, `\n${indent}`);
+}
+
+function describeAnchor(
+  thread: DesignCommentThread,
+  classByShapeId: Record<string, string>,
+): string {
+  const a = thread.anchor;
+  if (a.kind === 'canvas' || !a.shapeId) {
+    const at = `(at ${thread.position.x}, ${thread.position.y})`;
+    if (!a.nearBoards?.length) return `on the canvas, not over any layer ${at}`;
+    const near = a.nearBoards.map((b) => `"${b.name}" (${b.distance}px away, id ${b.id})`);
+    return `on the canvas next to board ${near.join(' / ')} ${at}`;
+  }
+  const cls = classByShapeId[a.shapeId];
+  const target = cls ? `\`.${cls}\`` : `"${a.shapeName}" (${a.shapeType})`;
+  const text = a.text ? ` · text "${a.text}"` : '';
+  return `on ${target} — ${a.path}${text} · id ${a.shapeId}`;
+}
+
+/**
+ * `## Design comments` block appended to `get_html` / returned by
+ * `get_comments`. Always emitted (even when empty) so the agent knows the
+ * comments were checked rather than missing.
+ */
+export function commentsSection(
+  threads: readonly DesignCommentThread[],
+  opts: CommentsSectionOptions = {},
+): string {
+  if (opts.error) {
+    return `\n## Design comments\n_Could not load design comments: ${opts.error}_`;
+  }
+  if (threads.length === 0) {
+    return `\n## Design comments\n_No design comments on ${opts.scopeLabel ?? 'this design'}._`;
+  }
+  const open = threads.filter((t) => !t.resolved).length;
+  const resolved = threads.length - open;
+  const counts = [`${open} open`, resolved ? `${resolved} resolved` : '']
+    .filter(Boolean)
+    .join(', ');
+  const classByShapeId = opts.classByShapeId ?? {};
+  const items = threads.map((t) => {
+    const header = `- #${t.seqn} · ${t.resolved ? 'resolved' : 'open'} · ${describeAnchor(t, classByShapeId)}`;
+    const lines = t.comments.map(
+      (c) =>
+        `  - **${c.author}** (${c.createdAt.slice(0, 10)}): ${indentContinuation(c.text, '    ')}`,
+    );
+    const missing = t.commentCount - t.comments.length;
+    if (missing > 0) lines.push(`  - _…${missing} more repl${missing === 1 ? 'y' : 'ies'}_`);
+    return [header, ...lines].join('\n');
+  });
+  return `\n## Design comments (${counts})\n${COMMENTS_PREAMBLE}\n\n${items.join('\n')}`;
 }

@@ -11,6 +11,13 @@ import {
 import { readSemanticsFromDisk } from '@penpot-tools/converter/semantics-store';
 import type { Page, Shape, ShapeType } from '@penpot-tools/converter/types';
 import { fetchPage, getPenpotBase, imageUrlFor } from './penpot-api.ts';
+import {
+  anchorThreads,
+  commentCountsBySubtree,
+  fetchPageCommentData,
+  settleCommentData,
+  type DesignCommentThread,
+} from './comments.ts';
 
 /** Compact list of (family, weight, italic) tuples used by the page. Used to
  *  let the LLM know which fonts are involved without paying the ~35 KB
@@ -119,6 +126,10 @@ export interface ShapeCodeBundle {
   /** Echo of the format/styling used so callers can label their output. */
   format: ShapeCodeFormat;
   styling: ShapeCodeStyling;
+  /** Shape id → class in `code` (css styling only). */
+  classByShapeId: Record<string, string>;
+  /** The fetched page, so callers can derive more context without refetching. */
+  page: Page;
 }
 
 export interface ShapeCodeOptions {
@@ -155,7 +166,7 @@ export async function convertShapeToCode(
   const rules = await readSemanticsFromDisk(fileId);
   const format = options.format ?? 'html';
   const styling = options.styling ?? 'css';
-  const { code, css, fonts } = await shapeToCode(shape, page.objects, ctx, {
+  const { code, css, fonts, classByShapeId } = await shapeToCode(shape, page.objects, ctx, {
     format,
     styling,
     includeDataAttrs: options.includeDataAttrs,
@@ -173,6 +184,8 @@ export async function convertShapeToCode(
     tokensCss: tokensToCss(tokens),
     format,
     styling,
+    classByShapeId,
+    page,
   };
 }
 
@@ -187,6 +200,10 @@ export interface PageCodeBundle {
   tokensCss: string;
   format: ShapeCodeFormat;
   styling: ShapeCodeStyling;
+  /** Shape id → class in `code` (css styling only). */
+  classByShapeId: Record<string, string>;
+  /** The fetched page, so callers can derive more context without refetching. */
+  page: Page;
 }
 
 /**
@@ -211,7 +228,7 @@ export async function convertPageToCode(
   const rules = await readSemanticsFromDisk(fileId);
   const format = options.format ?? 'html';
   const styling = options.styling ?? 'css';
-  const { code, css, fonts } = await pageToCode(page, ctx, {
+  const { code, css, fonts, classByShapeId } = await pageToCode(page, ctx, {
     format,
     styling,
     includeDataAttrs: options.includeDataAttrs,
@@ -226,6 +243,8 @@ export async function convertPageToCode(
     tokensCss: tokensToCss(tokens),
     format,
     styling,
+    classByShapeId,
+    page,
   };
 }
 
@@ -263,6 +282,8 @@ export interface OverviewNode {
   text?: string;
   layout?: string;
   flags?: string[];
+  /** Design-comment threads pinned on this node or any descendant. */
+  commentCount?: number;
 }
 
 /** Compact recursive node used by the page tree. Bounds are [x, y, width, height]. */
@@ -276,6 +297,8 @@ export interface PageTreeNode {
   text?: string;
   layout?: string;
   flags?: string[];
+  /** Design-comment threads pinned on this node or any descendant. */
+  commentCount?: number;
   childrenOmitted?: number;
   children?: PageTreeNode[];
 }
@@ -318,6 +341,23 @@ export interface PageOverview {
     truncated: boolean;
   };
   matches?: OverviewMatch[];
+  /** One line per design-comment thread on the page (open and resolved). */
+  comments?: OverviewComment[];
+  /** Set when the comment threads could not be loaded. */
+  commentsError?: string;
+}
+
+export interface OverviewComment {
+  seqn: number;
+  resolved: boolean;
+  /** Anchor layer; absent when the pin sits on empty canvas. */
+  shapeId?: string;
+  path?: string;
+  /** Canvas pins only: names of the top-level boards right next to the pin. */
+  nearBoards?: string[];
+  /** First comment, truncated. Use `get_comments` / `get_html` for the full thread. */
+  preview: string;
+  commentCount: number;
 }
 
 export type OverviewQueryField = 'name' | 'text' | 'path';
@@ -346,6 +386,7 @@ function collectText(shape: Shape, max: number): string | undefined {
 const DEFAULT_TREE_DEPTH = 4;
 const DEFAULT_TREE_MAX_NODES = 500;
 const TEXT_PREVIEW_CHARS = 80;
+const COMMENT_PREVIEW_CHARS = 140;
 
 function childIds(shape: Shape): string[] {
   return 'shapes' in shape && Array.isArray(shape.shapes) ? shape.shapes : [];
@@ -379,7 +420,11 @@ function shapeLayout(shape: Shape): string | undefined {
   return shape.layoutType === 'flex' ? `flex:${shape.layoutFlexDir ?? 'row'}` : 'grid';
 }
 
-function baseOverviewNode(objects: Record<string, Shape>, shape: Shape): OverviewNode {
+function baseOverviewNode(
+  objects: Record<string, Shape>,
+  shape: Shape,
+  commentCounts?: Map<string, number>,
+): OverviewNode {
   const children = childIds(shape);
   const node: OverviewNode = {
     id: shape.id,
@@ -398,6 +443,8 @@ function baseOverviewNode(objects: Record<string, Shape>, shape: Shape): Overvie
   if (layout) node.layout = layout;
   const flags = shapeFlags(shape);
   if (flags) node.flags = flags;
+  const comments = commentCounts?.get(shape.id);
+  if (comments) node.commentCount = comments;
   return node;
 }
 
@@ -405,6 +452,7 @@ interface TreeBuildState {
   returnedNodes: number;
   truncatedByDepth: boolean;
   truncatedByNodeLimit: boolean;
+  commentCounts?: Map<string, number>;
 }
 
 function buildTreeNode(
@@ -442,6 +490,8 @@ function buildTreeNode(
   if (layout) node.layout = layout;
   const flags = shapeFlags(shape);
   if (flags) node.flags = flags;
+  const comments = state.commentCounts?.get(shape.id);
+  if (comments) node.commentCount = comments;
 
   if (childrenIds.length === 0) return node;
   if (depth >= maxDepth) {
@@ -481,6 +531,8 @@ export interface OverviewOptions {
   scopeId?: string;
   /** Maximum number of flat search matches returned. Defaults to 50. */
   maxResults?: number;
+  /** Anchored design-comment threads; adds `commentCount` per node + a `comments` list. */
+  comments?: DesignCommentThread[];
 }
 
 function normaliseFontFamily(value: string): string {
@@ -529,8 +581,13 @@ function tokenNames(shape: Shape): string[] | undefined {
   return names.length > 0 ? names.sort() : undefined;
 }
 
-function buildMatch(objects: Record<string, Shape>, shape: Shape, rootId?: string): OverviewMatch {
-  const node = baseOverviewNode(objects, shape);
+function buildMatch(
+  objects: Record<string, Shape>,
+  shape: Shape,
+  rootId?: string,
+  commentCounts?: Map<string, number>,
+): OverviewMatch {
+  const node = baseOverviewNode(objects, shape, commentCounts);
   const match: OverviewMatch = {
     ...node,
     parentId: shape.parentId,
@@ -608,6 +665,22 @@ export function buildPageOverview(
     tokenSummary,
   };
 
+  const commentCounts = options.comments
+    ? commentCountsBySubtree(page.objects, options.comments)
+    : undefined;
+  if (options.comments && options.comments.length > 0) {
+    result.comments = options.comments.map((t) => ({
+      seqn: t.seqn,
+      resolved: t.resolved,
+      ...(t.anchor.shapeId ? { shapeId: t.anchor.shapeId, path: t.anchor.path } : {}),
+      ...(t.anchor.nearBoards?.length
+        ? { nearBoards: t.anchor.nearBoards.map((b) => b.name) }
+        : {}),
+      preview: truncate(t.comments[0]?.text.replace(/\s+/g, ' ') ?? '', COMMENT_PREVIEW_CHARS),
+      commentCount: t.commentCount,
+    }));
+  }
+
   if (options.includeTree !== false) {
     const maxDepth = Math.max(0, Math.min(options.maxDepth ?? DEFAULT_TREE_DEPTH, 8));
     const maxNodes = Math.max(1, Math.min(options.maxNodes ?? DEFAULT_TREE_MAX_NODES, 2000));
@@ -615,6 +688,7 @@ export function buildPageOverview(
       returnedNodes: 0,
       truncatedByDepth: false,
       truncatedByNodeLimit: false,
+      commentCounts,
     };
     const tree: PageTreeNode = {
       id: pageId,
@@ -623,6 +697,9 @@ export function buildPageOverview(
       childCount: rootChildIds.length,
       descendantCount: result.totalShapes,
     };
+    if (options.comments && options.comments.length > 0) {
+      tree.commentCount = options.comments.length;
+    }
     if (rootChildIds.length > 0) {
       if (maxDepth === 0) {
         tree.childrenOmitted = rootChildIds.length;
@@ -701,7 +778,7 @@ export function buildPageOverview(
   const maxResults = Math.max(1, Math.min(options.maxResults ?? 50, 200));
   const matches = matchedShapes
     .slice(0, maxResults)
-    .map((shape) => buildMatch(page.objects, shape, root?.id));
+    .map((shape) => buildMatch(page.objects, shape, root?.id, commentCounts));
   result.search = {
     ...(query ? { query } : {}),
     ...(query ? { queryFields } : {}),
@@ -721,6 +798,20 @@ export async function getPageOverview(
   pageId: string,
   options: OverviewOptions = {},
 ): Promise<PageOverview> {
-  const page = await fetchPage(token, fileId, pageId);
-  return buildPageOverview(page, fileId, pageId, options);
+  // Replies aren't fetched: the overview only previews each thread's first
+  // comment, which already travels on the thread itself.
+  const [page, commentData] = await Promise.all([
+    fetchPage(token, fileId, pageId),
+    settleCommentData(fetchPageCommentData(token, fileId, pageId, { withReplies: false })),
+  ]);
+  if ('error' in commentData) {
+    return {
+      ...buildPageOverview(page, fileId, pageId, options),
+      commentsError: commentData.error,
+    };
+  }
+  return buildPageOverview(page, fileId, pageId, {
+    ...options,
+    comments: anchorThreads(page, commentData.data),
+  });
 }

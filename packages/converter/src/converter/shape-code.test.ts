@@ -32,6 +32,20 @@ describe('stylesToCssClasses', () => {
     expect(css).toBe(`.card { color: red; font-size: 14px; }`);
   });
 
+  it('reports the class each shape id received (deduped classes included)', () => {
+    const html =
+      `<div data-id="a" style="color: red"></div>` +
+      `<span data-id="b" style="color: red"></span>` +
+      `<p data-id="c" style="color: blue"></p>`;
+    const names = new Map([
+      ['a', 'Card'],
+      ['b', 'Other'],
+      ['c', 'Card'],
+    ]);
+    const { classByShapeId } = stylesToCssClasses(html, 'class', names);
+    expect(classByShapeId).toEqual({ a: 'card', b: 'card', c: 'card-2' });
+  });
+
   it('slugifies weird names into safe class identifiers', () => {
     const html = `<div data-id="a" style="color: red"></div>`;
     const names = new Map([['a', 'Icons / token']]);

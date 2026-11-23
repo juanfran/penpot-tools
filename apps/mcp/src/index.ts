@@ -9,7 +9,15 @@ import {
   getPageOverview,
   getPageTokens,
 } from './convert.ts';
-import { describePageCodeBundle, describeShapeCodeBundle } from './format.ts';
+import { commentsSection, describePageCodeBundle, describeShapeCodeBundle } from './format.ts';
+import {
+  anchorThreads,
+  fetchPageCommentData,
+  settleCommentData,
+  threadsInScope,
+  type CommentDataResult,
+} from './comments.ts';
+import type { Page } from '@penpot-tools/converter/types';
 import { fetchPage } from './penpot-api.ts';
 import { buildScreenshotContent, renderScreenshot, type ScreenshotOutput } from './screenshot.ts';
 import { requireSelection, requireToken, resolvePage, resolveTarget } from './state.ts';
@@ -70,6 +78,15 @@ to fetch each. Per-file semantic-tag rules set in the viewer ("this shape
 is a button", "any layer named *link* is an \`<a>\`") are honoured
 automatically. \`PENPOT_TOKEN\` env var skips the viewer entirely.
 
+**Design comments.** The team pins comments on the design that often carry
+implementation requirements the layers can't show (behaviour, states,
+validation, copy, responsive rules). \`get_html\` always appends a
+\`## Design comments\` section with the threads pinned on the requested
+shape/page (open AND resolved), each mapped to the class of the layer it sits
+on. Read it and apply it before declaring an implementation done.
+\`get_page_overview\` flags nodes with \`commentCount\`; \`get_comments\`
+returns the full threads for a page or shape on their own.
+
 For framework conversion guidance fetch \`penpot://convert-guide\`.
 `.trim();
 
@@ -104,6 +121,15 @@ discover board ids by name, then \`get_html({ shapeId, fileId, pageId })\`
 to fetch each. Per-file semantic-tag rules set in the viewer ("this shape
 is a button", "any layer named *link* is an \`<a>\`") are honoured
 automatically. \`PENPOT_TOKEN\` env var skips the viewer entirely.
+
+**Design comments.** The team pins comments on the design that often carry
+implementation requirements the layers can't show (behaviour, states,
+validation, copy, responsive rules). \`get_html\` always appends a
+\`## Design comments\` section with the threads pinned on the requested
+shape/page (open AND resolved), each mapped to the class of the layer it sits
+on. Read it and apply it before declaring an implementation done.
+\`get_page_overview\` flags nodes with \`commentCount\`; \`get_comments\`
+returns the full threads for a page or shape on their own.
 
 Write tools (\`create_design_from_html\`, \`update_selection_from_html\`,
 \`modify_shape\`, \`apply_token\`, \`create_token_set\`, \`upload_media\`) push
@@ -211,6 +237,24 @@ const okImage = (img: ScreenshotOutput, caption: string) => ({
   content: buildScreenshotContent(img, caption),
 });
 
+/**
+ * Render the `## Design comments` block for a get_html / get_comments call.
+ * `scopeId` limits threads to that shape's subtree (page mode: all threads).
+ */
+function renderComments(
+  page: Page,
+  result: CommentDataResult,
+  opts: { scopeId?: string; scopeLabel: string; classByShapeId?: Record<string, string> },
+): string {
+  if ('error' in result) return commentsSection([], { error: result.error });
+  const all = anchorThreads(page, result.data);
+  const threads = opts.scopeId ? threadsInScope(page.objects, all, opts.scopeId) : all;
+  return commentsSection(threads, {
+    classByShapeId: opts.classByShapeId,
+    scopeLabel: opts.scopeLabel,
+  });
+}
+
 server.registerTool(
   'get_current_selection',
   {
@@ -229,7 +273,7 @@ server.registerTool(
   {
     title: 'HTML / JSX for a Penpot shape (or full page)',
     description:
-      'Returns clean, framework-ready code for a shape OR a full page: HTML or JSX with class / className refs (no inline styles), plus the matching CSS classes (or Tailwind utilities baked into the markup). Class names are derived from each layer\'s name ("Icons / token" → .icons-token); `<p>`/`<span>` text leaves inherit a `${parent}-text` class. `data-*` attributes are stripped by default. Per-file semantic rules — set in the viewer — are honoured automatically: shapes named "button", `<a>`-tagged ids, `name-contains` patterns, etc. lift the wrapper out of the default `<div>`. The output mirrors the Penpot tree literally: deep wrappers (`<div><div><p>X</p></div></div>`) are common — review the `## Notes` section and flatten / drop redundant wrappers before pasting into a project. With no args, uses the viewer selection (selected shape, else the page). For the exact CSS subset the converter ever emits — useful when feeding the write tools (`create_design_from_html`) — fetch `penpot://supported-css`. Set includeScreenshot:true to also receive a PNG render in the same response. See `penpot://convert-guide` before adapting into framework code.',
+      'Returns clean, framework-ready code for a shape OR a full page: HTML or JSX with class / className refs (no inline styles), plus the matching CSS classes (or Tailwind utilities baked into the markup). Class names are derived from each layer\'s name ("Icons / token" → .icons-token); `<p>`/`<span>` text leaves inherit a `${parent}-text` class. `data-*` attributes are stripped by default. Per-file semantic rules — set in the viewer — are honoured automatically: shapes named "button", `<a>`-tagged ids, `name-contains` patterns, etc. lift the wrapper out of the default `<div>`. The output mirrors the Penpot tree literally: deep wrappers (`<div><div><p>X</p></div></div>`) are common — review the `## Notes` section and flatten / drop redundant wrappers before pasting into a project. With no args, uses the viewer selection (selected shape, else the page). For the exact CSS subset the converter ever emits — useful when feeding the write tools (`create_design_from_html`) — fetch `penpot://supported-css`. Set includeScreenshot:true to also receive a PNG render in the same response. The response always includes a `## Design comments` section: the comment threads (open and resolved, with replies) pinned on the shape or page, each mapped to the class of the layer it sits on — they often carry implementation requirements, apply them. See `penpot://convert-guide` before adapting into framework code.',
     inputSchema: {
       fileId: z
         .string()
@@ -303,6 +347,10 @@ server.registerTool(
   }) => {
     const token = await requireToken();
     const target = await resolveTarget({ fileId, pageId, shapeId });
+    // Started up front so the comment RPCs overlap the conversion.
+    const commentData = settleCommentData(
+      fetchPageCommentData(token, target.fileId, target.pageId),
+    );
 
     if (target.shapeId) {
       const bundle = await convertShapeToCode(token, target.fileId, target.pageId, target.shapeId, {
@@ -312,7 +360,12 @@ server.registerTool(
       });
       const needFontsCss = !!includeFontsCss || !!includeScreenshot;
       const fontsCss = needFontsCss ? await bundle.buildFontsCss() : '';
-      const text = describeShapeCodeBundle(bundle, { includeFontsCss, fontsCss });
+      const comments = renderComments(bundle.page, await commentData, {
+        scopeId: target.shapeId,
+        scopeLabel: `shape "${bundle.shapeName}"`,
+        classByShapeId: bundle.classByShapeId,
+      });
+      const text = describeShapeCodeBundle(bundle, { includeFontsCss, fontsCss, comments });
       const content: Array<
         { type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }
       > = [{ type: 'text', text }];
@@ -351,7 +404,11 @@ server.registerTool(
     });
     const needFontsCss = !!includeFontsCss || !!includeScreenshot;
     const fontsCss = needFontsCss ? await bundle.buildFontsCss() : '';
-    const text = describePageCodeBundle(bundle, { includeFontsCss, fontsCss });
+    const comments = renderComments(bundle.page, await commentData, {
+      scopeLabel: `page "${bundle.pageName}"`,
+      classByShapeId: bundle.classByShapeId,
+    });
+    const text = describePageCodeBundle(bundle, { includeFontsCss, fontsCss, comments });
     const content: Array<
       { type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }
     > = [{ type: 'text', text }];
@@ -371,6 +428,61 @@ server.registerTool(
       content.push(...buildScreenshotContent(shot, caption));
     }
     return { content };
+  },
+);
+
+server.registerTool(
+  'get_comments',
+  {
+    title: 'Design comments pinned on a shape or page',
+    description:
+      'Returns the Penpot comment threads (with every reply) pinned on a page or on a shape and its descendants. Penpot pins comments to canvas points, not layers — each thread is mapped to the topmost visible layer under its pin (id, name, path from the top-level board), or marked as being on empty canvas. Comments often carry implementation requirements (behaviour, states, copy, responsive rules). `get_html` already appends the same section; use this tool when you only need the comments, or to see threads on empty canvas (page mode). With no args, uses the viewer selection (selected shape, else the page).',
+    inputSchema: {
+      fileId: z
+        .string()
+        .uuid()
+        .optional()
+        .describe("Override the file id; defaults to the viewer's current selection."),
+      pageId: z
+        .string()
+        .uuid()
+        .optional()
+        .describe("Override the page id; defaults to the viewer's current selection."),
+      shapeId: z
+        .string()
+        .optional()
+        .describe('Only threads pinned on this shape or its descendants. Omit for the whole page.'),
+      includeResolved: z
+        .boolean()
+        .optional()
+        .describe(
+          'Include resolved threads. Default true — they can still hold relevant decisions.',
+        ),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+  },
+  async ({ fileId, pageId, shapeId, includeResolved }) => {
+    const token = await requireToken();
+    const target = await resolveTarget({ fileId, pageId, shapeId });
+    const [page, data] = await Promise.all([
+      fetchPage(token, target.fileId, target.pageId),
+      fetchPageCommentData(token, target.fileId, target.pageId, { includeResolved }),
+    ]);
+    let scopeLabel = `page "${page.name}"`;
+    let title = `# Page "${page.name}"`;
+    if (target.shapeId) {
+      const shape = page.objects[target.shapeId];
+      if (!shape) throw new Error(`Shape ${target.shapeId} not found in page ${target.pageId}`);
+      scopeLabel = `shape "${shape.name}"`;
+      title = `# Shape "${shape.name}" (${shape.type}, id ${shape.id}) — page "${page.name}"`;
+    }
+    const comments = renderComments(page, { data }, { scopeId: target.shapeId, scopeLabel });
+    return ok(title + comments);
   },
 );
 
@@ -432,7 +544,7 @@ server.registerTool(
   {
     title: 'Bounded page tree and node finder',
     description:
-      'Returns the Penpot page as a recursive, context-bounded tree so callers can understand parent/child structure and identify nodes by stable id, name, type, bounds, text preview, layout, and flags. maxDepth bounds recursion (page root is depth 0) and maxNodes provides a hard response cap; treeMeta and childrenOmitted report truncation. Optional query/types/scopeId filters also return a flat matches list. Set includeTree=false only for search-only follow-up calls. Use get_html with a returned id for full design detail.',
+      'Returns the Penpot page as a recursive, context-bounded tree so callers can understand parent/child structure and identify nodes by stable id, name, type, bounds, text preview, layout, and flags. maxDepth bounds recursion (page root is depth 0) and maxNodes provides a hard response cap; treeMeta and childrenOmitted report truncation. Optional query/types/scopeId filters also return a flat matches list. Set includeTree=false only for search-only follow-up calls. Nodes with design comments pinned on them or their descendants carry `commentCount`, and a top-level `comments` list previews every thread on the page (open and resolved) — fetch the full threads with get_html or get_comments. Use get_html with a returned id for full design detail.',
     inputSchema: {
       fileId: z
         .string()
