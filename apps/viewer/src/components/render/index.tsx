@@ -24,6 +24,10 @@ import { loadTransform, saveTransform, type SavedTransform } from './transform-s
 import { ZoomControls } from './zoom-controls';
 import { ShapeNode } from './shape-node';
 import { SelectionHighlights, ShapeHitZone } from './shape-overlays';
+import { CommentPins, visibleThreads } from './comment-pins';
+import { CommentsPicker } from './comments-picker';
+import { useCommentsPrefs } from '#/components/comments/comments-prefs';
+import { COMMENT_CARD_CLASS } from '#/components/comments/thread-card';
 import { useInspectorPrefs } from '#/components/inspector-sidebar/prefs-store';
 import {
   Select,
@@ -35,11 +39,19 @@ import {
 
 export type RenderHandle = {
   goToShape: (shapeId: string) => void;
+  /** Pan (keeping the zoom, but never below `MIN_COMMENT_SCALE`) so a page point sits in view. */
+  goToPoint: (x: number, y: number) => void;
 };
 
 const VISIBILITY_MARGIN = 500;
 const CURRENT_TOKEN_SET_ID = '__current__';
 const EMPTY_TOKEN_SETS: FileTokenSet[] = [];
+/** Zoom used when jumping to a comment from a far-out view, so the layer under it is legible. */
+const MIN_COMMENT_SCALE = 0.5;
+/** Screen px the jump-to-comment target is shifted left, leaving room for the open card. */
+const COMMENT_CARD_ROOM = 170;
+/** Vertical spot (share of the canvas height) a jumped-to pin lands on; the card hangs below it. */
+const COMMENT_PIN_Y = 0.3;
 
 export const getPageShapesOptions = (fileId: string, pageId: string) =>
   queryOptions({
@@ -88,11 +100,7 @@ function TokenSetPicker({
     (hasTokenSets ? tokenSets[0]!.name : 'Current');
 
   return (
-    <div
-      className="absolute top-4 right-4 z-50"
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
-    >
+    <div>
       <Select value={value} onValueChange={handleValueChange}>
         <SelectTrigger className="h-8 max-w-64 border-white/10 bg-black/60 px-2.5 text-xs text-white shadow-xl backdrop-blur-sm hover:bg-black/70">
           <Palette className="size-3.5 text-white/70" />
@@ -124,6 +132,8 @@ export const Render = ({
   onShapeSelect,
   initialShapeId,
   tokenSets: providedTokenSets,
+  activeThreadId,
+  onActiveThreadChange,
   ref,
 }: {
   pageId: string;
@@ -132,6 +142,9 @@ export const Render = ({
   onShapeSelect?: (id: string | undefined) => void;
   initialShapeId?: string;
   tokenSets?: FileTokenSet[];
+  /** Comment thread whose card is open on the canvas. */
+  activeThreadId?: string;
+  onActiveThreadChange?: (id: string | undefined) => void;
   ref?: React.Ref<RenderHandle>;
 }) => {
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
@@ -149,6 +162,11 @@ export const Render = ({
   const [isPanning, setIsPanning] = useState(false);
   const [hoveredShapeId, setHoveredShapeId] = useState<string | undefined>(undefined);
   const unitFormat = useInspectorPrefs((s) => s.unitFormat);
+  const commentVisibility = useCommentsPrefs((s) => s.visibility);
+  const pins = useMemo(
+    () => visibleThreads(data.comments.threads, commentVisibility, activeThreadId),
+    [data.comments.threads, commentVisibility, activeThreadId],
+  );
   const selectedTokenSet = useMemo(
     () => tokenSets.find((set) => set.id === selectedTokenSetId),
     [selectedTokenSetId, tokenSets],
@@ -186,9 +204,15 @@ export const Render = ({
       const tag = target.tagName;
       return tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable;
     };
+    // Space activates focused controls (comment pins, card buttons, pickers);
+    // only steal it for panning when focus is elsewhere.
+    const isControl = (target: EventTarget | null) =>
+      target instanceof HTMLElement &&
+      target.closest('button, a[href], select, summary, [role="combobox"], [role="option"]') !==
+        null;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code !== 'Space' || e.repeat) return;
-      if (isTextInput(e.target)) return;
+      if (isTextInput(e.target) || isControl(e.target)) return;
       e.preventDefault();
       dispatchSpace(true);
     };
@@ -227,7 +251,33 @@ export const Render = ({
     [data.tree, containerSize],
   );
 
-  useImperativeHandle(ref, () => ({ goToShape }), [goToShape]);
+  const goToPoint = useCallback(
+    (x: number, y: number) => {
+      const api = transformRef.current;
+      const W = containerSize.width;
+      const H = containerSize.height;
+      if (!api || !W || !H) return;
+      const scale = Math.max(api.instance.state.scale, MIN_COMMENT_SCALE);
+      api.setTransform(
+        W / 2 - COMMENT_CARD_ROOM - scale * x,
+        H * COMMENT_PIN_Y - scale * y,
+        scale,
+        300,
+      );
+    },
+    [containerSize],
+  );
+
+  useImperativeHandle(ref, () => ({ goToShape, goToPoint }), [goToShape, goToPoint]);
+
+  // Any click on the canvas (empty area or a shape) closes the open thread card.
+  const handleShapeSelect = useCallback(
+    (id: string | undefined) => {
+      onActiveThreadChange?.(undefined);
+      onShapeSelect?.(id);
+    },
+    [onActiveThreadChange, onShapeSelect],
+  );
 
   const initialTransform = useMemo<SavedTransform | null | undefined>(() => {
     if (!containerSize.width || !containerSize.height) return undefined;
@@ -297,20 +347,30 @@ export const Render = ({
             return;
           }
           if (isSpacePressed) return;
-          onShapeSelect?.(undefined);
+          handleShapeSelect(undefined);
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Escape') onShapeSelect?.(undefined);
+          if (e.key !== 'Escape') return;
+          // Escape closes the open thread first, then clears the selection.
+          if (activeThreadId) onActiveThreadChange?.(undefined);
+          else onShapeSelect?.(undefined);
         }}
       >
-        <TokenSetPicker
-          value={selectedTokenSetId}
-          tokenSets={tokenSets}
-          onChange={(value) => {
-            setSelectedTokenSetId(value);
-            saveSelectedTokenSet(fileId, value);
-          }}
-        />
+        <div
+          className="absolute top-4 right-4 z-50 flex items-center gap-2"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <CommentsPicker threads={data.comments.threads} error={data.comments.error} />
+          <TokenSetPicker
+            value={selectedTokenSetId}
+            tokenSets={tokenSets}
+            onChange={(value) => {
+              setSelectedTokenSetId(value);
+              saveSelectedTokenSet(fileId, value);
+            }}
+          />
+        </div>
         {initialTransform !== undefined && (
           <TransformWrapper
             key={pageId}
@@ -329,12 +389,25 @@ export const Render = ({
               justPannedRef.current = true;
             }}
             smooth={false}
-            wheel={{ step: 0.1 }}
-            panning={{ activationKeys: [' '] }}
+            wheel={{ step: 0.1, excluded: [COMMENT_CARD_CLASS] }}
+            panning={{ activationKeys: [' '], excluded: [COMMENT_CARD_CLASS] }}
             doubleClick={{ disabled: true }}
           >
             <ZoomControls />
-            <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
+            <TransformComponent
+              wrapperStyle={{ width: '100%', height: '100%' }}
+              wrapperProps={{
+                // The viewport is overflow:hidden and positioned purely through
+                // transforms, but the browser still scrolls it to reveal a
+                // focused element (e.g. tabbing to an off-screen comment pin).
+                // That scroll offset would silently desync every overlay, so
+                // undo it; CommentPins pans to focused pins instead.
+                onScroll: (e) => {
+                  e.currentTarget.scrollLeft = 0;
+                  e.currentTarget.scrollTop = 0;
+                },
+              }}
+            >
               <div
                 className="pointer-events-none relative"
                 style={{ width: containerSize.width, height: containerSize.height }}
@@ -356,7 +429,7 @@ export const Render = ({
                     tree={data.tree}
                     selectedShapeId={selectedShapeId}
                     hoveredShapeId={hoveredShapeId}
-                    onShapeSelect={onShapeSelect}
+                    onShapeSelect={handleShapeSelect}
                     setHoveredShapeId={setHoveredShapeId}
                   />
                 )}
@@ -367,6 +440,15 @@ export const Render = ({
                     hoveredShapeId={hoveredShapeId}
                     unitFormat={unitFormat}
                     showHover={!isSpacePressed}
+                  />
+                )}
+                {onActiveThreadChange && pins.length > 0 && (
+                  <CommentPins
+                    threads={pins}
+                    activeThreadId={activeThreadId}
+                    onActiveThreadChange={onActiveThreadChange}
+                    onSelectShape={(id) => onShapeSelect?.(id)}
+                    onRevealPoint={goToPoint}
                   />
                 )}
               </div>

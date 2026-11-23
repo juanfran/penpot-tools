@@ -2,6 +2,7 @@ import { getPageShapesOptions } from '#/components/render';
 import { findNodeById, findParent } from '#/components/render/tree-utils';
 import { type ShapeTreeNode } from '#/lib/server/penpot-api';
 import { declToTailwind } from '@penpot-tools/converter/shape-code';
+import type { DesignCommentThread } from '@penpot-tools/converter/comments';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Check, ChevronRight, Copy } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -10,6 +11,7 @@ import { AssetItem } from './asset-item';
 import { type Asset, buildNodeIndex, collectAssetsFromDom } from './assets';
 import { EMPTY_MARGINS, type Margins, computeMargins, extractBoxModel } from './box-model';
 import { BoxModelViz } from './box-model-viz';
+import { CommentsSection } from './comments-section';
 import { ComponentSection, type ComponentRef } from './component-section';
 import { ExportDialog } from './export-dialog';
 import { transformValue } from './format-prefs';
@@ -50,10 +52,14 @@ export function InspectorSidebar({
   fileId,
   pageId,
   selectedShapeId,
+  activeThreadId,
+  onOpenThread,
 }: {
   fileId: string;
   pageId: string;
   selectedShapeId: string;
+  activeThreadId?: string;
+  onOpenThread: (thread: DesignCommentThread) => void;
 }) {
   const { data } = useSuspenseQuery(getPageShapesOptions(fileId, pageId));
   const [copied, setCopied] = useState<'css' | 'text' | null>(null);
@@ -206,6 +212,13 @@ export function InspectorSidebar({
 
       {/* Styles */}
       <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+        <CommentsSection
+          threads={data.comments.threads}
+          shapeId={selectedShapeId}
+          activeThreadId={activeThreadId}
+          onOpenThread={onOpenThread}
+        />
+
         <BoxModelViz model={boxModel} margins={margins} />
 
         {componentRef && <ComponentSection info={componentRef} />}

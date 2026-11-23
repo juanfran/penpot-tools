@@ -11,6 +11,7 @@ import { recordFileAccessFn } from '#/lib/server/file-access';
 import { setSelectionFn } from '#/lib/server/penpot-api';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
+import type { DesignCommentThread } from '@penpot-tools/converter/comments';
 import { Suspense, useEffect, useRef, useState, type Ref } from 'react';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
@@ -146,6 +147,8 @@ function RenderWrapper({
   selectedShapeId,
   onShapeSelect,
   initialShapeId,
+  activeThreadId,
+  onActiveThreadChange,
   renderRef,
 }: {
   fileId: string;
@@ -153,6 +156,8 @@ function RenderWrapper({
   selectedShapeId: string | undefined;
   onShapeSelect: (id: string | undefined) => void;
   initialShapeId: string | undefined;
+  activeThreadId: string | undefined;
+  onActiveThreadChange: (id: string | undefined) => void;
   renderRef: Ref<RenderHandle>;
 }) {
   const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
@@ -166,6 +171,8 @@ function RenderWrapper({
       selectedShapeId={selectedShapeId}
       onShapeSelect={onShapeSelect}
       initialShapeId={initialShapeId}
+      activeThreadId={activeThreadId}
+      onActiveThreadChange={onActiveThreadChange}
     />
   );
 }
@@ -176,6 +183,16 @@ function RouteComponent() {
   const navigate = Route.useNavigate();
   const initialShapeIdRef = useRef(shapeId);
   const [selectedShapeId, setSelectedShapeId] = useState<string | undefined>(undefined);
+  const [activeThreadId, setActiveThreadId] = useState<string | undefined>();
+  // Switching pages closes the open thread card (and it stays closed when
+  // coming back). Reset during render rather than in an effect, so the stale
+  // card never paints on the new page.
+  const [threadPageId, setThreadPageId] = useState(pageId);
+  if (threadPageId !== pageId) {
+    setThreadPageId(pageId);
+    setActiveThreadId(undefined);
+  }
+  const handleActiveThreadChange = setActiveThreadId;
   const renderRef = useRef<RenderHandle>(null);
   const inspectorWidth = useInspectorPrefs((s) => s.width);
 
@@ -204,6 +221,11 @@ function RouteComponent() {
     setSelectedShapeId(id);
   };
 
+  const handleOpenThread = (thread: DesignCommentThread) => {
+    handleActiveThreadChange(thread.id);
+    renderRef.current?.goToPoint(thread.position.x, thread.position.y);
+  };
+
   return (
     <>
       <div className="flex h-screen flex-col">
@@ -229,6 +251,8 @@ function RouteComponent() {
                 selectedShapeId={selectedShapeId}
                 onShapeSelect={setSelectedShapeId}
                 initialShapeId={initialShapeIdRef.current}
+                activeThreadId={activeThreadId}
+                onActiveThreadChange={handleActiveThreadChange}
               />
             </Suspense>
           </main>
@@ -239,6 +263,8 @@ function RouteComponent() {
                 fileId={fileId}
                 pageId={pageId}
                 selectedShapeId={selectedShapeId}
+                activeThreadId={activeThreadId}
+                onOpenThread={handleOpenThread}
               />
             </Suspense>
           )}

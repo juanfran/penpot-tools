@@ -15,6 +15,7 @@
       "@penpot-tools/converter/semantics-store": [
         "../../packages/converter/src/converter/semantics-store.ts"
       ],
+      "@penpot-tools/converter/comments": ["../../packages/converter/src/converter/comments.ts"],
       "@penpot-tools/penpot-types": ["../../packages/converter/src/penpot.types.ts"]
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],

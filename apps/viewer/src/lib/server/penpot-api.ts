@@ -13,6 +13,11 @@ import {
 import type { Page, Uuid } from '@penpot-tools/penpot-types';
 import type { ConverterContext } from '@penpot-tools/converter';
 import { getFileSummary, rpc } from './penpot-api-utils.server';
+import {
+  fetchPageThreadList,
+  fetchThreadComments,
+  resolvePageComments,
+} from './page-comments.server';
 
 export type { FileTokenSet } from './token-sets';
 
@@ -198,6 +203,11 @@ export const getPageShapesFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ fileId: z.uuid(), pageId: z.uuid() }))
   .middleware([authMiddleware])
   .handler(async ({ data, context }) => {
+    // The thread list only needs the file id, so it loads while the (much
+    // heavier) page downloads. Swallow the rejection here; resolvePageComments
+    // reports it.
+    const commentThreads = fetchPageThreadList(context.token, data.fileId, data.pageId);
+    commentThreads.catch(() => {});
     const page = await rpc<Page>(context.token, 'get-page', {
       params: { 'file-id': data.fileId, 'page-id': data.pageId },
     });
@@ -223,6 +233,7 @@ export const getPageShapesFn = createServerFn({ method: 'GET' })
       tree,
       fontsCss: await buildPenpotFontsCss(fonts, { baseUrl: getFontsBaseUrl() }),
       tokensCss: tokensToCss(tokens),
+      comments: await resolvePageComments(page, commentThreads),
     };
 
     console.timeEnd(`convertPageShapes ${data.pageId}`);
@@ -288,6 +299,12 @@ interface RawFileWithComponents {
   name?: string;
   data?: { components?: Record<string, RawComponent> };
 }
+
+/** Full conversation of one comment thread, loaded when its card opens. */
+export const getCommentThreadFn = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ threadId: z.uuid() }))
+  .middleware([authMiddleware])
+  .handler(async ({ data, context }) => fetchThreadComments(context.token, data.threadId));
 
 export const setSelectionFn = createServerFn({ method: 'POST' })
   .inputValidator(

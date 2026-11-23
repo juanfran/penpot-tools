@@ -6,6 +6,7 @@ import {
   ContextMenuContent,
   ContextMenuItem,
 } from '#/components/ui/context-menu';
+import { commentCountsBySubtree } from '@penpot-tools/converter/comments';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -21,6 +22,7 @@ import {
   Star,
   GitMerge,
   Crosshair,
+  MessageSquare,
 } from 'lucide-react';
 
 function shapeIcon(type: string) {
@@ -67,6 +69,7 @@ function ShapeTreeItem({
   depth,
   selectedShapeId,
   ancestorIds,
+  commentCounts,
   onShapeSelect,
   onGoToShape,
 }: {
@@ -74,9 +77,12 @@ function ShapeTreeItem({
   depth: number;
   selectedShapeId?: string;
   ancestorIds: Set<string>;
+  /** Comment threads pinned on each shape or its descendants. */
+  commentCounts: Map<string, number>;
   onShapeSelect: (id: string) => void;
   onGoToShape: (id: string) => void;
 }) {
+  const commentCount = commentCounts.get(node.id) ?? 0;
   const isSelected = node.id === selectedShapeId;
   const isAncestor = ancestorIds.has(node.id);
   const [open, setOpen] = useState(false);
@@ -120,6 +126,15 @@ function ShapeTreeItem({
           )}
           {shapeIcon(node.type)}
           <span className="truncate text-sm text-gray-700">{node.name}</span>
+          {commentCount > 0 && (
+            <span
+              className="ml-auto flex shrink-0 items-center gap-0.5 pl-1 text-[10px] text-gray-400 tabular-nums"
+              title={`${commentCount} comment thread${commentCount === 1 ? '' : 's'}`}
+            >
+              <MessageSquare size={10} />
+              {commentCount}
+            </span>
+          )}
         </ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem onClick={() => onGoToShape(node.id)}>
@@ -137,6 +152,7 @@ function ShapeTreeItem({
               depth={depth + 1}
               selectedShapeId={selectedShapeId}
               ancestorIds={ancestorIds}
+              commentCounts={commentCounts}
               onShapeSelect={onShapeSelect}
               onGoToShape={onGoToShape}
             />
@@ -166,6 +182,10 @@ function ShapeTree({
     if (!selectedShapeId) return new Set<string>();
     return new Set(findAncestorIds(data.tree, selectedShapeId) ?? []);
   }, [selectedShapeId, data.tree]);
+  const commentCounts = useMemo(
+    () => commentCountsBySubtree(data.comments.threads),
+    [data.comments.threads],
+  );
 
   return (
     <ul className="overflow-auto px-1">
@@ -176,6 +196,7 @@ function ShapeTree({
           depth={0}
           selectedShapeId={selectedShapeId}
           ancestorIds={ancestorIds}
+          commentCounts={commentCounts}
           onShapeSelect={onShapeSelect}
           onGoToShape={onGoToShape}
         />
