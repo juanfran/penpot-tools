@@ -57,11 +57,7 @@ function loadSelectedTokenSet(fileId: string): string {
 }
 
 function defaultTokenSetId(tokenSets: FileTokenSet[]): string {
-  return (
-    tokenSets.find((set) => set.active)?.id ??
-    tokenSets[0]?.id ??
-    CURRENT_TOKEN_SET_ID
-  );
+  return tokenSets.find((set) => set.active)?.id ?? tokenSets[0]?.id ?? CURRENT_TOKEN_SET_ID;
 }
 
 function saveSelectedTokenSet(fileId: string, value: string): void {

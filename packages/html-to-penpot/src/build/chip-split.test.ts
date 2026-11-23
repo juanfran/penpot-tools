@@ -113,9 +113,7 @@ describe('hasChipVisuals', () => {
 
 describe('splitChipPatterns', () => {
   it('leaves plain text leaves untouched', () => {
-    const nodes = [
-      leaf({ index: 0, rect: { x: 0, y: 0, width: 100, height: 20 }, text: 'Plain' }),
-    ];
+    const nodes = [leaf({ index: 0, rect: { x: 0, y: 0, width: 100, height: 20 }, text: 'Plain' })];
     const out = splitChipPatterns(nodes);
     expect(out.length).toBe(1);
     expect(out[0]!.textContent).toBe('Plain');
@@ -155,7 +153,7 @@ describe('splitChipPatterns', () => {
     expect(child.textContent).toBe('BROOKLYN');
     expect(child.rect).toEqual({
       x: 118, // 100 + paddingLeft 18
-      y: 60,  // 50 + paddingTop 10
+      y: 60, // 50 + paddingTop 10
       width: 164, // 200 - 18 - 18
       height: 20, // 40 - 10 - 10
     });

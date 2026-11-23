@@ -148,7 +148,9 @@ function buildOperations(ops: z.infer<typeof OpsInput>): { ops: SetOp[]; applied
     } else {
       const fill = {
         fillColor: ops.fill.color as HexColor,
-        ...(ops.fill.opacity !== undefined ? { fillOpacity: ops.fill.opacity } : { fillOpacity: 1 }),
+        ...(ops.fill.opacity !== undefined
+          ? { fillOpacity: ops.fill.opacity }
+          : { fillOpacity: 1 }),
       };
       out.push(SET('fills', [fill]));
       applied.push(`fill → ${ops.fill.color}`);

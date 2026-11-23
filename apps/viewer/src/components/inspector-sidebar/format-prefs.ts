@@ -237,8 +237,7 @@ function formatColor(c: RGBA, format: ColorFormat): string {
   }
 }
 
-export const COLOR_REGEX =
-  /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)|oklch\([^)]*\)/gi;
+export const COLOR_REGEX = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)|oklch\([^)]*\)/gi;
 const PX_REGEX = /(-?\d*\.?\d+)px\b/g;
 
 function trimTrailingZeros(n: number): string {

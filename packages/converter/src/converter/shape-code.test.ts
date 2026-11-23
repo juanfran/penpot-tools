@@ -52,7 +52,11 @@ describe('stylesToCssClasses', () => {
       `<div data-id="a" style="color: red"></div>` +
       `<span data-id="b" style="color: red"></span>` +
       `<p data-id="c" style="color: blue"></p>`;
-    const names = new Map([['a', 'Card'], ['b', 'Other'], ['c', 'Title']]);
+    const names = new Map([
+      ['a', 'Card'],
+      ['b', 'Other'],
+      ['c', 'Title'],
+    ]);
     const { html: out, css } = stylesToCssClasses(html, 'class', names);
     // First element wins the slug; second reuses by decls match.
     expect(out).toBe(
@@ -65,13 +69,14 @@ describe('stylesToCssClasses', () => {
 
   it('uniquifies names that collide with different declarations', () => {
     const html =
-      `<div data-id="a" style="color: red"></div>` +
-      `<div data-id="b" style="color: blue"></div>`;
-    const names = new Map([['a', 'Card'], ['b', 'Card']]);
+      `<div data-id="a" style="color: red"></div>` + `<div data-id="b" style="color: blue"></div>`;
+    const names = new Map([
+      ['a', 'Card'],
+      ['b', 'Card'],
+    ]);
     const { html: out, css } = stylesToCssClasses(html, 'class', names);
     expect(out).toBe(
-      `<div data-id="a" class="card"></div>` +
-        `<div data-id="b" class="card-2"></div>`,
+      `<div data-id="a" class="card"></div>` + `<div data-id="b" class="card-2"></div>`,
     );
     expect(css).toBe(`.card { color: red; }\n.card-2 { color: blue; }`);
   });
@@ -110,17 +115,13 @@ describe('stylesToCssClasses', () => {
     // descriptive class instead of an opaque `s-N`.
     const html =
       `<div data-id="a" data-type="frame" style="display: flex">` +
-        `<p style="font-size: 16px; color: red">Hi</p>` +
+      `<p style="font-size: 16px; color: red">Hi</p>` +
       `</div>`;
     const { html: out, css } = stylesToCssClasses(html, 'class', new Map([['a', 'Card']]));
     expect(out).toBe(
-      `<div data-id="a" data-type="frame" class="card">` +
-        `<p class="card-text">Hi</p>` +
-      `</div>`,
+      `<div data-id="a" data-type="frame" class="card">` + `<p class="card-text">Hi</p>` + `</div>`,
     );
-    expect(css).toBe(
-      `.card { display: flex; }\n.card-text { font-size: 16px; color: red; }`,
-    );
+    expect(css).toBe(`.card { display: flex; }\n.card-text { font-size: 16px; color: red; }`);
   });
 
   it('falls back to s-N for text leaves with no preceding class', () => {
@@ -131,10 +132,7 @@ describe('stylesToCssClasses', () => {
   });
 
   it('shares classes between data-id elements and orphan text leaves with identical styles', () => {
-    const html =
-      `<div data-id="a" style="color: red">` +
-        `<p style="color: red">Hi</p>` +
-      `</div>`;
+    const html = `<div data-id="a" style="color: red">` + `<p style="color: red">Hi</p>` + `</div>`;
     const { html: out, css } = stylesToCssClasses(html, 'class', new Map([['a', 'Card']]));
     expect(out).toBe(`<div data-id="a" class="card"><p class="card">Hi</p></div>`);
     expect(css).toBe(`.card { color: red; }`);
@@ -150,11 +148,9 @@ describe('stripDataAttrs', () => {
   it('strips data-* across nested elements', () => {
     const html =
       `<div data-id="a" class="card">` +
-        `<span data-id="b" data-type="text" class="title">hi</span>` +
+      `<span data-id="b" data-type="text" class="title">hi</span>` +
       `</div>`;
-    expect(stripDataAttrs(html)).toBe(
-      `<div class="card"><span class="title">hi</span></div>`,
-    );
+    expect(stripDataAttrs(html)).toBe(`<div class="card"><span class="title">hi</span></div>`);
   });
 
   it('handles editor-only data-penpot-* attrs', () => {
@@ -202,25 +198,19 @@ describe('slugifyName', () => {
 describe('stylesToTailwind', () => {
   it('translates a small inline style into a utility class string', () => {
     const html = `<div style="display: flex; flex-direction: column; gap: 8px"></div>`;
-    expect(stylesToTailwind(html, 'class')).toBe(
-      `<div class="flex flex-col gap-[8px]"></div>`,
-    );
+    expect(stylesToTailwind(html, 'class')).toBe(`<div class="flex flex-col gap-[8px]"></div>`);
   });
 
   it('uses className when targeting JSX', () => {
     const html = `<div style="color: red"></div>`;
-    expect(stylesToTailwind(html, 'className')).toBe(
-      `<div className="text-[red]"></div>`,
-    );
+    expect(stylesToTailwind(html, 'className')).toBe(`<div className="text-[red]"></div>`);
   });
 
   it('decodes HTML entities and substitutes whitespace in arbitrary values', () => {
     const html = `<div style="font-family: &quot;Inter&quot;, sans-serif"></div>`;
     // Quotes are stripped (Tailwind would otherwise reject the attribute);
     // spaces become `_` per Tailwind v4 arbitrary-value convention.
-    expect(stylesToTailwind(html, 'class')).toBe(
-      `<div class="font-[Inter,_sans-serif]"></div>`,
-    );
+    expect(stylesToTailwind(html, 'class')).toBe(`<div class="font-[Inter,_sans-serif]"></div>`);
   });
 
   it('drops style attributes with no parsable declarations', () => {
@@ -392,17 +382,13 @@ describe('resolveTagOverrides', () => {
 
   it('ignores disabled rules', () => {
     const objects = { a: shape('a', 'Card') } as never;
-    const rules = [
-      rule({ type: 'shape-id', value: 'a', tag: 'button', enabled: false }),
-    ];
+    const rules = [rule({ type: 'shape-id', value: 'a', tag: 'button', enabled: false })];
     expect(resolveTagOverrides(rules, objects).size).toBe(0);
   });
 
   it('returns an empty map when all rules are disabled', () => {
     const objects = { a: shape('a', 'Card') } as never;
-    const rules = [
-      rule({ type: 'name-contains', value: 'card', tag: 'article', enabled: false }),
-    ];
+    const rules = [rule({ type: 'name-contains', value: 'card', tag: 'article', enabled: false })];
     expect(resolveTagOverrides(rules, objects).size).toBe(0);
   });
 });

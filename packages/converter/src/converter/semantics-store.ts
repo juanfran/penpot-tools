@@ -77,10 +77,7 @@ export async function readSemanticsFromDisk(fileId: string): Promise<SemanticRul
   }
 }
 
-export async function writeSemanticsToDisk(
-  fileId: string,
-  rules: SemanticRule[],
-): Promise<void> {
+export async function writeSemanticsToDisk(fileId: string, rules: SemanticRule[]): Promise<void> {
   assertValidFileId(fileId);
   const next: FileSemantics = { rules, updatedAt: new Date().toISOString() };
   cache.set(fileId, next);

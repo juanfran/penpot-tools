@@ -113,9 +113,7 @@ describe('integration — property-card root promotion', () => {
       pageId: PAGE_ID,
       rootName: 'Property listing — Orchard',
     });
-    const wrapper = shapesFromBundle(changes).find(
-      (s) => s.parentId === PAGE_ROOT_ID,
-    )!;
+    const wrapper = shapesFromBundle(changes).find((s) => s.parentId === PAGE_ROOT_ID)!;
     expect(wrapper.name).toBe('Property listing — Orchard');
     expect(rootShapeName).toBe('Property listing — Orchard');
   }, 20_000);

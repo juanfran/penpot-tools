@@ -89,7 +89,13 @@ describe('buildTree — layer naming via data-name', () => {
     // No rootName: the top frame is promoted and its `data-name` becomes the
     // board's layer name (no synthetic wrapper to absorb it).
     const nodes = [
-      node({ index: 0, parentIndex: null, childIndices: [1], semanticTag: 'div', dataAttrs: { 'data-name': 'Hero' } }),
+      node({
+        index: 0,
+        parentIndex: null,
+        childIndices: [1],
+        semanticTag: 'div',
+        dataAttrs: { 'data-name': 'Hero' },
+      }),
       node({ index: 1, parentIndex: 0, semanticTag: 'p', textContent: 'Welcome' }),
     ];
     const { shapes, rootShapeName } = buildTree({
@@ -151,7 +157,12 @@ describe('buildTree — layer naming via data-name', () => {
 
   it('uses data-name on an empty leaf (rect)', () => {
     const nodes = [
-      node({ index: 0, parentIndex: null, semanticTag: 'div', dataAttrs: { 'data-name': 'Spacer' } }),
+      node({
+        index: 0,
+        parentIndex: null,
+        semanticTag: 'div',
+        dataAttrs: { 'data-name': 'Spacer' },
+      }),
     ];
     const { shapes } = buildTree({
       nodes,
@@ -242,9 +253,7 @@ describe('buildTree — CSS rotation', () => {
   });
 
   it('keeps rotation 0 and bbox dims when transform is "none"', () => {
-    const nodes = [
-      node({ index: 0, parentIndex: null, semanticTag: 'div', textContent: 'plain' }),
-    ];
+    const nodes = [node({ index: 0, parentIndex: null, semanticTag: 'div', textContent: 'plain' })];
     const { shapes } = buildTree({
       nodes,
       pageId: PAGE_ID,

@@ -8,7 +8,9 @@ describe('gradientFillFromBackgroundImage', () => {
   });
 
   it('parses a 0deg linear gradient (start at bottom, end at top)', () => {
-    const fill = gradientFillFromBackgroundImage('linear-gradient(0deg, rgb(255, 0, 0) 0%, rgb(0, 0, 255) 100%)');
+    const fill = gradientFillFromBackgroundImage(
+      'linear-gradient(0deg, rgb(255, 0, 0) 0%, rgb(0, 0, 255) 100%)',
+    );
     const g = fill!.fillColorGradient!;
     expect(g.type).toBe('linear');
     // 0deg points up: start = (0.5, 1) bottom, end = (0.5, 0) top
@@ -24,7 +26,9 @@ describe('gradientFillFromBackgroundImage', () => {
   });
 
   it('parses a 90deg linear gradient (left → right)', () => {
-    const fill = gradientFillFromBackgroundImage('linear-gradient(90deg, rgb(0,0,0), rgb(255,255,255))');
+    const fill = gradientFillFromBackgroundImage(
+      'linear-gradient(90deg, rgb(0,0,0), rgb(255,255,255))',
+    );
     const g = fill!.fillColorGradient!;
     expect(g.startX).toBeCloseTo(0);
     expect(g.startY).toBeCloseTo(0.5);
@@ -46,14 +50,18 @@ describe('gradientFillFromBackgroundImage', () => {
   });
 
   it('parses a `to right` keyword as 90deg', () => {
-    const fill = gradientFillFromBackgroundImage('linear-gradient(to right, rgb(0,0,0), rgb(255,255,255))');
+    const fill = gradientFillFromBackgroundImage(
+      'linear-gradient(to right, rgb(0,0,0), rgb(255,255,255))',
+    );
     const g = fill!.fillColorGradient!;
     expect(g.startX).toBeCloseTo(0);
     expect(g.endX).toBeCloseTo(1);
   });
 
   it('parses turn units', () => {
-    const fill = gradientFillFromBackgroundImage('linear-gradient(0.25turn, rgb(0,0,0), rgb(255,255,255))');
+    const fill = gradientFillFromBackgroundImage(
+      'linear-gradient(0.25turn, rgb(0,0,0), rgb(255,255,255))',
+    );
     const g = fill!.fillColorGradient!;
     // 0.25turn = 90deg → left-to-right
     expect(g.startX).toBeCloseTo(0);

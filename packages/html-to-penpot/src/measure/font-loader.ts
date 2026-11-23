@@ -39,7 +39,10 @@ const STYLE_ATTR_RE = /\bstyle\s*=\s*("([^"]*)"|'([^']*)')/gi;
 function firstFamilyFromValue(value: string): string | null {
   const first = value.split(',')[0]!;
   // Strip leading/trailing whitespace + surrounding ' or " around the family.
-  const trimmed = first.trim().replace(/^['"]|['"]$/g, '').trim();
+  const trimmed = first
+    .trim()
+    .replace(/^['"]|['"]$/g, '')
+    .trim();
   if (!trimmed) return null;
   if (trimmed.startsWith('var(')) return null;
   if (GENERIC_FAMILIES.has(trimmed.toLowerCase())) return null;
@@ -88,8 +91,7 @@ const ALL_ITALIC_WEIGHTS = `0,${ALL_WEIGHTS};1,${ALL_WEIGHTS}`;
 function buildGoogleFontsUrl(families: readonly string[]): string {
   const params = families
     .map(
-      (f) =>
-        `family=${encodeURIComponent(f).replace(/%20/g, '+')}:ital,wght@${ALL_ITALIC_WEIGHTS}`,
+      (f) => `family=${encodeURIComponent(f).replace(/%20/g, '+')}:ital,wght@${ALL_ITALIC_WEIGHTS}`,
     )
     .join('&');
   return `https://fonts.googleapis.com/css2?${params}&display=block`;

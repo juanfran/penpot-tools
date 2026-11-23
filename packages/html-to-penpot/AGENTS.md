@@ -91,19 +91,19 @@ free for downstream uses.
 
 ## Visual subset
 
-| HTML / CSS                                     | Penpot                                         |
-| ---------------------------------------------- | ---------------------------------------------- |
-| `<header>/<section>/<button>/<div>` w/children | `frame`                                        |
-| Leaf element with text                         | `text`                                         |
-| Leaf element no text                           | `rect`                                         |
-| `<img data-penpot-media-id="...">`             | `image` (media must be uploaded first)         |
-| `display: flex`                                | `frame` with `layoutType: 'flex'` + flex props |
-| `display: grid`                                | `frame` with `layoutType: 'grid'` + cells      |
-| `background-color` / `background-image`        | solid fill / gradient fill (stacked)           |
-| `border: Npx solid color` (uniform)            | stroke `inner`                                 |
-| `box-shadow: 0 0 0 Npx color`                  | stroke `outer`                                 |
-| `box-shadow` (otherwise, incl. inset / -spread)| shadow                                         |
-| `border-radius` incl. per-corner               | `r1..r4`                                       |
+| HTML / CSS                                      | Penpot                                         |
+| ----------------------------------------------- | ---------------------------------------------- |
+| `<header>/<section>/<button>/<div>` w/children  | `frame`                                        |
+| Leaf element with text                          | `text`                                         |
+| Leaf element no text                            | `rect`                                         |
+| `<img data-penpot-media-id="...">`              | `image` (media must be uploaded first)         |
+| `display: flex`                                 | `frame` with `layoutType: 'flex'` + flex props |
+| `display: grid`                                 | `frame` with `layoutType: 'grid'` + cells      |
+| `background-color` / `background-image`         | solid fill / gradient fill (stacked)           |
+| `border: Npx solid color` (uniform)             | stroke `inner`                                 |
+| `box-shadow: 0 0 0 Npx color`                   | stroke `outer`                                 |
+| `box-shadow` (otherwise, incl. inset / -spread) | shadow                                         |
+| `border-radius` incl. per-corner                | `r1..r4`                                       |
 
 ## Box-shadow parsing
 
@@ -140,6 +140,7 @@ content also vanished. The promoted-top mode preserves both the chrome
 and the wrapper's full declared dimensions.
 
 Naming priority for the root shape:
+
 1. `BuildContext.rootName` — typically the MCP `name` parameter.
 2. The promoted top's `data-name`.
 3. The literal `'New design'`.
@@ -149,7 +150,7 @@ frame as their parent so they stay grouped on the page.
 
 ## Border-radius percentage resolution
 
-Browsers preserve `%` in the *computed* value of `border-radius` (e.g.
+Browsers preserve `%` in the _computed_ value of `border-radius` (e.g.
 `border-radius:50%` returns `"50%"` from `getComputedStyle`, not the
 resolved px). `visual/radius.ts` gets the element's untransformed dimensions
 from the build site and resolves percentages against `min(width, height)` —
@@ -183,19 +184,19 @@ we scan the **inline `style` attribute string** for each element. For every
 declaration containing `var(--name[, fallback])`, the parser maps the CSS
 property to the corresponding Penpot `appliedTokens` slot:
 
-| CSS property                                        | Penpot slot(s)                  |
-| --------------------------------------------------- | ------------------------------- |
-| `background-color`, `background`                    | `fill`                          |
-| `color`                                             | `fill` (text)                   |
-| `border-color`, `border-top-color`                  | `strokeColor`                   |
-| `border-radius`                                     | `r1`, `r2`, `r3`, `r4`          |
-| `border-top-left-radius` (etc.)                    | `r1` (etc.)                     |
-| `border-width`                                      | `strokeWidth`                   |
-| `padding`                                           | `p1`, `p2`, `p3`, `p4`          |
-| `padding-top` (etc.)                                | `p1` (etc.)                     |
-| `gap`                                               | `rowGap`, `columnGap`           |
-| `width` / `height` / `min-width` / etc.             | `width` / `height` / ...        |
-| `font-size` / `font-family` / `line-height` / ...   | `fontSize` / `fontFamily` / ... |
+| CSS property                                      | Penpot slot(s)                  |
+| ------------------------------------------------- | ------------------------------- |
+| `background-color`, `background`                  | `fill`                          |
+| `color`                                           | `fill` (text)                   |
+| `border-color`, `border-top-color`                | `strokeColor`                   |
+| `border-radius`                                   | `r1`, `r2`, `r3`, `r4`          |
+| `border-top-left-radius` (etc.)                   | `r1` (etc.)                     |
+| `border-width`                                    | `strokeWidth`                   |
+| `padding`                                         | `p1`, `p2`, `p3`, `p4`          |
+| `padding-top` (etc.)                              | `p1` (etc.)                     |
+| `gap`                                             | `rowGap`, `columnGap`           |
+| `width` / `height` / `min-width` / etc.           | `width` / `height` / ...        |
+| `font-size` / `font-family` / `line-height` / ... | `fontSize` / `fontFamily` / ... |
 
 The fallback in `var(--name, fallback)` is what the browser renders, so the
 geometry we measure is correct even when the token isn't (yet) defined in the

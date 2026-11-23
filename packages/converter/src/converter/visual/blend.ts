@@ -21,9 +21,7 @@ const BLEND_MODE_VALUE: Record<Exclude<BlendMode, 'normal'>, string> = {
 
 export function blendModeToStyle(mode: BlendMode | undefined): string {
   if (!mode || mode === 'normal') return '';
-  return decl.mixBlendMode(
-    BLEND_MODE_VALUE[mode] as Parameters<typeof decl.mixBlendMode>[0],
-  );
+  return decl.mixBlendMode(BLEND_MODE_VALUE[mode] as Parameters<typeof decl.mixBlendMode>[0]);
 }
 
 export function opacityToStyle(opacity: number | undefined): string {

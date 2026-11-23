@@ -97,9 +97,7 @@ describe('strokesFromComputed', () => {
   });
 
   it('detects an outer stroke from the converter-style box-shadow', () => {
-    const r = strokesFromComputed(
-      style({ boxShadow: 'rgb(46, 81, 196) 0px 0px 0px 3px' }),
-    );
+    const r = strokesFromComputed(style({ boxShadow: 'rgb(46, 81, 196) 0px 0px 0px 3px' }));
     expect(r.strokes).toEqual([
       {
         strokeColor: '#2E51C4',
@@ -113,9 +111,7 @@ describe('strokesFromComputed', () => {
   });
 
   it('does NOT consume real shadows (with blur or offset)', () => {
-    const r = strokesFromComputed(
-      style({ boxShadow: 'rgba(0, 0, 0, 0.4) 0px 4px 12px 0px' }),
-    );
+    const r = strokesFromComputed(style({ boxShadow: 'rgba(0, 0, 0, 0.4) 0px 4px 12px 0px' }));
     expect(r.strokes).toEqual([]);
     expect(r.consumedShadowIndices.size).toBe(0);
   });
@@ -127,10 +123,7 @@ describe('splitBoxShadowList', () => {
       splitBoxShadowList(
         'rgba(0, 0, 0, 0.4) 0px 4px 12px 0px, rgba(255, 255, 255, 0.1) 0px 0px 0px 1px',
       ),
-    ).toEqual([
-      'rgba(0, 0, 0, 0.4) 0px 4px 12px 0px',
-      'rgba(255, 255, 255, 0.1) 0px 0px 0px 1px',
-    ]);
+    ).toEqual(['rgba(0, 0, 0, 0.4) 0px 4px 12px 0px', 'rgba(255, 255, 255, 0.1) 0px 0px 0px 1px']);
   });
 
   it('returns empty for none / empty', () => {

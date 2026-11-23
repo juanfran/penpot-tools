@@ -36,7 +36,16 @@ describe('integration — border-radius:50% on a square element', () => {
 
     const badge = changes
       .filter((c) => (c as { type: string }).type === 'add-obj')
-      .map((c) => (c as unknown as { obj: unknown }).obj as { name?: string; r1?: number; r2?: number; r3?: number; r4?: number })
+      .map(
+        (c) =>
+          (c as unknown as { obj: unknown }).obj as {
+            name?: string;
+            r1?: number;
+            r2?: number;
+            r3?: number;
+            r4?: number;
+          },
+      )
       .find((s) => s.name === 'Badge');
     expect(badge).toBeDefined();
     expect(badge!.r1).toBe(23);
@@ -59,7 +68,16 @@ describe('integration — root containing-block trap', () => {
     const { changes } = await htmlToChanges(html, { pageId: PAGE_ID });
     const shapes = changes
       .filter((c) => (c as { type: string }).type === 'add-obj')
-      .map((c) => (c as unknown as { obj: unknown }).obj as { name?: string; x?: number; y?: number; width?: number; height?: number });
+      .map(
+        (c) =>
+          (c as unknown as { obj: unknown }).obj as {
+            name?: string;
+            x?: number;
+            y?: number;
+            width?: number;
+            height?: number;
+          },
+      );
     const card = shapes.find((s) => s.name === 'Card');
     const left = shapes.find((s) => s.name === 'Left');
     const right = shapes.find((s) => s.name === 'Right');
@@ -95,14 +113,22 @@ describe('integration — original failing card HTML repro', () => {
     const { changes } = await htmlToChanges(html, { pageId: PAGE_ID });
     const shapes = changes
       .filter((c) => (c as { type: string }).type === 'add-obj')
-      .map((c) => (c as unknown as { obj: unknown }).obj as { name?: string; x?: number; y?: number; width?: number });
+      .map(
+        (c) =>
+          (c as unknown as { obj: unknown }).obj as {
+            name?: string;
+            x?: number;
+            y?: number;
+            width?: number;
+          },
+      );
     const card = shapes.find((s) => s.name === 'Property card');
     const save = shapes.find((s) => s.name === 'Save badge');
     const cta = shapes.find((s) => s.name === 'CTA button');
 
     expect(card!.width).toBe(440);
     expect(save!.x).toBe(380); // 440 - 14 - 46
-    expect(cta!.x).toBe(256);  // 440 - 24 - 160
+    expect(cta!.x).toBe(256); // 440 - 24 - 160
   }, 20_000);
 
   it('handles a card with mixed left:/right:/transform/text children (full property card)', async () => {
@@ -121,7 +147,10 @@ describe('integration — original failing card HTML repro', () => {
     const { changes } = await htmlToChanges(html, { pageId: PAGE_ID });
     const shapes = changes
       .filter((c) => (c as { type: string }).type === 'add-obj')
-      .map((c) => (c as unknown as { obj: unknown }).obj as { name?: string; x?: number; width?: number });
+      .map(
+        (c) =>
+          (c as unknown as { obj: unknown }).obj as { name?: string; x?: number; width?: number },
+      );
     const card = shapes.find((s) => s.name === 'Card');
     const save = shapes.find((s) => s.name === 'Save badge');
     const stats = shapes.find((s) => s.name === 'Stats card');
@@ -131,7 +160,7 @@ describe('integration — original failing card HTML repro', () => {
     // shadow projecting left. The chip's left edge is x=8 inside the card,
     // so the card bbox starts at 0 and extends to 440.
     expect(card!.width).toBe(440);
-    expect(save!.x).toBe(380);  // 440 - 14 - 46
+    expect(save!.x).toBe(380); // 440 - 14 - 46
     expect(stats!.x).toBe(182); // 440 - 22 - 236
     // CTA: right:24 from card. Card width = 440. CTA padding 14+22 = 36 plus
     // text width. Don't pin CTA x exactly — text widths shift with font.
@@ -184,7 +213,15 @@ describe('integration — chip auto-split with circular radius', () => {
 
     const shapes = changes
       .filter((c) => (c as { type: string }).type === 'add-obj')
-      .map((c) => (c as unknown as { obj: unknown }).obj as { name?: string; type?: string; r1?: number; width?: number });
+      .map(
+        (c) =>
+          (c as unknown as { obj: unknown }).obj as {
+            name?: string;
+            type?: string;
+            r1?: number;
+            width?: number;
+          },
+      );
 
     const frame = shapes.find((s) => s.name === 'Save' && s.type === 'frame');
     const text = shapes.find((s) => s.name === 'Save text');
@@ -212,11 +249,17 @@ describe('integration — chip auto-split with circular radius', () => {
 
     const text = changes
       .filter((c) => (c as { type: string }).type === 'add-obj')
-      .map((c) => (c as unknown as { obj: unknown }).obj as {
-        name?: string;
-        type?: string;
-        content?: { verticalAlign?: string; children?: { children?: { children?: { textAlign?: string }[] }[] }[] };
-      })
+      .map(
+        (c) =>
+          (c as unknown as { obj: unknown }).obj as {
+            name?: string;
+            type?: string;
+            content?: {
+              verticalAlign?: string;
+              children?: { children?: { children?: { textAlign?: string }[] }[] }[];
+            };
+          },
+      )
       .find((s) => s.name === 'Avatar text' && s.type === 'text');
 
     expect(text).toBeDefined();
@@ -238,11 +281,17 @@ describe('integration — chip auto-split with circular radius', () => {
 
     const text = changes
       .filter((c) => (c as { type: string }).type === 'add-obj')
-      .map((c) => (c as unknown as { obj: unknown }).obj as {
-        name?: string;
-        type?: string;
-        content?: { verticalAlign?: string; children?: { children?: { children?: { textAlign?: string }[] }[] }[] };
-      })
+      .map(
+        (c) =>
+          (c as unknown as { obj: unknown }).obj as {
+            name?: string;
+            type?: string;
+            content?: {
+              verticalAlign?: string;
+              children?: { children?: { children?: { textAlign?: string }[] }[] }[];
+            };
+          },
+      )
       .find((s) => s.name === 'Pill text');
 
     expect(text).toBeDefined();
@@ -268,13 +317,22 @@ describe('integration — editorial overlapping composition', () => {
 
     const shapes = changes
       .filter((c) => (c as { type: string }).type === 'add-obj')
-      .map((c) => (c as unknown as { obj: unknown }).obj as {
-        name?: string;
-        x?: number; y?: number; width?: number; height?: number;
-        rotation?: number;
-        r1?: number; r2?: number; r3?: number; r4?: number;
-        shadow?: unknown[];
-      });
+      .map(
+        (c) =>
+          (c as unknown as { obj: unknown }).obj as {
+            name?: string;
+            x?: number;
+            y?: number;
+            width?: number;
+            height?: number;
+            rotation?: number;
+            r1?: number;
+            r2?: number;
+            r3?: number;
+            r4?: number;
+            shadow?: unknown[];
+          },
+      );
 
     const photo = shapes.find((s) => s.name === 'Photo');
     const stamp = shapes.find((s) => s.name === 'Stamp');

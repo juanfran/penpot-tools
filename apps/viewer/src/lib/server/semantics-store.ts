@@ -14,11 +14,7 @@ import { authMiddleware } from '../middlewares/auth.middleware';
 import { readSemanticsFromDisk, writeSemanticsToDisk } from './semantics-fs.server';
 import { RuleSchema, type SemanticRule } from './semantics-types';
 
-export {
-  SEMANTIC_TAGS,
-  type SemanticTag,
-  type SemanticRule,
-} from './semantics-types';
+export { SEMANTIC_TAGS, type SemanticTag, type SemanticRule } from './semantics-types';
 
 export const getSemanticRulesFn = createServerFn({ method: 'GET' })
   .inputValidator(z.object({ fileId: z.uuid() }))

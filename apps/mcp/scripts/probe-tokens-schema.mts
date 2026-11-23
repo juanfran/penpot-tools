@@ -16,11 +16,16 @@ const meta = await getFileMeta(token, fileId);
 const tEntries = (...kv: unknown[]): unknown[] => ['^ ', ...kv];
 
 const body = tEntries(
-  '~:id', fileId,
-  '~:revn', meta.revn,
-  '~:vern', meta.vern,
-  '~:session-id', randomUUID(),
-  '~:features', [
+  '~:id',
+  fileId,
+  '~:revn',
+  meta.revn,
+  '~:vern',
+  meta.vern,
+  '~:session-id',
+  randomUUID(),
+  '~:features',
+  [
     'design-tokens/v1',
     'fdata/objects-map',
     'components/v2',
@@ -31,17 +36,16 @@ const body = tEntries(
     'styles/v2',
     'plugins/runtime',
   ],
-  '~:changes', [
+  '~:changes',
+  [
     tEntries(
-      '~:type', '~:set-tokens-lib',
-      '~:tokens-lib', tEntries(
+      '~:type',
+      '~:set-tokens-lib',
+      '~:tokens-lib',
+      tEntries(
         // String keys here (token set name + token names + $type/$value).
-        'theme', tEntries(
-          'primary', tEntries(
-            '$type', 'color',
-            '$value', '#2E51C4',
-          ),
-        ),
+        'theme',
+        tEntries('primary', tEntries('$type', 'color', '$value', '#2E51C4')),
       ),
     ),
   ],

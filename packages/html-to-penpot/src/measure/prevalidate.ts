@@ -23,7 +23,9 @@ export function prevalidateHtml(html: string): PrevalidateResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const inner = unwrapDocument(html).replace(/<!--[\s\S]*?-->/g, '').trim();
+  const inner = unwrapDocument(html)
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .trim();
   if (inner.length === 0) {
     errors.push(
       'Empty HTML fragment — nothing to render. Send at least one element with content (e.g. `<div data-name="Card" style="width:200px; height:80px;"></div>`).',

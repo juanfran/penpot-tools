@@ -37,15 +37,13 @@ function fmt(prop: string, value: string): string {
 
 export const decl = {
   // Display & visibility
-  display: (
-    v: 'flex' | 'grid' | 'block' | 'inline' | 'inline-block' | 'inline-flex' | 'none',
-  ) => fmt('display', v),
+  display: (v: 'flex' | 'grid' | 'block' | 'inline' | 'inline-block' | 'inline-flex' | 'none') =>
+    fmt('display', v),
   overflow: (v: 'visible' | 'hidden' | 'auto' | 'scroll') => fmt('overflow', v),
   opacity: (v: number) => fmt('opacity', String(v)),
 
   // Position
-  position: (v: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky') =>
-    fmt('position', v),
+  position: (v: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky') => fmt('position', v),
   top: (v: Length) => fmt('top', lengthValue(v)),
   right: (v: Length) => fmt('right', lengthValue(v)),
   bottom: (v: Length) => fmt('bottom', lengthValue(v)),
@@ -97,18 +95,9 @@ export const decl = {
   flex: (v: string) => fmt('flex', v),
   flexShrink: (v: number) => fmt('flex-shrink', String(v)),
   alignSelf: (
-    v:
-      | 'auto'
-      | 'start'
-      | 'end'
-      | 'flex-start'
-      | 'flex-end'
-      | 'center'
-      | 'stretch'
-      | 'baseline',
+    v: 'auto' | 'start' | 'end' | 'flex-start' | 'flex-end' | 'center' | 'stretch' | 'baseline',
   ) => fmt('align-self', v),
-  justifySelf: (v: 'auto' | 'start' | 'end' | 'center' | 'stretch') =>
-    fmt('justify-self', v),
+  justifySelf: (v: 'auto' | 'start' | 'end' | 'center' | 'stretch') => fmt('justify-self', v),
 
   // Grid
   gridTemplateColumns: (v: string) => fmt('grid-template-columns', v),
@@ -168,14 +157,10 @@ export const decl = {
   fontStyle: (v: 'normal' | 'italic' | 'oblique') => fmt('font-style', v),
   lineHeight: (v: number | string) => fmt('line-height', String(v)),
   letterSpacing: (v: number) => fmt('letter-spacing', `${v}px`),
-  textAlign: (v: 'left' | 'right' | 'center' | 'justify' | 'start' | 'end') =>
-    fmt('text-align', v),
-  textTransform: (v: 'uppercase' | 'lowercase' | 'capitalize' | 'none') =>
-    fmt('text-transform', v),
-  textDecoration: (v: 'underline' | 'line-through' | 'none') =>
-    fmt('text-decoration', v),
-  whiteSpace: (v: 'normal' | 'nowrap' | 'pre' | 'pre-line' | 'pre-wrap') =>
-    fmt('white-space', v),
+  textAlign: (v: 'left' | 'right' | 'center' | 'justify' | 'start' | 'end') => fmt('text-align', v),
+  textTransform: (v: 'uppercase' | 'lowercase' | 'capitalize' | 'none') => fmt('text-transform', v),
+  textDecoration: (v: 'underline' | 'line-through' | 'none') => fmt('text-decoration', v),
+  whiteSpace: (v: 'normal' | 'nowrap' | 'pre' | 'pre-line' | 'pre-wrap') => fmt('white-space', v),
 } as const;
 
 /** Runtime list of every CSS property name the converter can emit. */

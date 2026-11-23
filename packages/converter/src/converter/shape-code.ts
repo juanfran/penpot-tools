@@ -172,8 +172,7 @@ async function finishCode(
   // oxfmt treats a bare JSX fragment as an expression statement and emits a
   // trailing `;` — undesirable for a snippet meant to be pasted into a JSX
   // context.
-  const code =
-    options.format === 'jsx' ? formatted.replace(/;\s*$/, '\n') : formatted;
+  const code = options.format === 'jsx' ? formatted.replace(/;\s*$/, '\n') : formatted;
   const cssOut = css ? (await oxfmt.format('shape.css', css)).code : '';
 
   return { code, css: cssOut };
@@ -212,9 +211,7 @@ export function resolveTagOverrides(
       out.set(shape.id, eqMatch.tag);
       continue;
     }
-    const containsMatch = byContains.find((r) =>
-      name.includes(r.value.toLowerCase()),
-    );
+    const containsMatch = byContains.find((r) => name.includes(r.value.toLowerCase()));
     if (containsMatch) out.set(shape.id, containsMatch.tag);
   }
   return out;
@@ -379,14 +376,17 @@ export function declToTailwind(prop: string, value: string): string | null {
       if (v === 'none') return 'hidden';
       return arb(prop, v);
     case 'position':
-      return ['static', 'relative', 'absolute', 'fixed', 'sticky'].includes(v)
-        ? v
-        : arb(prop, v);
-    case 'top': return `top-[${tw(v)}]`;
-    case 'right': return `right-[${tw(v)}]`;
-    case 'bottom': return `bottom-[${tw(v)}]`;
-    case 'left': return `left-[${tw(v)}]`;
-    case 'z-index': return `z-[${tw(v)}]`;
+      return ['static', 'relative', 'absolute', 'fixed', 'sticky'].includes(v) ? v : arb(prop, v);
+    case 'top':
+      return `top-[${tw(v)}]`;
+    case 'right':
+      return `right-[${tw(v)}]`;
+    case 'bottom':
+      return `bottom-[${tw(v)}]`;
+    case 'left':
+      return `left-[${tw(v)}]`;
+    case 'z-index':
+      return `z-[${tw(v)}]`;
     case 'width':
       if (v === '100%') return 'w-full';
       if (v === 'auto') return 'w-auto';
@@ -395,12 +395,18 @@ export function declToTailwind(prop: string, value: string): string | null {
       if (v === '100%') return 'h-full';
       if (v === 'auto') return 'h-auto';
       return `h-[${tw(v)}]`;
-    case 'min-width': return `min-w-[${tw(v)}]`;
-    case 'min-height': return `min-h-[${tw(v)}]`;
-    case 'max-width': return `max-w-[${tw(v)}]`;
-    case 'max-height': return `max-h-[${tw(v)}]`;
-    case 'margin': return `m-[${tw(v)}]`;
-    case 'padding': return `p-[${tw(v)}]`;
+    case 'min-width':
+      return `min-w-[${tw(v)}]`;
+    case 'min-height':
+      return `min-h-[${tw(v)}]`;
+    case 'max-width':
+      return `max-w-[${tw(v)}]`;
+    case 'max-height':
+      return `max-h-[${tw(v)}]`;
+    case 'margin':
+      return `m-[${tw(v)}]`;
+    case 'padding':
+      return `p-[${tw(v)}]`;
     case 'flex-direction':
       if (v === 'row') return 'flex-row';
       if (v === 'column') return 'flex-col';
@@ -442,9 +448,12 @@ export function declToTailwind(prop: string, value: string): string | null {
       if (v === 'center') return 'justify-self-center';
       if (v === 'stretch') return 'justify-self-stretch';
       return arb(prop, v);
-    case 'gap': return `gap-[${tw(v)}]`;
-    case 'row-gap': return `gap-y-[${tw(v)}]`;
-    case 'column-gap': return `gap-x-[${tw(v)}]`;
+    case 'gap':
+      return `gap-[${tw(v)}]`;
+    case 'row-gap':
+      return `gap-y-[${tw(v)}]`;
+    case 'column-gap':
+      return `gap-x-[${tw(v)}]`;
     case 'flex':
       if (v === '1' || v === '1 1 0%') return 'flex-1';
       if (v === 'auto' || v === '1 1 auto') return 'flex-auto';
@@ -454,17 +463,25 @@ export function declToTailwind(prop: string, value: string): string | null {
       if (v === '0') return 'shrink-0';
       if (v === '1') return 'shrink';
       return arb(prop, v);
-    case 'grid-template-columns': return arb(prop, v);
-    case 'grid-template-rows': return arb(prop, v);
-    case 'grid-row-start': return `[grid-row-start:${tw(v)}]`;
-    case 'grid-row-end': return `[grid-row-end:${tw(v)}]`;
-    case 'grid-column-start': return `[grid-column-start:${tw(v)}]`;
-    case 'grid-column-end': return `[grid-column-end:${tw(v)}]`;
+    case 'grid-template-columns':
+      return arb(prop, v);
+    case 'grid-template-rows':
+      return arb(prop, v);
+    case 'grid-row-start':
+      return `[grid-row-start:${tw(v)}]`;
+    case 'grid-row-end':
+      return `[grid-row-end:${tw(v)}]`;
+    case 'grid-column-start':
+      return `[grid-column-start:${tw(v)}]`;
+    case 'grid-column-end':
+      return `[grid-column-end:${tw(v)}]`;
     case 'background':
     case 'background-color':
       return `bg-[${tw(v)}]`;
-    case 'background-image': return `bg-[image:${tw(v)}]`;
-    case 'background-position': return `bg-[position:${tw(v)}]`;
+    case 'background-image':
+      return `bg-[image:${tw(v)}]`;
+    case 'background-position':
+      return `bg-[position:${tw(v)}]`;
     case 'background-repeat':
       if (v === 'no-repeat') return 'bg-no-repeat';
       if (v === 'repeat') return 'bg-repeat';
@@ -473,21 +490,27 @@ export function declToTailwind(prop: string, value: string): string | null {
       if (v === 'cover') return 'bg-cover';
       if (v === 'contain') return 'bg-contain';
       return `bg-[length:${tw(v)}]`;
-    case 'color': return `text-[${tw(v)}]`;
-    case 'border': return arb(prop, v);
+    case 'color':
+      return `text-[${tw(v)}]`;
+    case 'border':
+      return arb(prop, v);
     case 'border-radius':
       if (v === '50%') return 'rounded-full';
       return `rounded-[${tw(v)}]`;
-    case 'box-shadow': return `shadow-[${tw(v)}]`;
-    case 'opacity': return `opacity-[${tw(v)}]`;
+    case 'box-shadow':
+      return `shadow-[${tw(v)}]`;
+    case 'opacity':
+      return `opacity-[${tw(v)}]`;
     case 'overflow':
       if (v === 'hidden') return 'overflow-hidden';
       if (v === 'auto') return 'overflow-auto';
       if (v === 'scroll') return 'overflow-scroll';
       if (v === 'visible') return 'overflow-visible';
       return arb(prop, v);
-    case 'font-family': return `font-[${tw(v)}]`;
-    case 'font-size': return `text-[${tw(v)}]`;
+    case 'font-family':
+      return `font-[${tw(v)}]`;
+    case 'font-size':
+      return `text-[${tw(v)}]`;
     case 'font-weight':
       if (v === '100') return 'font-thin';
       if (v === '200') return 'font-extralight';
@@ -503,8 +526,10 @@ export function declToTailwind(prop: string, value: string): string | null {
       if (v === 'italic') return 'italic';
       if (v === 'normal') return 'not-italic';
       return arb(prop, v);
-    case 'line-height': return `leading-[${tw(v)}]`;
-    case 'letter-spacing': return `tracking-[${tw(v)}]`;
+    case 'line-height':
+      return `leading-[${tw(v)}]`;
+    case 'letter-spacing':
+      return `tracking-[${tw(v)}]`;
     case 'text-align':
       if (['left', 'center', 'right', 'justify', 'start', 'end'].includes(v)) {
         return `text-${v}`;
@@ -516,7 +541,8 @@ export function declToTailwind(prop: string, value: string): string | null {
       if (v === 'capitalize') return 'capitalize';
       if (v === 'none') return 'normal-case';
       return arb(prop, v);
-    case 'text-decoration': return arb(prop, v);
+    case 'text-decoration':
+      return arb(prop, v);
     case 'white-space':
       if (v === 'nowrap') return 'whitespace-nowrap';
       if (v === 'pre') return 'whitespace-pre';
@@ -524,9 +550,12 @@ export function declToTailwind(prop: string, value: string): string | null {
       if (v === 'pre-wrap') return 'whitespace-pre-wrap';
       if (v === 'normal') return 'whitespace-normal';
       return arb(prop, v);
-    case 'transform': return arb(prop, v);
-    case 'filter': return arb(prop, v);
-    case 'backdrop-filter': return arb(prop, v);
+    case 'transform':
+      return arb(prop, v);
+    case 'filter':
+      return arb(prop, v);
+    case 'backdrop-filter':
+      return arb(prop, v);
     case 'mix-blend-mode':
       if (v === 'multiply') return 'mix-blend-multiply';
       if (v === 'screen') return 'mix-blend-screen';

@@ -134,9 +134,7 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
     return id;
   });
 
-  const rootShapeId = promotedTop
-    ? shapeIdsForNode[promotedTop.index]!
-    : newShapeId();
+  const rootShapeId = promotedTop ? shapeIdsForNode[promotedTop.index]! : newShapeId();
 
   // Penpot stores flex children in back-to-front Z-order — the renderer
   // reverses the array on the way out (see converter CLAUDE.md "Flex child
@@ -287,8 +285,7 @@ export function buildTree(input: BuildTreeInput): BuildTreeResult {
 
     const { appliedTokens, tokenNames } = tokensInInlineStyle(node.inlineStyle ?? '');
     for (const t of tokenNames) referencedTokens.add(t);
-    const tokenFields =
-      Object.keys(appliedTokens).length > 0 ? { appliedTokens } : {};
+    const tokenFields = Object.keys(appliedTokens).length > 0 ? { appliedTokens } : {};
 
     if (node.svgOuter) {
       warnings.push(`${nodeLabel(node)}: inline <svg> is not supported and was skipped.`);

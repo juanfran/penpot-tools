@@ -57,13 +57,7 @@ export function registerCreateFromHtmlTool(server: McpServer): void {
       const boardName = name ?? bundle.rootShapeName ?? 'New design';
 
       try {
-        const result = await updateFile(
-          token,
-          resolvedFile,
-          meta.revn,
-          meta.vern,
-          bundle.changes,
-        );
+        const result = await updateFile(token, resolvedFile, meta.revn, meta.vern, bundle.changes);
         const summary = [
           `# Created board "${boardName}"`,
           '',

@@ -217,7 +217,9 @@ describe('round-trip: <br> between text runs survives as a multi-line text shape
 
     const { shapes } = await roundtrip(html);
     const text = shapes.find((s) => s.name === 'Title') as
-      | (import('@penpot-tools/converter/types').TextShape & { content: import('@penpot-tools/converter/types').TextContent })
+      | (import('@penpot-tools/converter/types').TextShape & {
+          content: import('@penpot-tools/converter/types').TextContent;
+        })
       | undefined;
     expect(text).toBeDefined();
     const paragraphs = text!.content.children[0]!.children;
@@ -243,10 +245,10 @@ describe('round-trip: single text-only wrapper promotes to a text shape (no synt
   }, 30_000);
 
   it('honours the caller rootName on the promoted text root', async () => {
-    const bundle = await htmlToChanges(
-      `<div data-name="Address">Hello</div>`,
-      { pageId: PAGE_ID, rootName: 'Renamed' },
-    );
+    const bundle = await htmlToChanges(`<div data-name="Address">Hello</div>`, {
+      pageId: PAGE_ID,
+      rootName: 'Renamed',
+    });
     const objects = objectsFromChanges(bundle.changes);
     const root = objects[bundle.rootShapeId];
     expect(root?.type).toBe('text');

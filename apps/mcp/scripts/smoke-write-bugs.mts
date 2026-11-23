@@ -63,8 +63,7 @@ else {
 const chip = shapesByName.get('Rotated chip');
 if (!chip) fail('Rotated chip shape missing');
 else {
-  if (Math.abs((chip.rotation ?? 0) - 4) > 0.1)
-    fail(`rotation = ${chip.rotation}, expected ~4`);
+  if (Math.abs((chip.rotation ?? 0) - 4) > 0.1) fail(`rotation = ${chip.rotation}, expected ~4`);
   else console.error('PASS: rotation = 4° (Penpot convention)');
 
   // 3. Text-shape background fill.

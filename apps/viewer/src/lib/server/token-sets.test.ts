@@ -20,11 +20,7 @@ describe('extractTokenSetsFromTokensLib', () => {
               '~:name',
               'Light',
               '~:tokens',
-              [
-                '^ ',
-                'colors',
-                ['^ ', 'background', ['^ ', '$type', 'color', '$value', '#ffffff']],
-              ],
+              ['^ ', 'colors', ['^ ', 'background', ['^ ', '$type', 'color', '$value', '#ffffff']]],
             ],
           ],
         ],
@@ -87,9 +83,7 @@ describe('extractTokenSetsFromTokensLib', () => {
                           '~:tokens',
                           [
                             '~#ordered-map',
-                            [
-                              ['teal.600', ['^ ', '~:type', '~:color', '~:value', '#008080']],
-                            ],
+                            [['teal.600', ['^ ', '~:type', '~:color', '~:value', '#008080']]],
                           ],
                         ],
                       ],

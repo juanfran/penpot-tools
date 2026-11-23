@@ -55,7 +55,7 @@ export function parseNumber(value: string): number | null {
  */
 export function extractInlinePx(inlineStyle: string, prop: string): number | null {
   if (!inlineStyle) return null;
-  const escaped = prop.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const escaped = prop.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
   const re = new RegExp(`(?:^|;)\\s*${escaped}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)px\\b`, 'i');
   const m = inlineStyle.match(re);
   return m ? Number(m[1]) : null;
@@ -86,14 +86,14 @@ export function parseColor(value: string): ParsedColor | null {
 
   // rgb(r, g, b) | rgba(r, g, b, a) — comma separated
   let m = trimmed.match(
-    new RegExp(`^rgba?\\(\\s*(${NUM})\\s*,\\s*(${NUM})\\s*,\\s*(${NUM})\\s*(?:,\\s*(${NUM})\\s*)?\\)$`),
+    new RegExp(
+      `^rgba?\\(\\s*(${NUM})\\s*,\\s*(${NUM})\\s*,\\s*(${NUM})\\s*(?:,\\s*(${NUM})\\s*)?\\)$`,
+    ),
   );
   // rgb(r g b) | rgb(r g b / a) — space separated
   if (!m) {
     m = trimmed.match(
-      new RegExp(
-        `^rgba?\\(\\s*(${NUM})\\s+(${NUM})\\s+(${NUM})(?:\\s*\\/\\s*(${NUM})%?)?\\s*\\)$`,
-      ),
+      new RegExp(`^rgba?\\(\\s*(${NUM})\\s+(${NUM})\\s+(${NUM})(?:\\s*\\/\\s*(${NUM})%?)?\\s*\\)$`),
     );
   }
   if (!m) return null;
@@ -105,6 +105,11 @@ export function parseColor(value: string): ParsedColor | null {
 
   if (a === 0) return { hex: '#000000' as HexColor, opacity: 0 };
 
-  const hex = ('#' + toHexComponent(r) + toHexComponent(g) + toHexComponent(b)).toUpperCase() as HexColor;
+  const hex = (
+    '#' +
+    toHexComponent(r) +
+    toHexComponent(g) +
+    toHexComponent(b)
+  ).toUpperCase() as HexColor;
   return { hex, opacity: a };
 }

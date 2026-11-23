@@ -53,9 +53,7 @@ interface AddObj {
 }
 
 function shapesFrom(changes: unknown[]): Shape[] {
-  return (changes as AddObj[])
-    .filter((c) => c.type === 'add-obj')
-    .map((c) => c.obj);
+  return (changes as AddObj[]).filter((c) => c.type === 'add-obj').map((c) => c.obj);
 }
 
 describe('integration — property card', () => {

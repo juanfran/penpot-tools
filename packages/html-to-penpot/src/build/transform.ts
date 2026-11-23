@@ -89,8 +89,7 @@ function parseMatrixComponents(a: number, b: number, c: number, d: number): Pars
   // future round-trips. Keep 4 dp in the rare non-integer case.
   const css = -cssAngleDeg;
   const rounded = Math.round(css);
-  const snapped =
-    Math.abs(css - rounded) < 1e-3 ? rounded : Math.round(css * 10000) / 10000;
+  const snapped = Math.abs(css - rounded) < 1e-3 ? rounded : Math.round(css * 10000) / 10000;
 
   return {
     rotationDeg: snapped,

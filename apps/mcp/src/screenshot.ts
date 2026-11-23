@@ -173,10 +173,10 @@ export async function renderScreenshot(input: ScreenshotInput): Promise<Screensh
       // shows a serif fallback while the second (post-cache) call shows the
       // correct family.
       //
-      // Touch a layout-forcing property so the font requests get queued, wait
+      // Force a layout (getBoundingClientRect) so the font requests get queued, wait
       // for them, then explicitly load every used family / weight pair as a
       // belt-and-braces in case a hidden element triggered the layout.
-      document.documentElement.offsetHeight;
+      document.documentElement.getBoundingClientRect();
       try {
         await document.fonts.ready;
       } catch {

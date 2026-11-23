@@ -73,10 +73,7 @@ export function topChildAt(
   for (let index = 0; index < children.length; index++) {
     const child = children[index];
     if (!hitTest(child, x, y)) continue;
-    if (
-      !result ||
-      isPaintedAbove(child, index, result, resultIndex, children.length, parent)
-    ) {
+    if (!result || isPaintedAbove(child, index, result, resultIndex, children.length, parent)) {
       result = child;
       resultIndex = index;
     }

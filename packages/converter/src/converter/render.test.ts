@@ -63,7 +63,11 @@ describe('renderShape', () => {
   });
 
   it('html-escapes data-name (defensive, names can contain quotes)', () => {
-    const html = renderShape(makeRect({ name: 'a "quoted" <name>' } as Partial<RectShape>), {}, ctx);
+    const html = renderShape(
+      makeRect({ name: 'a "quoted" <name>' } as Partial<RectShape>),
+      {},
+      ctx,
+    );
     expect(html).toContain('data-name="a &quot;quoted&quot; &lt;name&gt;"');
   });
 

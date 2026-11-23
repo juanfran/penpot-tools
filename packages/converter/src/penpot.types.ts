@@ -528,6 +528,9 @@ export interface ShapeCommon {
   constraintsV?: ConstraintsV;
   fixedScroll?: boolean;
   rotation?: number;
+  /** Mirrored on the horizontal / vertical axis. Already baked into `transform`. */
+  flipX?: boolean;
+  flipY?: boolean;
 
   // Corner radii (rect, frame)
   r1?: number;

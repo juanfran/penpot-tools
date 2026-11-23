@@ -28,10 +28,7 @@ export interface RadiusBase {
  * cap. For a 46×46 badge that round-trips `border-radius:50%` to `r=23`,
  * giving the expected circle.
  */
-export function radiusFromComputed(
-  style: PickedComputedStyle,
-  base: RadiusBase,
-): RadiusValues {
+export function radiusFromComputed(style: PickedComputedStyle, base: RadiusBase): RadiusValues {
   const ref = Math.min(base.width, base.height);
   const tl = parseLengthOrPct(style.borderTopLeftRadius, ref) ?? 0;
   const tr = parseLengthOrPct(style.borderTopRightRadius, ref) ?? 0;

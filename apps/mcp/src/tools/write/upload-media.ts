@@ -13,7 +13,10 @@ export function registerUploadMediaTool(server: McpServer): void {
       description:
         'Uploads png/jpg/jpeg/gif/webp/svg files to the open Penpot file. Reference each id from HTML via `data-penpot-media-id="<id>"` on the `<img>`.',
       inputSchema: {
-        paths: z.array(z.string().min(1)).min(1).describe('Image paths (absolute or relative to MCP cwd).'),
+        paths: z
+          .array(z.string().min(1))
+          .min(1)
+          .describe('Image paths (absolute or relative to MCP cwd).'),
         fileId: z.string().uuid().optional(),
       },
     },

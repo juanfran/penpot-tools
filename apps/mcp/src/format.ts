@@ -116,10 +116,7 @@ export function describeShapeCodeBundle(
   );
 }
 
-export function describePageCodeBundle(
-  bundle: PageCodeBundle,
-  opts: DescribeOptions = {},
-): string {
+export function describePageCodeBundle(bundle: PageCodeBundle, opts: DescribeOptions = {}): string {
   const codeLang = bundle.format === 'jsx' ? 'jsx' : 'html';
   return (
     `# Page "${bundle.pageName}"` +

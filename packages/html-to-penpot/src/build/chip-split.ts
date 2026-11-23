@@ -83,8 +83,7 @@ function flexCentering(cs: PickedComputedStyle): {
 } {
   if (cs.display !== 'flex' && cs.display !== 'inline-flex') return {};
 
-  const isColumn =
-    cs.flexDirection === 'column' || cs.flexDirection === 'column-reverse';
+  const isColumn = cs.flexDirection === 'column' || cs.flexDirection === 'column-reverse';
   // For row direction: justify-content is the main (horizontal) axis,
   // align-items is the cross (vertical) axis. For column: it's swapped.
   const horizontalProp = isColumn ? cs.alignItems : cs.justifyContent;
@@ -163,9 +162,7 @@ function synthesizeTextChild(parent: MeasuredNode, childIndex: number): Measured
   };
 
   const parentName = parent.dataAttrs['data-name'];
-  const dataAttrs: Record<string, string> = parentName
-    ? { 'data-name': `${parentName} text` }
-    : {};
+  const dataAttrs: Record<string, string> = parentName ? { 'data-name': `${parentName} text` } : {};
 
   return {
     index: childIndex,

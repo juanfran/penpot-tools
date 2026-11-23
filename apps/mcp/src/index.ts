@@ -261,7 +261,7 @@ server.registerTool(
         .boolean()
         .optional()
         .describe(
-          'Keep the converter\'s `data-id` / `data-type` / `data-name` / `data-penpot-*` on the output. Default false — those attrs are useful for the inspector but pure noise once you paste the code into a project.',
+          "Keep the converter's `data-id` / `data-type` / `data-name` / `data-penpot-*` on the output. Default false — those attrs are useful for the inspector but pure noise once you paste the code into a project.",
         ),
       includeScreenshot: z
         .boolean()
@@ -305,19 +305,16 @@ server.registerTool(
     const target = await resolveTarget({ fileId, pageId, shapeId });
 
     if (target.shapeId) {
-      const bundle = await convertShapeToCode(
-        token,
-        target.fileId,
-        target.pageId,
-        target.shapeId,
-        { format, styling, includeDataAttrs },
-      );
+      const bundle = await convertShapeToCode(token, target.fileId, target.pageId, target.shapeId, {
+        format,
+        styling,
+        includeDataAttrs,
+      });
       const needFontsCss = !!includeFontsCss || !!includeScreenshot;
       const fontsCss = needFontsCss ? await bundle.buildFontsCss() : '';
       const text = describeShapeCodeBundle(bundle, { includeFontsCss, fontsCss });
       const content: Array<
-        | { type: 'text'; text: string }
-        | { type: 'image'; data: string; mimeType: string }
+        { type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }
       > = [{ type: 'text', text }];
 
       if (includeScreenshot) {
@@ -356,18 +353,13 @@ server.registerTool(
     const fontsCss = needFontsCss ? await bundle.buildFontsCss() : '';
     const text = describePageCodeBundle(bundle, { includeFontsCss, fontsCss });
     const content: Array<
-      | { type: 'text'; text: string }
-      | { type: 'image'; data: string; mimeType: string }
+      { type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }
     > = [{ type: 'text', text }];
     if (includeScreenshot) {
       // Screenshot renders the still-styled HTML so the visual is exact —
       // the cleaned `code` has had its inline styles moved into class
       // definitions and would render unstyled in headless.
-      const previewBundle = await convertPageToHtml(
-        token,
-        target.fileId,
-        target.pageId,
-      );
+      const previewBundle = await convertPageToHtml(token, target.fileId, target.pageId);
       const shot = await renderScreenshot({
         html: previewBundle.html,
         tokensCss: previewBundle.tokensCss,
@@ -471,7 +463,9 @@ server.registerTool(
       includeTree: z
         .boolean()
         .optional()
-        .describe('Include the recursive page tree. Default true; use false for search-only follow-ups.'),
+        .describe(
+          'Include the recursive page tree. Default true; use false for search-only follow-ups.',
+        ),
       query: z
         .string()
         .min(1)

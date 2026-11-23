@@ -65,9 +65,9 @@ describe('mergeStyles', () => {
   });
 
   it('preserves insertion order of unique props alongside an override', () => {
-    expect(
-      mergeStyles('position: absolute;', 'left: 10px;', 'top: 20px;', 'left: 50px;'),
-    ).toBe('position: absolute; top: 20px; left: 50px;');
+    expect(mergeStyles('position: absolute;', 'left: 10px;', 'top: 20px;', 'left: 50px;')).toBe(
+      'position: absolute; top: 20px; left: 50px;',
+    );
   });
 
   it('property names are case-insensitive (CSS spec)', () => {

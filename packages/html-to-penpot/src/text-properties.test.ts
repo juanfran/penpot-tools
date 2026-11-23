@@ -71,9 +71,7 @@ describe('integration — text typography round-trip', () => {
     // no further transform must be re-applied by Penpot's text engine.
     expect(leaf?.textTransform).toBe('none');
     // No warning — the transform was honoured silently.
-    expect(
-      warnings.find((w) => w.toLowerCase().includes('text-transform')),
-    ).toBeUndefined();
+    expect(warnings.find((w) => w.toLowerCase().includes('text-transform'))).toBeUndefined();
   }, 20_000);
 
   it('pre-applies text-transform:lowercase and capitalize too', async () => {

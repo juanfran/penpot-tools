@@ -132,10 +132,7 @@ describe('radiusFromComputed', () => {
 
   it('still returns empty when zero-area element has 0 radii', () => {
     // Edge case: a 0×0 measured element shouldn't blow up — base is 0, % is 0.
-    const out = radiusFromComputed(
-      style({ borderTopLeftRadius: '50%' }),
-      { width: 0, height: 0 },
-    );
+    const out = radiusFromComputed(style({ borderTopLeftRadius: '50%' }), { width: 0, height: 0 });
     // 0 * 0.5 = 0 in the only non-zero corner; rest already 0; whole object empty.
     expect(out).toEqual({});
   });

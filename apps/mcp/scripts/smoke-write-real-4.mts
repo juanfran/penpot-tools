@@ -12,11 +12,7 @@
  */
 import { htmlToChanges } from '@penpot-tools/html-to-penpot';
 import type { FileChange, Uuid } from '@penpot-tools/converter/types';
-import {
-  getFileMeta,
-  PenpotConflictError,
-  updateFile,
-} from '../src/penpot-api.ts';
+import { getFileMeta, PenpotConflictError, updateFile } from '../src/penpot-api.ts';
 
 const token = process.env['PENPOT_TOKEN'];
 const fileId = process.env['PENPOT_FILE_ID'];
@@ -58,7 +54,12 @@ const change = {
   id: heroId,
   pageId,
   operations: [
-    { type: 'set', attr: 'fills', val: [{ fillColor: '#22C55E', fillOpacity: 1 }], ignoreTouched: true },
+    {
+      type: 'set',
+      attr: 'fills',
+      val: [{ fillColor: '#22C55E', fillOpacity: 1 }],
+      ignoreTouched: true,
+    },
     { type: 'set', attr: 'r1', val: 24, ignoreTouched: true },
     { type: 'set', attr: 'r2', val: 24, ignoreTouched: true },
     { type: 'set', attr: 'r3', val: 24, ignoreTouched: true },
@@ -71,7 +72,9 @@ const change = {
 try {
   result = await updateFile(token, fileId, meta.revn, meta.vern, [change]);
   console.error(`  modify OK — new revn ${result.revn}`);
-  console.error('  Refresh viewer; the inner rect should be green, more rounded, slightly transparent, renamed.');
+  console.error(
+    '  Refresh viewer; the inner rect should be green, more rounded, slightly transparent, renamed.',
+  );
 } catch (err) {
   if (err instanceof PenpotConflictError) {
     console.error('CONFLICT:', err.message);

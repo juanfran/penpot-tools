@@ -274,8 +274,7 @@ retry with the fresh revn, never the stale one.
  * doc to keep in sync).
  */
 function buildSupportedCssGuide(): string {
-  const camelToKebab = (s: string): string =>
-    s.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+  const camelToKebab = (s: string): string => s.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
   const lines = [...SUPPORTED_PROPS]
     .sort((a, b) => a.localeCompare(b))
     .map((prop) => `- \`${camelToKebab(prop)}\` (\`decl.${prop}\`)`);
@@ -293,10 +292,7 @@ function buildSupportedCssGuide(): string {
   ].join('\n');
 }
 
-export function registerGuideResources(
-  server: McpServer,
-  options: { writable: boolean },
-): void {
+export function registerGuideResources(server: McpServer, options: { writable: boolean }): void {
   server.registerResource(
     'convert-guide',
     'penpot://convert-guide',

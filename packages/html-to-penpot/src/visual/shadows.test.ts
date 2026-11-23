@@ -46,10 +46,7 @@ describe('parseSingleBoxShadow', () => {
 
 describe('shadowsFromBoxShadowList', () => {
   it('skips entries already consumed as outer strokes', () => {
-    const entries = [
-      'rgb(0, 0, 0) 0px 0px 0px 2px',
-      'rgba(0, 0, 0, 0.4) 0px 4px 12px 0px',
-    ];
+    const entries = ['rgb(0, 0, 0) 0px 0px 0px 2px', 'rgba(0, 0, 0, 0.4) 0px 4px 12px 0px'];
     const consumed = new Set([0]);
     const shadows = shadowsFromBoxShadowList(entries, consumed);
     expect(shadows).toHaveLength(1);

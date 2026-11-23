@@ -36,7 +36,5 @@ export function StyleDecl({ prop, value }: { prop: string; value: string }) {
 }
 
 export function TailwindDecl({ utility }: { utility: string }) {
-  return (
-    <div className="min-w-0 py-0.5 break-all text-sky-700">{renderWithSwatches(utility)}</div>
-  );
+  return <div className="min-w-0 py-0.5 break-all text-sky-700">{renderWithSwatches(utility)}</div>;
 }

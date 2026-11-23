@@ -11,9 +11,7 @@ const FLEX_DIR_VALUE: Record<FlexDirection, 'row' | 'column'> = {
   'column-reverse': 'column',
 };
 
-const ALIGN_ITEMS_VALUE: Partial<
-  Record<FlexAlign, Parameters<typeof decl.alignItems>[0]>
-> = {
+const ALIGN_ITEMS_VALUE: Partial<Record<FlexAlign, Parameters<typeof decl.alignItems>[0]>> = {
   start: 'flex-start',
   center: 'center',
   end: 'flex-end',
@@ -23,17 +21,16 @@ const ALIGN_ITEMS_VALUE: Partial<
   'space-evenly': 'space-evenly',
 };
 
-const JUSTIFY_CONTENT_VALUE: Partial<
-  Record<FlexAlign, Parameters<typeof decl.justifyContent>[0]>
-> = {
-  start: 'flex-start',
-  center: 'center',
-  end: 'flex-end',
-  stretch: 'stretch',
-  'space-between': 'space-between',
-  'space-around': 'space-around',
-  'space-evenly': 'space-evenly',
-};
+const JUSTIFY_CONTENT_VALUE: Partial<Record<FlexAlign, Parameters<typeof decl.justifyContent>[0]>> =
+  {
+    start: 'flex-start',
+    center: 'center',
+    end: 'flex-end',
+    stretch: 'stretch',
+    'space-between': 'space-between',
+    'space-around': 'space-around',
+    'space-evenly': 'space-evenly',
+  };
 
 // Detect wrap from stored child positions when the row/column they fall on
 // can't be explained by single-line align variations. Penpot occasionally

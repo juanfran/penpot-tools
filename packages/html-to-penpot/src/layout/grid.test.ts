@@ -135,10 +135,7 @@ describe('gridLayoutFromComputed', () => {
       { type: 'flex', value: 1 },
       { type: 'flex', value: 1 },
     ]);
-    expect(result?.layoutGridRows).toEqual([
-      { type: 'fixed', value: 100 },
-      { type: 'auto' },
-    ]);
+    expect(result?.layoutGridRows).toEqual([{ type: 'fixed', value: 100 }, { type: 'auto' }]);
   });
 
   it('auto-places six children across a 3-column row-flow grid', () => {
@@ -192,16 +189,13 @@ describe('gridLayoutFromComputed', () => {
   it('honours an explicit grid-row / grid-column on a child', () => {
     // First child is auto-placed; second is pinned at (2, 3); third is
     // auto-placed and must skip the cell already taken by the second.
-    const result = gridLayoutFromComputed(
-      style({ gridTemplateColumns: '1fr 1fr 1fr' }),
-      [
-        child('first'),
-        child('pinned', { gridRowStart: '2', gridColumnStart: '3' }),
-        child('after-pin'),
-        child('after-pin-2'),
-        child('after-pin-3'),
-      ],
-    );
+    const result = gridLayoutFromComputed(style({ gridTemplateColumns: '1fr 1fr 1fr' }), [
+      child('first'),
+      child('pinned', { gridRowStart: '2', gridColumnStart: '3' }),
+      child('after-pin'),
+      child('after-pin-2'),
+      child('after-pin-3'),
+    ]);
     const placement = cellsByShape(result!.layoutGridCells);
     expect(placement).toEqual({
       first: { row: 1, column: 1 },

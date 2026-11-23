@@ -139,11 +139,7 @@ describe('buildPenpotFontsCss', () => {
   it('ignora familias genéricas CSS y referencias tipo token', async () => {
     const fetchFn = vi.fn();
     const css = await buildPenpotFontsCss(
-      [
-        { fontFamily: 'monospace' },
-        { fontFamily: 'sans-serif' },
-        { fontFamily: 'textos.texto1' },
-      ],
+      [{ fontFamily: 'monospace' }, { fontFamily: 'sans-serif' }, { fontFamily: 'textos.texto1' }],
       { fetch: fetchFn as unknown as typeof globalThis.fetch },
     );
 

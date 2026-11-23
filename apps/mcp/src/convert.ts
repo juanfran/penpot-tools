@@ -43,9 +43,7 @@ function summariseFonts(fonts: readonly FontInfo[]): FontUsage[] {
     const key = `${family}|${weight}|${italic}`;
     if (!seen.has(key)) seen.set(key, { family, weight, italic });
   }
-  return [...seen.values()].sort(
-    (a, b) => a.family.localeCompare(b.family) || a.weight - b.weight,
-  );
+  return [...seen.values()].sort((a, b) => a.family.localeCompare(b.family) || a.weight - b.weight);
 }
 
 export async function convertPageToHtml(

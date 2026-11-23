@@ -14,12 +14,7 @@ import {
   SEMANTIC_TAGS,
   setSemanticRulesFn,
 } from '#/lib/server/semantics-store';
-import {
-  queryOptions,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -55,8 +50,7 @@ export function SemanticRules({
   const rules = data?.rules ?? [];
 
   const saveMutation = useMutation({
-    mutationFn: (next: SemanticRule[]) =>
-      setSemanticRulesFn({ data: { fileId, rules: next } }),
+    mutationFn: (next: SemanticRule[]) => setSemanticRulesFn({ data: { fileId, rules: next } }),
     onSuccess: ({ rules: saved }) => {
       queryClient.setQueryData(['semantic-rules', fileId], { rules: saved });
       // Rules drive code generation, so invalidate every cached output for
@@ -69,9 +63,7 @@ export function SemanticRules({
 
   const handleQuickTag = (tag: SemanticTag) => {
     // Replace any existing shape-id rule for this shape; otherwise prepend.
-    const filtered = rules.filter(
-      (r) => !(r.type === 'shape-id' && r.value === selectedShapeId),
-    );
+    const filtered = rules.filter((r) => !(r.type === 'shape-id' && r.value === selectedShapeId));
     persist([
       {
         id: newId(),
@@ -103,10 +95,7 @@ export function SemanticRules({
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center gap-1 px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-600 uppercase transition-colors hover:text-gray-900"
       >
-        <ChevronRight
-          size={12}
-          className={`transition-transform ${open ? 'rotate-90' : ''}`}
-        />
+        <ChevronRight size={12} className={`transition-transform ${open ? 'rotate-90' : ''}`} />
         Semantic rules
         <span className="font-mono text-[10px] tracking-normal text-gray-400 normal-case">
           ({rules.length})
@@ -138,7 +127,7 @@ export function SemanticRules({
           <AddRuleForm onAdd={handleAdd} disabled={saveMutation.isPending} />
 
           {saveMutation.isError && (
-            <p className="text-xs text-destructive">Failed to save rules.</p>
+            <p className="text-destructive text-xs">Failed to save rules.</p>
           )}
         </div>
       )}
@@ -162,12 +151,7 @@ function QuickTagShape({
         Tag <span className="font-medium text-gray-800">{name}</span> as
       </span>
       <TagSelect value={tag} onChange={setTag} />
-      <Button
-        size="xs"
-        variant="outline"
-        onClick={() => onTag(tag)}
-        disabled={disabled}
-      >
+      <Button size="xs" variant="outline" onClick={() => onTag(tag)} disabled={disabled}>
         Apply
       </Button>
     </div>
@@ -221,7 +205,7 @@ function RuleRow({
       <button
         type="button"
         onClick={onDelete}
-        className="rounded p-0.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-destructive"
+        className="hover:text-destructive rounded p-0.5 text-gray-400 transition-colors hover:bg-gray-100"
         title="Delete rule"
       >
         <Trash2 size={11} />

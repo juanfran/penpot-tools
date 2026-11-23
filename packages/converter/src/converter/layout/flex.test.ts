@@ -198,9 +198,7 @@ describe('flexContainerStyle', () => {
 
   it('does not wrap a single child', () => {
     const frame = makeFrame({ layoutFlexDir: 'row', layoutWrapType: 'nowrap' });
-    const children: Shape[] = [
-      makeRect({ id: 'a' as Uuid, x: 0, y: 0, width: 100, height: 24 }),
-    ];
+    const children: Shape[] = [makeRect({ id: 'a' as Uuid, x: 0, y: 0, width: 100, height: 24 })];
     expect(flexContainerStyle(frame, children)).not.toContain('flex-wrap');
   });
 

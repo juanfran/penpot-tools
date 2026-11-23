@@ -38,7 +38,9 @@ function transitGet(value: unknown, key: string): unknown {
 function mapEntries(value: unknown): [unknown, unknown][] {
   value = transitValue(value);
   if (Array.isArray(value)) {
-    return value.filter((entry): entry is [unknown, unknown] => Array.isArray(entry) && entry.length >= 2);
+    return value.filter(
+      (entry): entry is [unknown, unknown] => Array.isArray(entry) && entry.length >= 2,
+    );
   }
   const hasMapApi =
     !!value &&
@@ -50,11 +52,7 @@ function mapEntries(value: unknown): [unknown, unknown][] {
     const wrappedMap = object['map'];
     if (wrappedMap && typeof wrappedMap === 'object') {
       const hashMap = wrappedMap as { map?: unknown; _keys?: unknown[] };
-      if (
-        hashMap.map &&
-        typeof hashMap.map === 'object' &&
-        Array.isArray(hashMap._keys)
-      ) {
+      if (hashMap.map && typeof hashMap.map === 'object' && Array.isArray(hashMap._keys)) {
         return hashMap._keys.flatMap((hash): [unknown, unknown][] => {
           const entry = (hashMap.map as Record<string, unknown>)[String(hash)];
           return Array.isArray(entry) && entry.length >= 2 ? [[entry[0], entry[1]]] : [];
@@ -114,7 +112,9 @@ function collectTokenCssLines(tokens: unknown, prefix = ''): [string, string][] 
   return entries;
 }
 
-function entriesToCss(entries: [string, string][]): { css: string; tokenCount: number } | undefined {
+function entriesToCss(
+  entries: [string, string][],
+): { css: string; tokenCount: number } | undefined {
   if (entries.length === 0) return undefined;
   const lines = entries
     .map(([name, value]) => `    --${tokenToCssVarName(name)}: ${value};`)
@@ -165,16 +165,27 @@ function themePath(name: string, group: string): string {
 }
 
 function collectActiveThemePaths(value: unknown): Set<string> {
-  return new Set(mapEntries(value).map(([rawKey, rawValue]) => String(rawValue ?? keyName(rawKey))));
+  return new Set(
+    mapEntries(value).map(([rawKey, rawValue]) => String(rawValue ?? keyName(rawKey))),
+  );
 }
 
-function collectThemes(value: unknown): { id: string; name: string; sets: string[]; path: string }[] {
+function collectThemes(
+  value: unknown,
+): { id: string; name: string; sets: string[]; path: string }[] {
   const themeSets = collectThemeSets(value);
   if (themeSets.length > 0) {
     const name = String(transitGet(value, 'name') ?? '');
     const group = String(transitGet(value, 'group') ?? '');
     if (!name || name === '__PENPOT__HIDDEN__TOKEN__THEME__') return [];
-    return [{ id: `theme:${themePath(name, group)}`, name, sets: themeSets, path: themePath(name, group) }];
+    return [
+      {
+        id: `theme:${themePath(name, group)}`,
+        name,
+        sets: themeSets,
+        path: themePath(name, group),
+      },
+    ];
   }
 
   return mapEntries(value).flatMap(([, child]) => collectThemes(child));
@@ -204,7 +215,17 @@ export function extractTokenSetsFromTokensLib(tokensLib: unknown): FileTokenSet[
 
   const sets = definitions.flatMap((set) => {
     const css = entriesToCss(set.entries);
-    return css ? [{ id: `set:${set.id}`, name: set.name, css: css.css, tokenCount: css.tokenCount, kind: 'set' as const }] : [];
+    return css
+      ? [
+          {
+            id: `set:${set.id}`,
+            name: set.name,
+            css: css.css,
+            tokenCount: css.tokenCount,
+            kind: 'set' as const,
+          },
+        ]
+      : [];
   });
 
   if (themes.length > 0) {

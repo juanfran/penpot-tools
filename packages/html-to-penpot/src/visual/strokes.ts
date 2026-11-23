@@ -14,8 +14,7 @@ const STROKE_STYLE: Record<string, StrokeStyle> = {
  * entry (e.g. `rgb(...) 0px 0px 0px 3px`), so we extract the color separately
  * before testing this pattern.
  */
-const OUTER_STROKE_LENGTHS_RE =
-  /^\s*0(?:px)?\s+0(?:px)?\s+0(?:px)?\s+(-?\d+(?:\.\d+)?)px\s*$/;
+const OUTER_STROKE_LENGTHS_RE = /^\s*0(?:px)?\s+0(?:px)?\s+0(?:px)?\s+(-?\d+(?:\.\d+)?)px\s*$/;
 
 export interface StrokeExtraction {
   strokes: Stroke[];

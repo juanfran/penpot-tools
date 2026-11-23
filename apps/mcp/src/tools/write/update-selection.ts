@@ -116,13 +116,7 @@ export function registerUpdateSelectionFromHtmlTool(server: McpServer): void {
       const changes: FileChange[] = [...delChanges, ...bundle.changes];
 
       try {
-        const result = await updateFile(
-          token,
-          resolvedFile,
-          meta.revn,
-          meta.vern,
-          changes,
-        );
+        const result = await updateFile(token, resolvedFile, meta.revn, meta.vern, changes);
         const replacementName = name ?? target.name ?? resolvedShape;
         const summary = [
           `# Replaced shape "${target.name ?? resolvedShape}"`,
