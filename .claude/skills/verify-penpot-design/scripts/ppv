@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Entry point for the verify-penpot-design harness. See ../SKILL.md.
+set -euo pipefail
+exec node "$(dirname "$(readlink -f "$0")")/ppv.mjs" "$@"

@@ -1,0 +1,21 @@
+[
+  {
+    "tool": "create_token_set",
+    "args": {
+      "sets": [
+        {
+          "setName": "legacy",
+          "tokens": [{ "name": "legacy.accent", "type": "color", "value": "#ff00aa" }]
+        }
+      ]
+    }
+  },
+  {
+    "tool": "create_design_from_html",
+    "args": {
+      "name": "Legacy note",
+      "position": { "x": 0, "y": 0 },
+      "html": "<div data-name=\"Legacy note\" style=\"width: 200px; height: 80px; background: #fde68a; border-radius: 4px\"></div>"
+    }
+  }
+]

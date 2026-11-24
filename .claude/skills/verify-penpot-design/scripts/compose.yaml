@@ -1,0 +1,93 @@
+# Disposable Penpot instance for verify-penpot-design.
+# Compose project name is always `penpot-verify` (set by scripts/ppv), so the
+# volumes below become `penpot-verify_*` and never touch the devenv or any
+# other Penpot instance on this machine.
+
+x-flags: &flags
+  PENPOT_FLAGS: >-
+    disable-email-verification disable-secure-session-cookies
+    enable-login-with-password enable-registration enable-access-tokens
+    disable-onboarding disable-admin-console
+x-uri: &public-uri
+  PENPOT_PUBLIC_URI: http://localhost:${PPV_PORT:-9101}
+x-secret: &secret
+  PENPOT_SECRET_KEY: penpot-verify-insecure-key
+x-db: &db
+  PENPOT_DATABASE_URI: postgresql://penpot-postgres/penpot
+  PENPOT_DATABASE_USERNAME: penpot
+  PENPOT_DATABASE_PASSWORD: penpot
+
+networks:
+  penpot:
+
+volumes:
+  postgres:
+  assets:
+
+services:
+  penpot-frontend:
+    image: 'penpotapp/frontend:${PPV_PENPOT_VERSION:-2.19.5}'
+    ports:
+      - '127.0.0.1:${PPV_PORT:-9101}:8080'
+    volumes:
+      - assets:/opt/data/assets
+    depends_on:
+      - penpot-backend
+      - penpot-exporter
+    networks: [penpot]
+    environment:
+      <<: [*flags, *public-uri]
+
+  penpot-backend:
+    image: 'penpotapp/backend:${PPV_PENPOT_VERSION:-2.19.5}'
+    volumes:
+      - assets:/opt/data/assets
+    depends_on:
+      penpot-postgres:
+        condition: service_healthy
+      penpot-valkey:
+        condition: service_healthy
+    networks: [penpot]
+    environment:
+      <<: [*flags, *public-uri, *secret, *db]
+      PENPOT_REDIS_URI: redis://penpot-valkey/0
+      PENPOT_OBJECTS_STORAGE_BACKEND: fs
+      PENPOT_OBJECTS_STORAGE_FS_DIRECTORY: /opt/data/assets
+      PENPOT_TELEMETRY_ENABLED: 'false'
+
+  penpot-exporter:
+    image: 'penpotapp/exporter:${PPV_PENPOT_VERSION:-2.19.5}'
+    depends_on:
+      penpot-valkey:
+        condition: service_healthy
+    networks: [penpot]
+    environment:
+      <<: [*flags, *secret, *public-uri]
+      PENPOT_INTERNAL_URI: http://penpot-frontend:8080
+      PENPOT_REDIS_URI: redis://penpot-valkey/0
+
+  penpot-postgres:
+    image: 'postgres:15'
+    stop_signal: SIGINT
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U penpot']
+      interval: 2s
+      timeout: 10s
+      retries: 15
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks: [penpot]
+    environment:
+      POSTGRES_INITDB_ARGS: --data-checksums
+      POSTGRES_DB: penpot
+      POSTGRES_USER: penpot
+      POSTGRES_PASSWORD: penpot
+
+  penpot-valkey:
+    image: 'valkey/valkey:8.1'
+    healthcheck:
+      test: ['CMD-SHELL', 'valkey-cli ping | grep PONG']
+      interval: 1s
+      timeout: 3s
+      retries: 10
+    networks: [penpot]

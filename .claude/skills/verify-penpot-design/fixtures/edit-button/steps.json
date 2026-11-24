@@ -1,0 +1,24 @@
+[
+  {
+    "tool": "apply_token",
+    "args": {
+      "shapeId": "${shape:Choose plan}",
+      "applications": [{ "slot": "strokeColor", "tokenName": "color.accent" }]
+    },
+    "continueOnError": true
+  },
+  {
+    "tool": "modify_shape",
+    "args": { "shapeId": "${shape:Choose plan label}", "ops": { "text": "Start now" } },
+    "continueOnError": true
+  },
+  {
+    "tool": "update_selection_from_html",
+    "args": {
+      "shapeId": "${shape:Details}",
+      "html": { "$file": "details.html" },
+      "includeScreenshot": true
+    },
+    "continueOnError": true
+  }
+]

@@ -1,0 +1,37 @@
+{
+  "name": "edit-button",
+  "about": "Edits on an existing design keep layer ids, component links and earlier applied tokens. Run after the pricing-card steps in the same run.",
+  "root": "Pricing card",
+  "generic": {
+    "rootOnTop": false
+  },
+  "layers": [
+    {
+      "name": "Choose plan label",
+      "content": "Start now"
+    },
+    {
+      "name": "Details label",
+      "content": "Compare plans"
+    }
+  ],
+  "tokens": {
+    "applied": [
+      {
+        "layer": "Choose plan",
+        "attr": "strokeColor",
+        "token": "color.accent"
+      },
+      {
+        "layer": "Details",
+        "attr": "strokeColor",
+        "token": "color.accent"
+      }
+    ]
+  },
+  "preserve": {
+    "from": "before-edit",
+    "sameId": ["Choose plan", "Choose plan label", "Details", "Details label"]
+  },
+  "editor": true
+}

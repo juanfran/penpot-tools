@@ -1,0 +1,151 @@
+{
+  "name": "pricing-card",
+  "about": "What a perfect translation of design.html into Penpot looks like. Each entry is a fact about the stored file, not about the MCP response.",
+  "root": "Pricing card",
+  "generic": {},
+  "layers": [
+    {
+      "name": "Pricing card",
+      "attrs": {
+        "type": "frame",
+        "layoutFlexDir": "column",
+        "width": 320,
+        "layoutType": "flex"
+      }
+    },
+    {
+      "name": "Header",
+      "attrs": {
+        "layoutFlexDir": "row",
+        "layoutJustifyContent": "space-between",
+        "layoutType": "flex"
+      }
+    },
+    {
+      "name": "Actions",
+      "attrs": {
+        "layoutFlexDir": "row",
+        "layoutType": "flex",
+        "layoutRowGap": 12,
+        "layoutColumnGap": 12
+      }
+    },
+    {
+      "name": "Plan name",
+      "text": {
+        "fontFamily": "Inter",
+        "fontWeight": "700",
+        "fontSize": "24",
+        "fontId": "gfont-inter"
+      }
+    },
+    {
+      "name": "Popular badge",
+      "rotation": -8
+    },
+    {
+      "name": "Details",
+      "attrs": {
+        "strokes": [
+          {
+            "strokeColor": "#6366f1",
+            "strokeOpacity": 1,
+            "strokeWidth": 1,
+            "strokeAlignment": "inner",
+            "strokeStyle": "solid"
+          }
+        ]
+      }
+    }
+  ],
+  "tokens": {
+    "sets": ["core"],
+    "themes": ["Dark"],
+    "tokens": [
+      {
+        "name": "color.surface",
+        "type": "color",
+        "value": "#0f172a"
+      },
+      {
+        "name": "color.primary",
+        "type": "color",
+        "value": "#6366f1"
+      },
+      {
+        "name": "radius.card",
+        "type": "border-radius",
+        "value": "16"
+      },
+      {
+        "name": "spacing.sm",
+        "type": "spacing",
+        "value": "12"
+      }
+    ],
+    "applied": [
+      {
+        "layer": "Pricing card",
+        "attr": "fill",
+        "token": "color.surface",
+        "resolved": "#0f172a"
+      },
+      {
+        "layer": "Pricing card",
+        "attr": "r1",
+        "token": "radius.card"
+      },
+      {
+        "layer": "Pricing card",
+        "attr": "p1",
+        "token": "spacing.lg"
+      },
+      {
+        "layer": "Actions",
+        "attr": "columnGap",
+        "token": "spacing.sm"
+      },
+      {
+        "layer": "Choose plan",
+        "attr": "fill",
+        "token": "color.primary",
+        "resolved": "#6366f1"
+      },
+      {
+        "layer": "Details",
+        "attr": "strokeColor",
+        "token": "color.primary"
+      }
+    ]
+  },
+  "components": {
+    "defined": [
+      {
+        "name": "Button",
+        "variants": 2
+      }
+    ],
+    "instances": [
+      {
+        "layer": "Choose plan",
+        "component": "Button"
+      },
+      {
+        "layer": "Details",
+        "component": "Button"
+      }
+    ]
+  },
+  "typographies": [
+    {
+      "name": "Heading/L",
+      "usedBy": ["Plan name"]
+    }
+  ],
+  "preserve": {
+    "from": "before",
+    "sameId": ["Legacy note"]
+  },
+  "visual": ["card"],
+  "editor": true
+}

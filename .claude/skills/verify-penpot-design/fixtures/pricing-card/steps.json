@@ -1,0 +1,32 @@
+[
+  {
+    "tool": "create_token_set",
+    "args": {
+      "sets": [
+        {
+          "setName": "core",
+          "tokens": [
+            { "name": "color.surface", "type": "color", "value": "#0f172a" },
+            { "name": "color.on-surface", "type": "color", "value": "#f8fafc" },
+            { "name": "color.primary", "type": "color", "value": "#6366f1" },
+            { "name": "color.accent", "type": "color", "value": "#f59e0b" },
+            { "name": "radius.card", "type": "border-radius", "value": "16" },
+            { "name": "radius.button", "type": "border-radius", "value": "8" },
+            { "name": "spacing.sm", "type": "spacing", "value": "12" },
+            { "name": "spacing.md", "type": "spacing", "value": "16" },
+            { "name": "spacing.lg", "type": "spacing", "value": "24" }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "tool": "create_design_from_html",
+    "args": {
+      "name": "Pricing card",
+      "position": { "x": 400, "y": 0 },
+      "html": { "$file": "design.html" },
+      "includeScreenshot": true
+    }
+  }
+]

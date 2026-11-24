@@ -1,0 +1,113 @@
+<div
+  data-name="Pricing card"
+  style="
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md, 16px);
+    padding: var(--spacing-lg, 24px);
+    background: var(--color-surface, #0f172a);
+    border-radius: var(--radius-card, 16px);
+  "
+>
+  <div
+    data-name="Header"
+    style="display: flex; flex-direction: row; justify-content: space-between; align-items: center"
+  >
+    <p
+      data-name="Plan name"
+      data-typography="Heading/L"
+      style="
+        font-family: Inter;
+        font-weight: 700;
+        font-size: 24px;
+        line-height: 1.2;
+        color: var(--color-on-surface, #f8fafc);
+      "
+    >
+      Pro
+    </p>
+    <div
+      data-name="Popular badge"
+      style="
+        transform: rotate(-8deg);
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--color-accent, #f59e0b);
+      "
+    >
+      <p
+        data-name="Badge label"
+        style="
+          font-family: Inter;
+          font-weight: 700;
+          font-size: 12px;
+          line-height: 1.2;
+          color: #111827;
+        "
+      >
+        Popular
+      </p>
+    </div>
+  </div>
+  <p
+    data-name="Price"
+    style="
+      font-family: Inter;
+      font-weight: 400;
+      font-size: 40px;
+      line-height: 1.1;
+      color: var(--color-on-surface, #f8fafc);
+    "
+  >
+    $24<span style="font-size: 16px; color: #94a3b8">/month</span>
+  </p>
+  <div data-name="Actions" style="display: flex; flex-direction: row; gap: var(--spacing-sm, 12px)">
+    <div
+      data-name="Choose plan"
+      data-component="Button"
+      data-variant="Type=Primary"
+      style="
+        padding: 10px 16px;
+        border-radius: var(--radius-button, 8px);
+        background: var(--color-primary, #6366f1);
+      "
+    >
+      <p
+        data-name="Choose plan label"
+        style="
+          font-family: Inter;
+          font-weight: 700;
+          font-size: 14px;
+          line-height: 1.2;
+          color: #ffffff;
+        "
+      >
+        Choose plan
+      </p>
+    </div>
+    <div
+      data-name="Details"
+      data-component="Button"
+      data-variant="Type=Secondary"
+      style="
+        padding: 9px 15px;
+        border-radius: var(--radius-button, 8px);
+        border: 1px solid var(--color-primary, #6366f1);
+      "
+    >
+      <p
+        data-name="Details label"
+        style="
+          font-family: Inter;
+          font-weight: 700;
+          font-size: 14px;
+          line-height: 1.2;
+          color: var(--color-primary, #6366f1);
+        "
+      >
+        Details
+      </p>
+    </div>
+  </div>
+</div>
