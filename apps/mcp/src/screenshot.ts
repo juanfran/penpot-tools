@@ -1,3 +1,6 @@
+import { constants } from 'node:fs';
+import { lstat, mkdir, writeFile } from 'node:fs/promises';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import { chromium, type Browser } from 'playwright';
 
 /**
@@ -75,6 +78,11 @@ function getBrowser(): Promise<Browser> {
 export const DEFAULT_SCREENSHOT_MAX_WIDTH = 1600;
 export const DEFAULT_SCREENSHOT_MAX_HEIGHT = 2000;
 
+/** Largest side, in device pixels, of a `fullSize` render (PNG/Skia limit). */
+export const MAX_EXPORT_SIDE_PX = 32767;
+/** Largest area, in device pixels, of a `fullSize` render (~256 MB as RGBA). */
+export const MAX_EXPORT_PIXELS = 64_000_000;
+
 export interface ScreenshotInput {
   html: string;
   fontsCss: string;
@@ -83,6 +91,10 @@ export interface ScreenshotInput {
   /** Hard cap on viewport width / height in CSS px to keep payloads bounded. */
   maxWidth?: number;
   maxHeight?: number;
+  /** Device pixels per CSS px. Default 1, so the PNG has the design's size. */
+  scale?: number;
+  /** Render the whole content and ignore maxWidth/maxHeight. */
+  fullSize?: boolean;
 }
 
 export interface ScreenshotOutput {
@@ -93,6 +105,81 @@ export interface ScreenshotOutput {
   fullWidth: number;
   fullHeight: number;
   trimmed: boolean;
+  /** Device pixels per CSS px. */
+  scale: number;
+  /** Real size of the PNG, read from its header. */
+  pixelWidth: number;
+  pixelHeight: number;
+}
+
+export interface OutputPathOptions {
+  /** Replace an existing regular file. Symbolic links are always refused. */
+  overwrite?: boolean;
+}
+
+/**
+ * Check that `outputPath` can take a PNG: absolute, ending in `.png`, not a
+ * symbolic link, not a folder, and not an existing file unless `overwrite`.
+ * Call it before rendering so a bad path fails fast. Returns the resolved path.
+ */
+export async function prepareOutputPath(
+  outputPath: string,
+  { overwrite = false }: OutputPathOptions = {},
+): Promise<string> {
+  if (!isAbsolute(outputPath)) {
+    throw new Error(`outputPath must be an absolute path, got "${outputPath}".`);
+  }
+  if (!/\.png$/i.test(outputPath)) {
+    throw new Error(`outputPath must end in .png, got "${outputPath}".`);
+  }
+  const target = resolve(outputPath);
+  const stat = await lstat(target).catch((err: NodeJS.ErrnoException) => {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  });
+  if (stat?.isSymbolicLink()) {
+    throw new Error(`outputPath "${target}" is a symbolic link; refusing to write through it.`);
+  }
+  if (stat && !stat.isFile()) {
+    throw new Error(`outputPath "${target}" exists and is not a regular file.`);
+  }
+  if (stat && !overwrite) {
+    throw new Error(`outputPath "${target}" already exists; pass overwrite:true to replace it.`);
+  }
+  return target;
+}
+
+/**
+ * Write a rendered PNG to `outputPath`, creating missing folders. Refuses
+ * symbolic links, and existing files unless `overwrite` is set.
+ */
+export async function saveScreenshot(
+  shot: ScreenshotOutput,
+  outputPath: string,
+  options: OutputPathOptions = {},
+): Promise<{ path: string; bytes: number }> {
+  const target = await prepareOutputPath(outputPath, options);
+  const data = Buffer.from(shot.base64, 'base64');
+  await mkdir(dirname(target), { recursive: true });
+  // O_NOFOLLOW / O_EXCL close the gap between the check above and the write.
+  const flags =
+    constants.O_WRONLY |
+    constants.O_CREAT |
+    (constants.O_NOFOLLOW ?? 0) |
+    (options.overwrite ? constants.O_TRUNC : constants.O_EXCL);
+  try {
+    await writeFile(target, data, { flag: flags });
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'EEXIST') {
+      throw new Error(`outputPath "${target}" already exists; pass overwrite:true to replace it.`);
+    }
+    if (code === 'ELOOP') {
+      throw new Error(`outputPath "${target}" is a symbolic link; refusing to write through it.`);
+    }
+    throw err;
+  }
+  return { path: target, bytes: data.length };
 }
 
 export interface McpTextBlock {
@@ -114,7 +201,7 @@ export type McpContentBlock = McpTextBlock | McpImageBlock;
  */
 export function buildScreenshotContent(shot: ScreenshotOutput, caption: string): McpContentBlock[] {
   const sizeNote = shot.trimmed
-    ? `${caption} (${shot.width}×${shot.height} px — trimmed from ${shot.fullWidth}×${shot.fullHeight}; pass maxWidth/maxHeight to see more)`
+    ? `${caption} (${shot.width}×${shot.height} px — trimmed from ${shot.fullWidth}×${shot.fullHeight}; pass maxWidth/maxHeight to see more, or call get_screenshot with outputPath for the full-size PNG)`
     : `${caption} (${shot.width}×${shot.height} px)`;
   return [
     { type: 'text', text: sizeNote },
@@ -146,6 +233,123 @@ ${fontsCss ? `<style data-penpot-fonts>${fontsCss}</style>` : ''}
 }
 
 /**
+ * In-page script that measures the painted box of `#penpot-inner`, shifts the
+ * content to (0, 0) and sizes `#penpot-root` to fit. Returns `{ width, height }`
+ * in CSS px, or null when nothing is painted.
+ *
+ * - Content clipped by an `overflow` ancestor (a board with clip content) does
+ *   not grow the box, so a board exports at its own size.
+ * - Outer box-shadows grow the box, as they do in a Penpot export.
+ *
+ * Plain JS in a string on purpose: the MCP runs through tsx, whose esbuild
+ * transform wraps named functions in `__name(...)`, a helper that does not
+ * exist in the page. Same approach as html-to-penpot's `WALKER_SOURCE`.
+ */
+const MEASURE_SOURCE = `(() => {
+  const inner = document.getElementById('penpot-inner');
+  if (!inner) return null;
+  const intersect = (a, c) => {
+    const out = {
+      l: Math.max(a.l, c.l),
+      t: Math.max(a.t, c.t),
+      r: Math.min(a.r, c.r),
+      b: Math.min(a.b, c.b),
+    };
+    return out.r > out.l && out.b > out.t ? out : null;
+  };
+  // Computed value: "rgba(...) Xpx Ypx Blurpx Spreadpx [inset], ...".
+  const outerShadows = (value) =>
+    value === 'none'
+      ? []
+      : value
+          .split(/,(?![^(]*\\))/)
+          .filter((part) => !/\\binset\\b/.test(part))
+          .map((part) => (part.match(/-?[\\d.]+px/g) || []).map(parseFloat))
+          .map((n) => ({ x: n[0] || 0, y: n[1] || 0, reach: (n[2] || 0) + (n[3] || 0) }));
+  // Largest stretch of a 2D matrix, so offsets grow with a scaled element.
+  const matrixScale = (value) => {
+    const m = /matrix\\(([^)]+)\\)/.exec(value);
+    if (!m) return 1;
+    const [a, b, c, d] = m[1].split(',').map(parseFloat);
+    return Math.max(Math.hypot(a, b), Math.hypot(c, d)) || 1;
+  };
+  // A layer blur bleeds about three times its radius.
+  const blurBleed = (value) => {
+    const m = /blur\\(([\\d.]+)px\\)/.exec(value);
+    return m ? 3 * parseFloat(m[1]) : 0;
+  };
+  let total = null;
+  const add = (bx) => {
+    total = total
+      ? {
+          l: Math.min(total.l, bx.l),
+          t: Math.min(total.t, bx.t),
+          r: Math.max(total.r, bx.r),
+          b: Math.max(total.b, bx.b),
+        }
+      : bx;
+  };
+  // Walk the tree, carrying the clip of every overflow ancestor and whether
+  // a transform is in effect: under a transform a shadow offset turns with
+  // the element, so it is applied on every side.
+  const walk = (el, clip, transformed) => {
+    for (const child of Array.from(el.children)) {
+      const cs = getComputedStyle(child);
+      if (cs.display === 'none') continue;
+      const ownTransform = cs.transform !== 'none';
+      const turned = transformed || ownTransform;
+      const k = ownTransform ? matrixScale(cs.transform) : 1;
+      const r = child.getBoundingClientRect();
+      const own = { l: r.left, t: r.top, r: r.right, b: r.bottom };
+      const painted = { l: own.l, t: own.t, r: own.r, b: own.b };
+      for (const sh of outerShadows(cs.boxShadow)) {
+        if (turned) {
+          const pad = (Math.abs(sh.x) + Math.abs(sh.y) + sh.reach) * k;
+          painted.l = Math.min(painted.l, own.l - pad);
+          painted.t = Math.min(painted.t, own.t - pad);
+          painted.r = Math.max(painted.r, own.r + pad);
+          painted.b = Math.max(painted.b, own.b + pad);
+        } else {
+          painted.l = Math.min(painted.l, own.l + sh.x - sh.reach);
+          painted.t = Math.min(painted.t, own.t + sh.y - sh.reach);
+          painted.r = Math.max(painted.r, own.r + sh.x + sh.reach);
+          painted.b = Math.max(painted.b, own.b + sh.y + sh.reach);
+        }
+      }
+      const bleed = r.width > 0 || r.height > 0 ? blurBleed(cs.filter) * k : 0;
+      painted.l -= bleed;
+      painted.t -= bleed;
+      painted.r += bleed;
+      painted.b += bleed;
+      if (painted.r > painted.l && painted.b > painted.t) {
+        const visible = clip ? intersect(painted, clip) : painted;
+        if (visible) add(visible);
+      }
+      const clips = cs.overflowX !== 'visible' || cs.overflowY !== 'visible';
+      if (!clips) {
+        walk(child, clip, turned);
+        continue;
+      }
+      const childClip = clip ? intersect(own, clip) : own;
+      if (childClip) walk(child, childClip, turned);
+    }
+  };
+  walk(inner, null, false);
+  if (!total) return null;
+  const cRect = inner.getBoundingClientRect();
+  inner.style.transform =
+    'translate(' + -(total.l - cRect.left) + 'px, ' + -(total.t - cRect.top) + 'px)';
+  const width = Math.max(1, Math.ceil(total.r - total.l));
+  const height = Math.max(1, Math.ceil(total.b - total.t));
+  const root = document.getElementById('penpot-root');
+  if (root) {
+    root.style.width = width + 'px';
+    root.style.height = height + 'px';
+  }
+  return { width, height };
+})()`;
+
+/**
  * Renders a converter HTML fragment in headless chromium and returns a PNG.
  *
  * The converter emits Penpot shapes at canvas coordinates (top-level boards use
@@ -155,10 +359,15 @@ ${fontsCss ? `<style data-penpot-fonts>${fontsCss}</style>` : ''}
  * same trick `intengration/mount.ts` uses to keep test screenshots tight.
  */
 export async function renderScreenshot(input: ScreenshotInput): Promise<ScreenshotOutput> {
+  const scale = input.scale ?? 1;
+  if (scale !== 1 && !input.fullSize) {
+    // Caps are in CSS px; scaling an inline image would blow past them.
+    throw new Error('`scale` needs a fullSize render (get_screenshot with outputPath).');
+  }
   const browser = await getBrowser();
   const context = await browser.newContext({
     viewport: { width: 1920, height: 1080 },
-    deviceScaleFactor: 1,
+    deviceScaleFactor: scale,
   });
   try {
     const page = await context.newPage();
@@ -214,43 +423,34 @@ export async function renderScreenshot(input: ScreenshotInput): Promise<Screensh
       );
     });
 
-    const box = await page.evaluate(() => {
-      const inner = document.getElementById('penpot-inner');
-      if (!inner) return null;
-      const descendants = Array.from(inner.querySelectorAll<HTMLElement>('*'));
-      let minLeft = Infinity;
-      let minTop = Infinity;
-      let maxRight = -Infinity;
-      let maxBottom = -Infinity;
-      for (const el of descendants) {
-        const r = el.getBoundingClientRect();
-        if (r.width === 0 && r.height === 0) continue;
-        minLeft = Math.min(minLeft, r.left);
-        minTop = Math.min(minTop, r.top);
-        maxRight = Math.max(maxRight, r.right);
-        maxBottom = Math.max(maxBottom, r.bottom);
-      }
-      if (!Number.isFinite(minLeft)) return null;
-      const cRect = inner.getBoundingClientRect();
-      const dx = minLeft - cRect.left;
-      const dy = minTop - cRect.top;
-      inner.style.transform = `translate(${-dx}px, ${-dy}px)`;
-      const width = Math.max(1, Math.ceil(maxRight - minLeft));
-      const height = Math.max(1, Math.ceil(maxBottom - minTop));
-      const root = document.getElementById('penpot-root');
-      if (root) {
-        root.style.width = `${width}px`;
-        root.style.height = `${height}px`;
-      }
-      return { width, height };
-    });
+    const box = (await page.evaluate(MEASURE_SOURCE)) as { width: number; height: number } | null;
 
     if (!box) {
       throw new Error('Could not measure rendered content (empty bounding box).');
     }
 
-    const maxW = Math.max(1, input.maxWidth ?? DEFAULT_SCREENSHOT_MAX_WIDTH);
-    const maxH = Math.max(1, input.maxHeight ?? DEFAULT_SCREENSHOT_MAX_HEIGHT);
+    if (input.fullSize) {
+      const devW = Math.ceil(box.width * scale);
+      const devH = Math.ceil(box.height * scale);
+      if (Math.max(devW, devH) > MAX_EXPORT_SIDE_PX || devW * devH > MAX_EXPORT_PIXELS) {
+        throw new Error(
+          `Content is too large to render in one PNG: ${box.width}×${box.height} px at ${scale}x ` +
+            `is ${devW}×${devH} device px (limits: ${MAX_EXPORT_SIDE_PX} px per side, ` +
+            `${MAX_EXPORT_PIXELS / 1e6} MP). Use a lower scale or export a smaller shape.`,
+        );
+      }
+    }
+    if (Math.floor(box.width * scale) < 1 || Math.floor(box.height * scale) < 1) {
+      throw new Error(
+        `Content is too small to render: ${box.width}×${box.height} px at ${scale}x is under one device pixel.`,
+      );
+    }
+    const maxW = input.fullSize
+      ? box.width
+      : Math.max(1, input.maxWidth ?? DEFAULT_SCREENSHOT_MAX_WIDTH);
+    const maxH = input.fullSize
+      ? box.height
+      : Math.max(1, input.maxHeight ?? DEFAULT_SCREENSHOT_MAX_HEIGHT);
     const width = Math.min(box.width, maxW);
     const height = Math.min(box.height, maxH);
     const trimmed = width < box.width || height < box.height;
@@ -265,11 +465,14 @@ export async function renderScreenshot(input: ScreenshotInput): Promise<Screensh
 
     return {
       base64: buffer.toString('base64'),
+      pixelWidth: buffer.readUInt32BE(16),
+      pixelHeight: buffer.readUInt32BE(20),
       width,
       height,
       fullWidth: box.width,
       fullHeight: box.height,
       trimmed,
+      scale,
     };
   } finally {
     await context.close();

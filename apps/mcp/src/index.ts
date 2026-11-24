@@ -13,7 +13,13 @@ import { commentsSection, describePageCodeBundle, describeShapeCodeBundle } from
 import { loadPageThreads, resolveDesignComments, type ThreadsResult } from './comments.ts';
 import type { Page } from '@penpot-tools/converter/types';
 import { fetchPage } from './penpot-api.ts';
-import { buildScreenshotContent, renderScreenshot, type ScreenshotOutput } from './screenshot.ts';
+import {
+  buildScreenshotContent,
+  prepareOutputPath,
+  renderScreenshot,
+  saveScreenshot,
+  type ScreenshotOutput,
+} from './screenshot.ts';
 import { requireSelection, requireToken, resolvePage, resolveTarget } from './state.ts';
 import { registerGuideResources } from './resources.ts';
 import { registerAssetTools } from './tools/assets.ts';
@@ -48,7 +54,8 @@ file/page/shape selection is tracked by the viewer — call
 Read tools: \`get_html\` (clean HTML/JSX with extracted CSS classes or
 Tailwind utilities + optional inline screenshot), \`get_page_overview\`
 (bounded page tree + filtered node lookup), \`get_page_tokens\` (full tokens + \`:root\`
-CSS), \`get_screenshot\` (image only), \`list_assets\` / \`download_asset\`
+CSS), \`get_screenshot\` (inline image, or a full-size PNG file
+with \`outputPath\`), \`list_assets\` / \`download_asset\`
 (image media). \`get_html\` defaults to \`format:'html'\` +
 \`styling:'css'\` (class names slugified from layer names — "Icons /
 token" → \`.icons-token\`, \`data-*\` stripped). Pass \`format:'jsx'\` or
@@ -95,7 +102,8 @@ viewer — call \`get_current_selection\` if unsure; do NOT ask the user for IDs
 Read tools: \`get_html\` (clean HTML/JSX with extracted CSS classes or
 Tailwind utilities + optional inline screenshot), \`get_page_overview\`
 (bounded page tree + filtered node lookup), \`get_page_tokens\` (full tokens + \`:root\`
-CSS), \`get_screenshot\` (image only), \`list_assets\` / \`download_asset\`
+CSS), \`get_screenshot\` (inline image, or a full-size PNG file
+with \`outputPath\`), \`list_assets\` / \`download_asset\`
 (image media). \`get_html\` defaults to \`format:'html'\` +
 \`styling:'css'\` (class names slugified from layer names — "Icons /
 token" → \`.icons-token\`, \`data-*\` stripped). Pass \`format:'jsx'\` or
@@ -676,7 +684,7 @@ server.registerTool(
   {
     title: 'PNG of the current selection',
     description:
-      'Selected shape if any, else the full page. Defaults to a 1600×2000 cap; output is auto-trimmed and the caption flags it. Raise maxWidth/maxHeight only when needed. Pass fileId/pageId to bypass the viewer selection (e.g. when the viewer is not open).',
+      'Selected shape if any, else the full page. Inline by default, at 1x, capped at 1600×2000 and auto-trimmed (the caption flags it); raise maxWidth/maxHeight only when needed. Pass `outputPath` (absolute .png path) to write the full-size PNG to disk instead: no cap, no inline image, `scale` 1 by default, so a board exports at its design size. An existing file is kept unless `overwrite:true`; symbolic links are refused. Rendered from the converted HTML/CSS in headless Chromium. Pass fileId/pageId to bypass the viewer selection (e.g. when the viewer is not open).',
     inputSchema: {
       target: z
         .enum(['auto', 'page', 'shape'])
@@ -695,9 +703,43 @@ server.registerTool(
         .describe("Override the page id; defaults to the viewer's current selection."),
       maxWidth: z.number().int().positive().max(4000).optional(),
       maxHeight: z.number().int().positive().max(10000).optional(),
+      scale: z
+        .number()
+        .min(0.25)
+        .max(4)
+        .optional()
+        .describe(
+          'Device pixels per design px, with outputPath only. Default 1 (1x export); 2 for @2x.',
+        ),
+      outputPath: z
+        .string()
+        .optional()
+        .describe(
+          'Absolute path ending in .png. Writes the full-size PNG there (missing folders are created) and returns the path instead of an inline image. maxWidth/maxHeight are ignored.',
+        ),
+      overwrite: z
+        .boolean()
+        .optional()
+        .describe('Replace an existing file at outputPath. Default false.'),
     },
   },
-  async ({ target = 'auto', shapeId, fileId, pageId, maxWidth, maxHeight }) => {
+  async ({
+    target = 'auto',
+    shapeId,
+    fileId,
+    pageId,
+    maxWidth,
+    maxHeight,
+    scale,
+    outputPath,
+    overwrite,
+  }) => {
+    if (scale !== undefined && outputPath === undefined) {
+      throw new Error('`scale` needs `outputPath`; inline images are always 1x.');
+    }
+    // Fail on a bad path before converting and rendering the design.
+    const savePath =
+      outputPath === undefined ? undefined : await prepareOutputPath(outputPath, { overwrite });
     const token = await requireToken();
     const resolved = await resolveTarget({ fileId, pageId, shapeId });
     const resolvedShape = target === 'page' ? undefined : resolved.shapeId;
@@ -721,12 +763,23 @@ server.registerTool(
       fontsCss,
       maxWidth,
       maxHeight,
+      scale,
+      fullSize: savePath !== undefined,
     });
 
     const caption =
       wantShape && resolvedShape
         ? `Penpot screenshot — shape ${resolvedShape} on page "${bundle.pageName}"`
         : `Penpot screenshot — full page "${bundle.pageName}"`;
+
+    if (savePath !== undefined) {
+      const saved = await saveScreenshot(shot, savePath, { overwrite });
+      return ok(
+        `${caption} saved to ${saved.path}\n` +
+          `- PNG: ${shot.pixelWidth}×${shot.pixelHeight} px (${shot.width}×${shot.height} design px at ${shot.scale}x), ${saved.bytes} bytes\n` +
+          '- Rendered from the converted HTML/CSS in headless Chromium.',
+      );
+    }
 
     return okImage(shot, caption);
   },
