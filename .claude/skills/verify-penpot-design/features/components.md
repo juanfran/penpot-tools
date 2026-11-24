@@ -34,10 +34,10 @@ Preconditions:
 - **Build the design.** Run `$P play $R $F/pricing-card/steps.json`. Prints
   `PLAY OK`.
 - **Record the result.** Run `$P snapshot $R after`.
-- **Audit.** Run `$P audit $R $F/pricing-card/spec.json after`.
+- **Audit.** Run `$P audit $R $F/pricing-card/spec.json after components.`.
   `components.defined.Button`, `components.variants.Button`,
-  `components.instance.Choose plan` and `components.instance.Details` read
-  `PASS`.
+  `components.instance.Choose plan` (`Type=Primary`) and
+  `components.instance.Details` (`Type=Secondary`) read `PASS`.
 - **See it.** Run `$P editor $R`; `editor.png` shows the layers. Copies show
   the component icon in the layer panel.
 

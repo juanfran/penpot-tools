@@ -31,7 +31,8 @@
   },
   "preserve": {
     "from": "before-edit",
-    "sameId": ["Choose plan", "Choose plan label", "Details", "Details label"]
+    "sameId": ["Choose plan", "Choose plan label", "Details", "Details label"],
+    "unchanged": ["Header", "Plan name", "Popular badge", "Price"]
   },
   "editor": true
 }

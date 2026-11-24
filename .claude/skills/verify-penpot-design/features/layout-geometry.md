@@ -39,7 +39,7 @@ Preconditions:
 - **Render the intent.** Run
   `$P reference $R $F/pricing-card/design.html`. Writes `reference.png`.
 - **Compare.** Run `$P compare $R reference.png render-card.png card`. Prints
-  `COMPARE PASS` and writes `card-diff.png`.
+  `COMPARE PASS` and writes `compare-card-diff.png`.
 - **Open the editor.** Run `$P editor $R`. Prints `EDITOR PASS`.
 - **Audit.** Run `$P audit $R $F/pricing-card/spec.json after`. The
   `layer.*.layout*`, `generic.rotation-transform`, `layer.Popular

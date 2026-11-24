@@ -42,9 +42,10 @@ Preconditions:
   `$P reference $R $F/pricing-card/design.html` and
   `$P compare $R reference.png render-card.png card`. `$24` appears in both
   images.
-- **Audit.** Run `$P audit $R $F/pricing-card/spec.json after`.
-  `generic.fonts-resolved`, `layer.Plan name.text.*`,
-  `generic.text-position-data` and `typographies.*` read `PASS`.
+- **Audit.** Run
+  `$P audit $R $F/pricing-card/spec.json after generic.fonts,generic.text,generic.layer-names,layer.Plan name,layer.Price,typographies.,visual.`.
+  Every line reads `PASS`, including `layer.Price.content` (`$24/month`) and
+  `visual.card`.
 
 ## Gotchas
 

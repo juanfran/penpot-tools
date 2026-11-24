@@ -38,9 +38,10 @@ Preconditions:
 - **Create tokens and the design.** Run `$P play $R $F/pricing-card/steps.json`.
   Prints `TOOL-OK` for `create_token_set` and `create_design_from_html`.
 - **Record the after state.** Run `$P snapshot $R after`.
-- **Audit.** Run `$P audit $R $F/pricing-card/spec.json after`. Every
-  `tokens.*` and `preserve.token*` line reads `PASS`; `audit-after.md` holds
-  the table.
+- **Audit.** Run
+  `$P audit $R $F/pricing-card/spec.json after tokens.,preserve.token`. Every
+  line reads `PASS` and the command prints `AUDIT PASS`; `audit-after.md`
+  holds the table.
 
 ## Gotchas
 

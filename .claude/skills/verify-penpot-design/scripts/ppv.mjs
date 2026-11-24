@@ -35,9 +35,15 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-function writeJson(file, data) {
+function writeJson(file, data, mode) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
+  fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n', mode ? { mode } : undefined);
+  if (mode) fs.chmodSync(file, mode);
+}
+
+/** Remove earlier outputs so a failed capture never leaves stale evidence. */
+function clearOutputs(...files) {
+  for (const f of files) fs.rmSync(f, { force: true });
 }
 
 function compose(args, opts = {}) {
@@ -198,16 +204,19 @@ async function cmdUp() {
   const cookie = await login();
   const { token } = await rpc('create-access-token', { name: `ppv-${Date.now()}` }, { cookie });
   const profile = await rpc('get-profile', {}, { token });
-  writeJson(INSTANCE_FILE, {
-    baseUrl: BASE,
-    version: VERSION,
-    email: BOT.email,
-    profileId: profile.id,
-    teamId: profile.defaultTeamId,
-    token,
-    seededAt: new Date().toISOString(),
-  });
-  fs.chmodSync(INSTANCE_FILE, 0o600);
+  writeJson(
+    INSTANCE_FILE,
+    {
+      baseUrl: BASE,
+      version: VERSION,
+      email: BOT.email,
+      profileId: profile.id,
+      teamId: profile.defaultTeamId,
+      token,
+      seededAt: new Date().toISOString(),
+    },
+    0o600,
+  );
   console.log(`READY ${BASE} (seeded, team ${profile.defaultTeamId})`);
 }
 
@@ -308,12 +317,12 @@ async function cmdNewRun(label = 'run') {
     createdAt: new Date().toISOString(),
   };
   writeJson(path.join(dir, 'run.json'), run);
+  // Selection only: the MCP gets the token through PENPOT_TOKEN, so nothing
+  // in the run folder (the evidence) holds a credential.
   writeJson(path.join(dir, 'mcp-state.json'), {
-    token: inst.token,
     selection: { fileId: file.id, pageId, teamId: inst.teamId },
     updatedAt: new Date().toISOString(),
   });
-  fs.chmodSync(path.join(dir, 'mcp-state.json'), 0o600);
   console.log(runId);
 }
 
@@ -438,8 +447,12 @@ async function cmdPlay(runId, fixtureDir) {
   const base = path.dirname(stepsFile);
   const steps = readJson(stepsFile);
   fs.copyFileSync(stepsFile, path.join(dir, `fixture-${path.basename(stepsFile)}`));
+  const fixtureName = path.basename(base);
   if (fs.existsSync(path.join(base, 'spec.json')))
-    fs.copyFileSync(path.join(base, 'spec.json'), path.join(dir, 'spec.json'));
+    fs.copyFileSync(
+      path.join(base, 'spec.json'),
+      path.join(dir, `fixture-${fixtureName}-spec.json`),
+    );
   for (const f of fs.readdirSync(base))
     if (f.endsWith('.html')) fs.copyFileSync(path.join(base, f), path.join(dir, `fixture-${f}`));
   const { client, close } = await mcpClient(dir);
@@ -489,10 +502,12 @@ async function cmdRender(runId, shapeName, label) {
   const dir = runDir(runId);
   const run = readJson(path.join(dir, 'run.json'));
   const inst = instance();
-  const objects = pageOf(await getFile(inst, run.fileId), run.pageId).objects;
+  const out = path.join(dir, `render-${label ?? slug(shapeName)}.png`);
+  clearOutputs(out, out.replace(/\.png$/, '.json'));
+  const file = await getFile(inst, run.fileId);
+  const objects = pageOf(file, run.pageId).objects;
   const shape = findByName(objects, shapeName);
   const cookie = await login();
-  const out = path.join(dir, `render-${label ?? slug(shapeName)}.png`);
   const errors = [];
   await withBrowser(async (browser) => {
     const context = await browser.newContext({
@@ -518,6 +533,7 @@ async function cmdRender(runId, shapeName, label) {
   });
   writeJson(out.replace(/\.png$/, '.json'), {
     shape: { id: shape.id, name: shape.name },
+    revn: file.revn,
     renderer: 'penpot render.html',
     errors,
   });
@@ -533,7 +549,7 @@ function slug(s) {
     .toLowerCase();
 }
 
-function fontLinks(html) {
+function fontFamilies(html) {
   const generic = new Set([
     'serif',
     'sans-serif',
@@ -545,14 +561,19 @@ function fontLinks(html) {
     'initial',
   ]);
   const fams = new Set();
-  for (const m of html.matchAll(/font-family\s*:\s*([^;"]+)/gi)) {
+  // Values may quote the family with the other quote kind than the attribute.
+  for (const m of html.matchAll(/font-family\s*:\s*((?:"[^"]*"|'[^']*'|[^;"'}])+)/gi)) {
     const first = m[1]
       .split(',')[0]
       .trim()
       .replace(/^['"]|['"]$/g, '');
     if (first && !generic.has(first.toLowerCase()) && !first.startsWith('var(')) fams.add(first);
   }
-  return [...fams]
+  return [...fams];
+}
+
+function fontLinkTags(fams) {
+  return fams
     .map(
       (f) =>
         `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(f).replace(/%20/g, '+')}:ital,wght@0,100..900;1,100..900&display=block">`,
@@ -567,19 +588,37 @@ async function cmdReference(runId, htmlFile, label = 'reference') {
   const tokensFile = path.join(path.dirname(htmlFile), 'tokens.css');
   const tokensCss = fs.existsSync(tokensFile) ? fs.readFileSync(tokensFile, 'utf8') : '';
   const out = path.join(dir, `${label}.png`);
+  clearOutputs(out);
+  const fams = fontFamilies(html);
+  let missing = [];
   await withBrowser(async (browser) => {
     const page = await browser.newPage({
       deviceScaleFactor: 1,
       viewport: { width: 1920, height: 1080 },
     });
     await page.setContent(
-      `<!doctype html><html><head><meta charset="utf-8">${fontLinks(html)}<style>${baseCss}</style><style>${tokensCss}</style><style>body>*{position:absolute;left:0;top:0}</style></head><body>${html}</body></html>`,
+      `<!doctype html><html><head><meta charset="utf-8">${fontLinkTags(fams)}<style>${baseCss}</style><style>${tokensCss}</style><style>body>*{position:absolute;left:0;top:0}</style></head><body>${html}</body></html>`,
       { waitUntil: 'networkidle' },
     );
     await page.evaluate(() => document.fonts.ready);
-    const node = page.locator('body > *').first();
+    missing = await page.evaluate(async (list) => {
+      const out = [];
+      for (const f of list) {
+        const faces = await document.fonts.load(`16px "${f}"`);
+        if (faces.length === 0) out.push(f);
+      }
+      return out;
+    }, fams);
+    const node = page.locator('body > :not(style):not(script):not(link):not(meta)').first();
     await node.screenshot({ path: out, omitBackground: true });
   });
+  if (missing.length) {
+    console.log(
+      `REFERENCE FAIL fonts not loaded: ${missing.join(', ')} (the picture uses a fallback) → ${path.relative(REPO, out)}`,
+    );
+    process.exitCode = 1;
+    return;
+  }
   console.log(`REFERENCE ${htmlFile} → ${path.relative(REPO, out)}`);
 }
 
@@ -588,15 +627,20 @@ async function cmdCompare(runId, a, b, label = 'compare', threshold = '0.02') {
   const pa = path.resolve(dir, a);
   const pb = path.resolve(dir, b);
   const toUrl = (p) => `data:image/png;base64,${fs.readFileSync(p).toString('base64')}`;
-  const out = path.join(dir, `${label}-diff.png`);
+  const out = path.join(dir, `compare-${label}-diff.png`);
+  const summaryFile = path.join(dir, `compare-${label}.json`);
+  clearOutputs(out, summaryFile);
+  const sidecar = pb.replace(/\.png$/, '.json');
+  const rendered = fs.existsSync(sidecar) ? readJson(sidecar) : null;
   const result = await withBrowser(async (browser) => {
     const page = await browser.newPage();
     return page.evaluate(
       async ([ua, ub]) => {
         const load = (u) =>
-          new Promise((ok) => {
+          new Promise((ok, fail) => {
             const i = new Image();
             i.onload = () => ok(i);
+            i.onerror = () => fail(new Error('could not decode an image'));
             i.src = u;
           });
         const [ia, ib] = await Promise.all([load(ua), load(ub)]);
@@ -662,8 +706,11 @@ async function cmdCompare(runId, a, b, label = 'compare', threshold = '0.02') {
     threshold: Number(threshold),
     pass,
     diff: path.basename(out),
+    // The file revision the rendered side shows, so audit can tell stale evidence.
+    revn: rendered?.revn ?? null,
+    shape: rendered?.shape ?? null,
   };
-  writeJson(path.join(dir, `${label}.json`), summary);
+  writeJson(summaryFile, summary);
   console.log(
     `${pass ? 'COMPARE PASS' : 'COMPARE FAIL'} size ${result.a.join('x')} vs ${result.b.join('x')}, mismatch ${(ratio * 100).toFixed(2)}% (limit ${(Number(threshold) * 100).toFixed(1)}%) → ${path.relative(REPO, out)}`,
   );
@@ -673,11 +720,16 @@ async function cmdCompare(runId, a, b, label = 'compare', threshold = '0.02') {
 async function cmdEditor(runId) {
   const dir = runDir(runId);
   const run = readJson(path.join(dir, 'run.json'));
-  const cookie = await login();
   const out = path.join(dir, 'editor.png');
+  const summaryFile = path.join(dir, 'editor.json');
+  clearOutputs(out, summaryFile);
+  // Revision before opening: the editor itself may write texts on open.
+  const { revn } = await getFile(instance(), run.fileId);
+  const cookie = await login();
   const errors = [];
   const consoleErrors = [];
   let errorScreen = null;
+  let loaded = false;
   await withBrowser(async (browser) => {
     const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
     await context.addCookies([{ name: 'auth-token', value: cookie, url: BASE }]);
@@ -688,22 +740,39 @@ async function cmdEditor(runId) {
       `${BASE}/#/workspace?team-id=${run.teamId}&file-id=${run.fileId}&page-id=${run.pageId}`,
       { waitUntil: 'networkidle' },
     );
-    await page.waitForTimeout(8000);
+    // Loaded = still on the workspace route (`#/workspace`, or `?screen=workspace`
+    // since 2.19) and the header shows this file's name (the run id). A login
+    // redirect or a stuck loader never gets there.
+    try {
+      await page.waitForFunction(
+        (name) =>
+          (location.hash.startsWith('#/workspace') ||
+            new URLSearchParams(location.search).get('screen') === 'workspace') &&
+          document.body.innerText.includes(name),
+        run.runId,
+        { timeout: 45_000 },
+      );
+      loaded = true;
+    } catch {
+      loaded = false;
+    }
+    await page.waitForTimeout(3000);
     const body = await page.locator('body').innerText();
     errorScreen =
-      /Internal error|Something wrong has happened|Unexpected error|not found/i.exec(body)?.[0] ??
-      null;
+      /Internal error|Something wrong has happened|Unexpected error/i.exec(body)?.[0] ?? null;
     await page.screenshot({ path: out });
   });
-  const pass = !errorScreen && errors.length === 0;
-  writeJson(path.join(dir, 'editor.json'), {
+  const pass = loaded && !errorScreen && errors.length === 0;
+  writeJson(summaryFile, {
     pass,
+    loaded,
+    revn,
     errorScreen,
     pageErrors: errors,
     consoleErrors,
   });
   console.log(
-    `${pass ? 'EDITOR PASS' : 'EDITOR FAIL'} ${errorScreen ? `error screen "${errorScreen}" ` : ''}${errors.length} page error(s), ${consoleErrors.length} console error(s) → ${path.relative(REPO, out)}`,
+    `${pass ? 'EDITOR PASS' : 'EDITOR FAIL'} ${loaded ? '' : 'workspace did not load; '}${errorScreen ? `error screen "${errorScreen}" ` : ''}${errors.length} page error(s), ${consoleErrors.length} console error(s) → ${path.relative(REPO, out)}`,
   );
   if (!pass) process.exitCode = 1;
 }
@@ -757,6 +826,7 @@ function canon(v) {
 function readTokensLib(lib) {
   const sets = [];
   const tokens = {};
+  const bySet = {};
   for (const [setName, body] of Object.entries(lib ?? {})) {
     if (setName.startsWith('$')) continue;
     sets.push(setName);
@@ -764,24 +834,27 @@ function readTokensLib(lib) {
       for (const [k, v] of Object.entries(node ?? {})) {
         if (!v || typeof v !== 'object') continue;
         const name = prefix ? `${prefix}.${k}` : k;
-        if ('$value' in v) tokens[name] = { set: setName, type: v.$type, value: v.$value };
-        else walk(v, name);
+        if ('$value' in v) {
+          tokens[name] = { set: setName, type: v.$type, value: v.$value };
+          bySet[`${setName}/${name}`] = { type: v.$type, value: v.$value };
+        } else walk(v, name);
       }
     };
     walk(body, '');
   }
   const themes = (lib?.$themes ?? []).map((t) => (t.group ? `${t.group}/${t.name}` : t.name));
-  return { sets, tokens, themes };
+  return { sets, tokens, bySet, themes };
 }
 
 function isIdentity(t) {
   return !t || (t.a === 1 && t.b === 0 && t.c === 0 && t.d === 1);
 }
 
-async function cmdAudit(runId, specArg, label = 'after') {
+async function cmdAudit(runId, specArg, label = 'after', only) {
   const dir = runDir(runId);
   const run = readJson(path.join(dir, 'run.json'));
-  const spec = readJson(specArg ?? path.join(dir, 'spec.json'));
+  if (!specArg) die('usage: ppv audit <run> <spec.json> [snapshot label] [check prefixes]');
+  const spec = readJson(specArg);
   const snapFile = path.join(dir, `snapshot-${label}.json`);
   if (!fs.existsSync(snapFile))
     die(`missing ${snapFile}; run \`ppv snapshot ${runId} ${label}\` first`);
@@ -800,6 +873,12 @@ async function cmdAudit(runId, specArg, label = 'after') {
   }
   const tree = root ? subtree(objects, root.id) : [];
   const g = spec.generic ?? {};
+  // Expectations name layers inside the audited root, so a layer moved out of
+  // it (or a same-named layer elsewhere on the page) does not count.
+  const inRoot = (name) => {
+    if (!root) throw new Error(`root "${spec.root}" missing`);
+    return findByName(Object.fromEntries(tree.map((x) => [x.id, x])), name);
+  };
 
   if (root && g.rootOnTop !== false) {
     const parent = objects[root.parentId];
@@ -829,9 +908,9 @@ async function cmdAudit(runId, specArg, label = 'after') {
     const bad = leaves.filter(({ l }) => !l.fontId || !l.fontVariantId);
     check(
       'generic.fonts-resolved',
-      leaves.length > 0 && bad.length === 0,
+      bad.length === 0,
       leaves.length === 0
-        ? 'no text leaves found'
+        ? 'no text in the design'
         : bad.length
           ? `${bad.length}/${leaves.length} text leaves lack fontId/fontVariantId (e.g. "${bad[0].s.name}": family ${bad[0].l.fontFamily}, fontId ${bad[0].l.fontId ?? 'none'})`
           : `${leaves.length} leaves resolved`,
@@ -865,7 +944,7 @@ async function cmdAudit(runId, specArg, label = 'after') {
   for (const exp of spec.layers ?? []) {
     let s;
     try {
-      s = findByName(objects, exp.name);
+      s = inRoot(exp.name);
     } catch (e) {
       check(`layer.${exp.name}`, false, e.message);
       continue;
@@ -957,7 +1036,7 @@ async function cmdAudit(runId, specArg, label = 'after') {
   for (const ap of t.applied ?? []) {
     let s;
     try {
-      s = findByName(objects, ap.layer);
+      s = inRoot(ap.layer);
     } catch (e) {
       check(`tokens.applied.${ap.layer}.${ap.attr}`, false, e.message);
       continue;
@@ -974,7 +1053,7 @@ async function cmdAudit(runId, specArg, label = 'after') {
       const val =
         ap.attr === 'fill'
           ? s.fills?.[0]?.fillColor
-          : ap.attr === 'stroke-color'
+          : ap.attr === 'strokeColor'
             ? s.strokes?.[0]?.strokeColor
             : s[ap.attr];
       check(
@@ -1010,22 +1089,25 @@ async function cmdAudit(runId, specArg, label = 'after') {
   for (const inst of c.instances ?? []) {
     let s;
     try {
-      s = findByName(objects, inst.layer);
+      s = inRoot(inst.layer);
     } catch (e) {
       check(`components.instance.${inst.layer}`, false, e.message);
       continue;
     }
     const comp = comps.find((x) => x.id === s.componentId);
+    const variantOf = (x) =>
+      (x?.variantProperties ?? []).map((p) => `${p.name}=${p.value}`).join(', ');
     const ok =
       s.componentId &&
       !s.mainInstance &&
       comp &&
-      (comp.name === inst.component || comp.path?.endsWith(inst.component));
+      (comp.name === inst.component || comp.path?.endsWith(inst.component)) &&
+      (!inst.variant || variantOf(comp) === inst.variant);
     check(
       `components.instance.${inst.layer}`,
       ok,
       s.componentId
-        ? `instance of ${comp?.name ?? s.componentId}${s.mainInstance ? ' (main, not a copy)' : ''}`
+        ? `instance of ${comp?.name ?? s.componentId}${comp && variantOf(comp) ? ` [${variantOf(comp)}]` : ''}${s.mainInstance ? ' (main, not a copy)' : ''}${inst.variant ? `; expected [${inst.variant}]` : ''}`
         : 'plain shape, not a component copy',
     );
   }
@@ -1039,7 +1121,7 @@ async function cmdAudit(runId, specArg, label = 'after') {
     for (const layer of want.usedBy ?? []) {
       let s;
       try {
-        s = findByName(objects, layer);
+        s = inRoot(layer);
       } catch (e) {
         check(`typographies.used.${want.name}.${layer}`, false, e.message);
         continue;
@@ -1123,13 +1205,52 @@ async function cmdAudit(runId, specArg, label = 'after') {
           ? `lost sets: ${lostSets.join(', ')}`
           : `${b.sets.length} earlier sets kept`,
       );
-      const lostTokens = Object.keys(b.tokens).filter((x) => !allTokens[x]);
+      const afterBySet = readTokensLib(file.data?.tokensLib).bySet;
+      const changedTokens = Object.entries(b.bySet)
+        .filter(([key, tok]) => canon(afterBySet[key]) !== canon(tok))
+        .map(([key]) => (afterBySet[key] ? `${key} (changed)` : `${key} (lost)`));
       check(
         'preserve.tokens',
-        lostTokens.length === 0,
-        lostTokens.length
-          ? `lost tokens: ${lostTokens.slice(0, 8).join(', ')}`
-          : `${Object.keys(b.tokens).length} earlier tokens kept`,
+        changedTokens.length === 0,
+        changedTokens.length
+          ? `earlier tokens lost or changed: ${changedTokens.slice(0, 8).join(', ')}`
+          : `${Object.keys(b.bySet).length} earlier tokens kept with the same type and value`,
+      );
+      for (const name of spec.preserve.unchanged ?? []) {
+        const bs = Object.values(bObj).find((x) => x.name === name);
+        const as = bs && objects[bs.id];
+        const diff =
+          bs && as
+            ? Object.keys({ ...bs, ...as }).filter((k) => canon(bs[k]) !== canon(as[k]))
+            : [];
+        check(
+          `preserve.unchanged.${name}`,
+          bs && as && diff.length === 0,
+          !bs
+            ? 'layer missing before'
+            : !as
+              ? 'layer gone'
+              : diff.length
+                ? `changed: ${diff.join(', ')}`
+                : 'identical',
+        );
+      }
+      const appliedChanged = [];
+      for (const bs of Object.values(bObj)) {
+        const as = objects[bs.id];
+        if (!as) continue;
+        for (const [k, v] of Object.entries(bs.appliedTokens ?? {}))
+          if (k in (as.appliedTokens ?? {}) && as.appliedTokens[k] !== v)
+            appliedChanged.push(`${bs.name}.${k}: ${v} → ${as.appliedTokens[k]}`);
+      }
+      const allowedApplied = new Set(spec.preserve.allowAppliedChanges ?? []);
+      const unexpected = appliedChanged.filter((x) => !allowedApplied.has(x.split(':')[0]));
+      check(
+        'preserve.applied-token-names',
+        unexpected.length === 0,
+        unexpected.length
+          ? `applied tokens swapped: ${unexpected.slice(0, 8).join('; ')}`
+          : 'no applied token swapped',
       );
       const lostThemes = b.themes.filter((x) => !themeNames.includes(x));
       check(
@@ -1154,14 +1275,18 @@ async function cmdAudit(runId, specArg, label = 'after') {
   }
 
   for (const f of spec.visual ?? []) {
-    const cmp = path.join(dir, `${f}.json`);
-    if (!fs.existsSync(cmp)) check(`visual.${f}`, false, `missing ${f}.json; run \`ppv compare\``);
+    const cmp = path.join(dir, `compare-${f}.json`);
+    if (!fs.existsSync(cmp))
+      check(`visual.${f}`, false, `missing compare-${f}.json; run \`ppv compare\``);
     else {
       const r = readJson(cmp);
+      const fresh = r.revn === file.revn && (!root || r.shape?.id === root.id);
       check(
         `visual.${f}`,
-        r.pass,
-        `mismatch ${(r.mismatchRatio * 100).toFixed(2)}%, size ${r.sizeA.join('x')} vs ${r.sizeB.join('x')}`,
+        r.pass && fresh,
+        fresh
+          ? `mismatch ${(r.mismatchRatio * 100).toFixed(2)}%, size ${r.sizeA.join('x')} vs ${r.sizeB.join('x')}`
+          : `stale evidence: compared render of ${r.shape?.name ?? '?'} at revn ${r.revn ?? '?'}, snapshot is revn ${file.revn}; render and compare again`,
       );
     }
   }
@@ -1170,20 +1295,35 @@ async function cmdAudit(runId, specArg, label = 'after') {
     if (!fs.existsSync(ed)) check('editor.opens', false, 'missing editor.json; run `ppv editor`');
     else {
       const r = readJson(ed);
+      const fresh = r.revn === file.revn;
       check(
         'editor.opens',
-        r.pass,
-        r.pass
-          ? 'opens without errors'
-          : `${r.errorScreen ?? ''} ${r.pageErrors.length} page error(s)`,
+        r.pass && fresh,
+        !fresh
+          ? `stale evidence: editor opened revn ${r.revn ?? '?'}, snapshot is revn ${file.revn}; run \`ppv editor\` after this snapshot`
+          : r.pass
+            ? 'opens without errors'
+            : `${r.loaded === false ? 'workspace did not load; ' : ''}${r.errorScreen ?? ''} ${r.pageErrors.length} page error(s)`,
       );
     }
   }
 
+  if (only) {
+    const prefixes = only
+      .split(',')
+      .map((x) => x.trim())
+      .filter(Boolean);
+    const keep = checks.filter(
+      (x) => x.id === 'root.exists' || prefixes.some((p) => x.id.startsWith(p)),
+    );
+    checks.length = 0;
+    checks.push(...keep);
+  }
   const failed = checks.filter((x) => !x.pass);
   writeJson(path.join(dir, `audit-${label}.json`), {
     runId,
     spec: spec.name,
+    only: only ?? null,
     snapshot: path.basename(snapFile),
     pass: failed.length === 0,
     checks,
@@ -1191,7 +1331,7 @@ async function cmdAudit(runId, specArg, label = 'after') {
   const lines = [
     `# Audit ${spec.name ?? ''} — ${runId}`,
     '',
-    `Snapshot: \`${path.basename(snapFile)}\` · ${checks.length - failed.length}/${checks.length} checks pass`,
+    `Snapshot: \`${path.basename(snapFile)}\`${only ? ` · checks: \`${only}\`` : ''} · ${checks.length - failed.length}/${checks.length} checks pass`,
     '',
     '| Check | Result | Detail |',
     '|---|---|---|',

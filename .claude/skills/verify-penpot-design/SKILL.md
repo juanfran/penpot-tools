@@ -78,6 +78,10 @@ $P editor $R                               # open the file in the Penpot editor
 $P audit $R <fixture>/spec.json after      # facts about the stored file
 ```
 
+`audit` takes an optional fourth argument, a comma-separated list of check-id
+prefixes (`tokens.,preserve.token`), for journeys that prove one feature and
+skip the evidence the others need. The report names the filter it used.
+
 Order matters: take every snapshot before `ppv editor`. Opening the editor
 makes Penpot write text position-data and resize drifted texts, which changes
 the file you are auditing.
@@ -91,8 +95,9 @@ $P mcp $R modify_shape '{"shapeId":"${shape:Choose plan}","ops":{"radius":12}}'
 ```
 
 The MCP runs as `node apps/mcp/bin/mcp.mjs` with `PENPOT_BASE_URL`,
-`PENPOT_TOKEN` and `PENPOT_RANDOM_STATE_FILE=<run>/mcp-state.json` (selection =
-the run's file and page), so it never reads or writes the user's
+`PENPOT_TOKEN` and `PENPOT_RANDOM_STATE_FILE=<run>/mcp-state.json` (selection
+only, the run's file and page; no token in the evidence folder), so it never
+reads or writes the user's
 `~/.config/penpot-tools/state.json`. `PPV_MCP_MODE=read-only` starts it in
 read-only mode.
 
@@ -114,9 +119,12 @@ A fixture is a folder in `fixtures/`:
   `layers` (`attrs` compared after lower-casing hex colours, `text` leaf
   attributes, `content`, `rotation` in CSS degrees, `fill`), `tokens`
   (`sets`, `themes`, `tokens`, `applied` with optional `resolved`),
-  `components` (`defined` with `variants`, `instances`), `typographies`
-  (`name`, `usedBy`), `colors`, `preserve` (`from` snapshot label,
-  `sameId`, `allowDeleted`), `visual` (compare labels) and `editor`.
+  `components` (`defined` with `variants`, `instances` with optional
+  `variant`), `typographies` (`name`, `usedBy`), `colors`, `preserve` (`from`
+  snapshot label, `sameId`, `unchanged`, `allowDeleted`,
+  `allowAppliedChanges`), `visual` (compare labels) and `editor`. Layer
+  names in `layers`, `applied`, `instances` and `usedBy` are looked up inside
+  `root` only.
 
 Write a spec from the design's intent, never from what the MCP produced. To
 check a new LLM design, copy `fixtures/pricing-card`, replace `design.html`,
@@ -134,14 +142,20 @@ Everything lands in `tmp/verify/<run-id>/` (ignored by git through `**/tmp/*`):
   `.image-N.png`: every MCP call, its answer and its duration. `TOOL-ERROR`
   marks `isError` or an error text.
 - `snapshot-<label>.json`: the stored file from `get-file`.
-- `render-<label>.png` (+ `.json` with page errors): Penpot's `render.html`,
-  the same path the exporter uses.
+- `render-<label>.png` (+ `.json` with the layer, the file `revn` and page
+  errors): Penpot's `render.html`, the same path the exporter uses.
 - `reference.png`: `design.html` in Chromium with `scripts/reference-base.css`
   (the MCP's documented Tailwind preflight contract) and Google Fonts.
-- `<label>-diff.png` and `<label>.json`: red pixels differ by more than 48 in
-  any channel; passes when sizes match within 1 px and mismatch ≤ 2 %.
-- `editor.png` and `editor.json`: the workspace after 8 s, page errors,
-  console errors, error screen text.
+  `REFERENCE FAIL` when a font the HTML names does not load.
+- `compare-<label>-diff.png` and `compare-<label>.json`: red pixels differ by
+  more than 48 in any channel; passes when sizes match within 1 px and
+  mismatch ≤ 2 %. Records the `revn` and layer of the render it compared.
+- `editor.png` and `editor.json`: passes only when the workspace loads (the
+  header shows the run's file name) with no page error and no error screen.
+  Records the `revn` it opened.
+- Every capture deletes its old output first. `audit` fails `visual.*` and
+  `editor.opens` when their `revn` (or layer) differs from the audited
+  snapshot, so evidence from an earlier state never counts.
 - `audit-<label>.md` and `.json`: every check with PASS/FAIL and the reason.
 - `mcp-stderr.log`, `run.json`, copies of the fixture files used.
 
@@ -161,7 +175,7 @@ Proof standards:
 ## Cleanup
 
 ```bash
-$P clean-run $R          # deletes the run's Penpot project, removes mcp-state.json (token)
+$P clean-run $R          # deletes the run's Penpot project and the run's MCP state
 $P down                  # stops penpot-verify, keeps its volumes (fast restart)
 $P down --destroy        # also removes penpot-verify_* volumes and .instance.json
 ```
@@ -186,7 +200,7 @@ the same.
 | `ppv reference <run> <design.html> [label]`             | Intended render of the HTML                         |
 | `ppv compare <run> <a.png> <b.png> [label] [threshold]` | Pixel diff                                          |
 | `ppv editor <run>`                                      | Open the file in the editor, collect errors         |
-| `ppv audit <run> [spec.json] [snapshot label]`          | Check the stored file against a spec                |
+| `ppv audit <run> <spec.json> [label] [prefixes]`        | Check the stored file against a spec                |
 | `ppv clean-run <run>`                                   | Delete the run's project; keep evidence             |
 | `ppv down [--destroy]`                                  | Stop the instance                                   |
 | `ppv logs [service]`                                    | Last 80 log lines (default `penpot-backend`)        |

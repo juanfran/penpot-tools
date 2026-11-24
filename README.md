@@ -99,7 +99,7 @@ $P down                                 # stop (keeps data); `down --destroy` wi
 Every command exits non-zero on failure. Everything a run produces stays in
 `tmp/verify/<run-id>/` (git-ignored), even after cleanup. Start with
 `audit-after.md` (every check, PASS/FAIL and why), then look at
-`render-card.png`, `reference.png` and `card-diff.png`. Every MCP request and
+`render-card.png`, `reference.png` and `compare-card-diff.png`. Every MCP request and
 response is saved as `NN-<tool>.*`.
 
 ### Checking a new design
