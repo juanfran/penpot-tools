@@ -12,6 +12,7 @@ import type {
 import { z } from 'zod';
 import { fetchPage, getFileMeta, PenpotConflictError, updateFile } from '../../penpot-api.ts';
 import { requireSelection, requireToken } from '../../state.ts';
+import { rejected } from './responses.ts';
 
 const ok = (text: string) => ({ content: [{ type: 'text' as const, text }] });
 
@@ -285,7 +286,7 @@ export function registerModifyShapeTool(server: McpServer): void {
       const resolvedPage = pageId ?? sel.pageId;
       const resolvedShape = shapeId ?? sel.shapeId;
       if (!resolvedShape) {
-        return ok(
+        return rejected(
           '# No shape selected\n\nPick the shape in the viewer or pass `shapeId` explicitly.',
         );
       }
@@ -299,16 +300,18 @@ export function registerModifyShapeTool(server: McpServer): void {
         const page = await fetchPage(token, resolvedFile, resolvedPage);
         const target = page.objects[resolvedShape] as TextShape | undefined;
         if (!target) {
-          return ok(`# Shape not found\n\nShape ${resolvedShape} is not on page ${resolvedPage}.`);
+          return rejected(
+            `# Shape not found\n\nShape ${resolvedShape} is not on page ${resolvedPage}.`,
+          );
         }
         if (target.type !== 'text' || !target.content) {
-          return ok(
+          return rejected(
             `# \`text\` op needs a text shape\n\nShape ${resolvedShape} is a ${target.type}. Use \`update_selection_from_html\` if you want to swap a non-text shape with text.`,
           );
         }
         const newContent = rebuildTextContent(target.content, ops.text);
         if (!newContent) {
-          return ok(
+          return rejected(
             `# Could not rebuild text content\n\nShape ${resolvedShape} has an unexpected content tree. Use \`update_selection_from_html\` instead.`,
           );
         }
@@ -318,7 +321,7 @@ export function registerModifyShapeTool(server: McpServer): void {
       }
 
       if (setOps.length === 0) {
-        return ok('# No-op\n\nProvide at least one attribute under `ops`.');
+        return rejected('# No-op\n\nProvide at least one attribute under `ops`.');
       }
 
       const meta = await getFileMeta(token, resolvedFile);
@@ -344,7 +347,9 @@ export function registerModifyShapeTool(server: McpServer): void {
         );
       } catch (err) {
         if (err instanceof PenpotConflictError) {
-          return ok(`# update-file conflict\n\n${err.message}\n\nReload selection and retry.`);
+          return rejected(
+            `# update-file conflict\n\n${err.message}\n\nReload selection and retry.`,
+          );
         }
         throw err;
       }

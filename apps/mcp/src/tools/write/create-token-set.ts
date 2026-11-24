@@ -8,6 +8,7 @@ import {
   setTokensLib,
 } from '../../penpot-api.ts';
 import { requireSelection, requireToken } from '../../state.ts';
+import { rejected } from './responses.ts';
 
 const ok = (text: string) => ({ content: [{ type: 'text' as const, text }] });
 
@@ -75,7 +76,9 @@ export function registerCreateTokenSetTool(server: McpServer): void {
         );
       } catch (err) {
         if (err instanceof PenpotConflictError) {
-          return ok(`# update-file conflict\n\n${err.message}\n\nReload selection and retry.`);
+          return rejected(
+            `# update-file conflict\n\n${err.message}\n\nReload selection and retry.`,
+          );
         }
         throw err;
       }

@@ -6,6 +6,7 @@ import { getFileMeta, PenpotConflictError, updateFile } from '../../penpot-api.t
 import type { McpContentBlock } from '../../screenshot.ts';
 import { requireSelection, requireToken } from '../../state.ts';
 import { shapeScreenshotContent } from './screenshot.ts';
+import { rejected } from './responses.ts';
 
 const okText = (text: string) => ({ content: [{ type: 'text' as const, text }] });
 
@@ -89,7 +90,7 @@ export function registerCreateFromHtmlTool(server: McpServer): void {
         return { content };
       } catch (err) {
         if (err instanceof PenpotConflictError) {
-          return okText(
+          return rejected(
             `# update-file conflict\n\n${err.message}\n\nReload your selection in the viewer and call this tool again.`,
           );
         }

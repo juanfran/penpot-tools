@@ -3,6 +3,7 @@ import type { FileChange, Uuid } from '@penpot-tools/converter/types';
 import { z } from 'zod';
 import { getFileMeta, PenpotConflictError, updateFile } from '../../penpot-api.ts';
 import { requireSelection, requireToken } from '../../state.ts';
+import { rejected } from './responses.ts';
 
 const ok = (text: string) => ({ content: [{ type: 'text' as const, text }] });
 
@@ -80,7 +81,7 @@ export function registerApplyTokenTool(server: McpServer): void {
       const resolvedPage = pageId ?? sel.pageId;
       const resolvedShape = shapeId ?? sel.shapeId;
       if (!resolvedShape) {
-        return ok(
+        return rejected(
           '# No shape selected\n\nPick the shape in the viewer or pass `shapeId` explicitly.',
         );
       }
@@ -119,7 +120,9 @@ export function registerApplyTokenTool(server: McpServer): void {
         );
       } catch (err) {
         if (err instanceof PenpotConflictError) {
-          return ok(`# update-file conflict\n\n${err.message}\n\nReload selection and retry.`);
+          return rejected(
+            `# update-file conflict\n\n${err.message}\n\nReload selection and retry.`,
+          );
         }
         throw err;
       }

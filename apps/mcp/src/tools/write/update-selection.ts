@@ -6,6 +6,7 @@ import { fetchPage, getFileMeta, PenpotConflictError, updateFile } from '../../p
 import type { McpContentBlock } from '../../screenshot.ts';
 import { requireSelection, requireToken } from '../../state.ts';
 import { shapeScreenshotContent } from './screenshot.ts';
+import { rejected } from './responses.ts';
 
 const okText = (text: string) => ({ content: [{ type: 'text' as const, text }] });
 
@@ -59,7 +60,7 @@ export function registerUpdateSelectionFromHtmlTool(server: McpServer): void {
       const resolvedPage = pageId ?? sel.pageId;
       const resolvedShape = shapeId ?? sel.shapeId;
       if (!resolvedShape) {
-        return okText(
+        return rejected(
           '# No shape selected\n\nPick the shape you want to replace in the viewer, then call this tool again.',
         );
       }
@@ -67,7 +68,7 @@ export function registerUpdateSelectionFromHtmlTool(server: McpServer): void {
       const page = await fetchPage(token, resolvedFile, resolvedPage);
       const target = page.objects[resolvedShape];
       if (!target) {
-        return okText(
+        return rejected(
           `# Shape not found\n\nShape ${resolvedShape} is not on page ${resolvedPage}.`,
         );
       }
@@ -147,7 +148,7 @@ export function registerUpdateSelectionFromHtmlTool(server: McpServer): void {
         return { content };
       } catch (err) {
         if (err instanceof PenpotConflictError) {
-          return okText(
+          return rejected(
             `# update-file conflict\n\n${err.message}\n\nReload your selection and try again.`,
           );
         }
