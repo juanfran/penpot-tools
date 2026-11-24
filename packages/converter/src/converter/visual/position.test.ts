@@ -47,14 +47,20 @@ describe('absolutePositionStyle', () => {
     expect(result).toContain('top: 20.75px;');
   });
 
-  it('defaults missing dimensions to 0', () => {
+  it('falls back to selrect when position and size are missing', () => {
     const result = absolutePositionStyle(
-      makeShape({ x: undefined, y: undefined, width: undefined, height: undefined }),
+      makeShape({
+        x: undefined,
+        y: undefined,
+        width: undefined,
+        height: undefined,
+        selrect: { x: 30, y: 40, width: 50, height: 60 },
+      }),
     );
-    expect(result).toContain('left: 0px;');
-    expect(result).toContain('top: 0px;');
-    expect(result).toContain('width: 0px;');
-    expect(result).toContain('height: 0px;');
+    expect(result).toContain('left: 30px;');
+    expect(result).toContain('top: 40px;');
+    expect(result).toContain('width: 50px;');
+    expect(result).toContain('height: 60px;');
   });
 
   it('emits fixed when fixedScroll is true and isChildOfRoot is true', () => {

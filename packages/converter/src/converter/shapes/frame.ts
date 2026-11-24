@@ -18,6 +18,7 @@ import {
 import { gridTracksToStyle, gridCellStyle, findCellForShape } from '../layout/grid';
 import { decl } from '../decl';
 import { renderShape } from './dispatch';
+import { shapeBox } from '../utils/geometry';
 
 function shadowBorderRadiusFromChildren(shape: FrameShape, children: Shape[]): string {
   if (!shape.shadow?.length) return '';
@@ -36,7 +37,8 @@ function shadowBorderRadiusFromChildren(shape: FrameShape, children: Shape[]): s
   for (const child of children) {
     if (child.hidden) continue;
     if (child.type !== 'rect' && child.type !== 'circle') continue;
-    if ((child.width ?? 0) !== shape.width || (child.height ?? 0) !== shape.height) continue;
+    const childBox = shapeBox(child);
+    if (childBox.width !== shape.width || childBox.height !== shape.height) continue;
     const r = child.r1 ?? 0;
     if (r === 0) continue;
     if ((child.r2 ?? 0) !== r || (child.r3 ?? 0) !== r || (child.r4 ?? 0) !== r) continue;
@@ -132,8 +134,7 @@ export function renderFrame(
   if (isFlex) {
     const flexDir = shape.layoutFlexDir;
     const isReverseDir = flexDir === 'row-reverse' || flexDir === 'column-reverse';
-    const frameOffsetX = shape.x ?? 0;
-    const frameOffsetY = shape.y ?? 0;
+    const { x: frameOffsetX, y: frameOffsetY } = shapeBox(shape);
     const orderedChildren = isReverseDir ? [...children] : [...children].reverse();
     const parentWraps = frameWillWrap(shape, children);
     inner = orderedChildren
@@ -187,8 +188,8 @@ export function renderFrame(
       _parentIsLayoutAutoW: undefined,
       _parentIsLayoutAutoH: undefined,
       _parentLayoutItemStyles: undefined,
-      _offsetX: shape.x ?? 0,
-      _offsetY: shape.y ?? 0,
+      _offsetX: shapeBox(shape).x,
+      _offsetY: shapeBox(shape).y,
     };
     inner = children.map((child) => renderShape(child, objects, childCtx)).join('');
   }

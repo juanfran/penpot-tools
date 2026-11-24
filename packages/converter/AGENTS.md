@@ -74,6 +74,8 @@ Priority (highest first):
 
 When `_parentLayoutItemStyles` is set (flex/grid child), the result above is `mergeStyles`'d with it so layout-item sizing/margin/align-self/z-index/grid-cell placement lands on the child's own div.
 
+Read a shape's position and size through `shapeBox` (`utils/geometry.ts`), never `shape.x ?? 0`. Penpot sends path and bool shapes with `x`/`y`/`width`/`height` set to `null` and their geometry in `selrect`; reading the nulls as 0 placed a full-size path at minus its page position (`left: -9810px`), which also blew up screenshot bounds.
+
 ## Frame rendering (`shapes/frame.ts`)
 
 - **Root frame** (`parentId === id`): `position: relative; width; height`. Never rendered directly.

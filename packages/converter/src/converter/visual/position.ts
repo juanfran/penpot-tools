@@ -4,6 +4,7 @@ import { isIdentityMatrix, matrixToCss } from '../utils/transform';
 import { mergeStyles } from '../utils/style';
 import { px } from '../utils/css';
 import { decl } from '../decl';
+import { shapeBox } from '../utils/geometry';
 
 export function combinedTransformStyle(shape: ShapeCommon): string {
   const hasRotation = !!shape.rotation;
@@ -25,36 +26,31 @@ export function absolutePositionStyle(
   offsetY = 0,
 ): string {
   const position = isChildOfRoot && shape.fixedScroll ? 'fixed' : 'absolute';
-  const x = (shape.x ?? 0) - offsetX;
-  const y = (shape.y ?? 0) - offsetY;
+  const box = shapeBox(shape);
   return [
     decl.position(position),
-    decl.left(x),
-    decl.top(y),
-    decl.width(shape.width ?? 0),
-    decl.height(shape.height ?? 0),
+    decl.left(box.x - offsetX),
+    decl.top(box.y - offsetY),
+    decl.width(box.width),
+    decl.height(box.height),
   ].join(' ');
 }
 
 function relativePositionStyle(shape: ShapeCommon): string {
-  return [
-    decl.position('relative'),
-    decl.width(shape.width ?? 0),
-    decl.height(shape.height ?? 0),
-  ].join(' ');
+  const box = shapeBox(shape);
+  return [decl.position('relative'), decl.width(box.width), decl.height(box.height)].join(' ');
 }
 
 export function topLevelPositionStyle(shape: ShapeCommon, isChildOfRoot = false): string {
   const position = isChildOfRoot && shape.fixedScroll ? 'fixed' : 'absolute';
-  const x = shape.x ?? 0;
-  const y = shape.y ?? 0;
+  const box = shapeBox(shape);
   return mergeStyles(
     decl.position(position),
     decl.top(0),
     decl.left(0),
-    decl.width(shape.width ?? 0),
-    decl.height(shape.height ?? 0),
-    decl.transform(`translate(${px(x)}, ${px(y)})`),
+    decl.width(box.width),
+    decl.height(box.height),
+    decl.transform(`translate(${px(box.x)}, ${px(box.y)})`),
   );
 }
 
@@ -67,10 +63,12 @@ export function resolvePositionOutput(shape: ShapeCommon, ctx: ConverterContext)
 
     const parts: string[] = [];
     if (!itemHasWidth) {
-      parts.push(ctx._parentIsLayoutAutoW ? decl.width(shape.width ?? 0) : decl.width('100%'));
+      parts.push(ctx._parentIsLayoutAutoW ? decl.width(shapeBox(shape).width) : decl.width('100%'));
     }
     if (!itemHasHeight) {
-      parts.push(ctx._parentIsLayoutAutoH ? decl.height(shape.height ?? 0) : decl.height('100%'));
+      parts.push(
+        ctx._parentIsLayoutAutoH ? decl.height(shapeBox(shape).height) : decl.height('100%'),
+      );
     }
     positionStyle = parts.join(' ');
   } else if (ctx._forceRelative) {

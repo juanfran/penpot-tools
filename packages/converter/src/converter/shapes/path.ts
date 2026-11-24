@@ -9,6 +9,7 @@ import { blurToStyle } from '../visual/blur';
 import { shadowsToStyle } from '../visual/shadows';
 import { radiusToStyle } from '../visual/radius';
 import { hexOpacityToCss } from '../utils/color';
+import { shapeBox } from '../utils/geometry';
 
 function buildMarkerDef(capType: StrokeCap, color: string, id: string): string | null {
   if (!capType || capType === 'round' || capType === 'square') return null;
@@ -98,10 +99,7 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
   const firstFill = fills[0];
   const firstStroke = strokes[0];
 
-  const x = shape.x ?? shape.selrect?.x ?? 0;
-  const y = shape.y ?? shape.selrect?.y ?? 0;
-  const width = shape.width ?? shape.selrect?.width ?? 0;
-  const height = shape.height ?? shape.selrect?.height ?? 0;
+  const { x, y, width, height } = shapeBox(shape);
 
   // A strictly vertical or horizontal line (start.x === end.x or
   // start.y === end.y) lands here with selrect.width or selrect.height ≈ 0.
@@ -213,6 +211,8 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
     y: svgY,
     width: svgWidth,
     height: svgHeight,
+    // `shapeBox` reads selrect first for paths, so it must carry the box too.
+    selrect: { ...shape.selrect, x: svgX, y: svgY, width: svgWidth, height: svgHeight },
   };
   const posStyle = resolvePositionOutput(effectiveShape, ctx);
 
@@ -233,7 +233,16 @@ export function renderPath(shape: PathShape, ctx: ConverterContext): string {
   // have specificity 0). Setting it inline ensures stroke/marker painted
   // beyond the viewport (e.g. an arrowhead extending past the path endpoint)
   // stay visible.
-  const style = mergeStyles(posStyle, baseNoTransform, decl.overflow('visible'));
+  // An absolute flex child is placed by its parent from the raw selrect, so
+  // the padding added to a zero-width/height line has to be undone here.
+  const padShift =
+    ctx._parentIsLayout && shape.layoutItemAbsolute
+      ? mergeStyles(
+          inflateX ? decl.marginLeft(-inflateX) : '',
+          inflateY ? decl.marginTop(-inflateY) : '',
+        )
+      : '';
+  const style = mergeStyles(posStyle, baseNoTransform, decl.overflow('visible'), padShift);
 
   const defs = defsInner ? tag('defs', {}, defsInner) : '';
 

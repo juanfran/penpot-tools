@@ -354,4 +354,29 @@ describe('renderPath', () => {
     expect(style).not.toContain('rotate(');
     expect(style).not.toContain('matrix(');
   });
+
+  it('shifts an absolute flex child back by the padding added to a zero-width line', () => {
+    // The parent flex board places absolute children with left/top from the
+    // raw selrect; the svg of a zero-width line is widened by 16px on each
+    // side, so without a matching negative margin the line lands 16px right.
+    const html = renderPath(
+      makePath({
+        layoutItemAbsolute: true,
+        x: null as unknown as number,
+        y: null as unknown as number,
+        width: null as unknown as number,
+        height: null as unknown as number,
+        selrect: { x: 150, y: 20, width: 0, height: 100 },
+        content: 'M 150 20 L 150 120',
+      }),
+      {
+        ...ctx,
+        _parentIsLayout: true,
+        _parentLayoutItemStyles: 'position: absolute; left: 50px; top: 0px;',
+      },
+    );
+    expect(html).toContain('left: 50px;');
+    expect(html).toContain('margin-left: -16px;');
+    expect(html).not.toContain('margin-top');
+  });
 });

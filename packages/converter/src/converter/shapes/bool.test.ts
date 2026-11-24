@@ -65,6 +65,38 @@ describe('renderBool', () => {
     expect(renderBool(makeBool({ x: 10, y: 20 }), ctx)).toContain('translate(-10, -20)');
   });
 
+  it('falls back to selrect when x/y/width/height are null', () => {
+    const html = renderBool(
+      makeBool({
+        x: null as unknown as number,
+        y: null as unknown as number,
+        width: null as unknown as number,
+        height: null as unknown as number,
+        selrect: { x: 10, y: 20, width: 100, height: 50 },
+      }),
+      ctx,
+    );
+    expect(html).toContain('translate(-10, -20)');
+    expect(html).toContain('width="100"');
+    expect(html).toContain('height="50"');
+  });
+
+  it('does not rotate content that is already in page coordinates, and lets it overflow', () => {
+    // Bool content is stored already rotated; a CSS rotate on top would turn
+    // it twice, and the svg's default overflow:hidden would cut the corners
+    // that stick out of the unrotated selrect.
+    const html = renderBool(
+      makeBool({
+        rotation: 45,
+        transform: { a: 0.7071, b: 0.7071, c: -0.7071, d: 0.7071, e: 0, f: 0 },
+      }),
+      ctx,
+    );
+    expect(html).not.toContain('rotate(');
+    expect(html).not.toContain('matrix(');
+    expect(html).toContain('overflow: visible;');
+  });
+
   it('applies fill color from fills', () => {
     const html = renderBool(makeBool({ fills: [{ fillColor: '#ff0000' as HexColor }] }), ctx);
     expect(html).toContain('fill="#ff0000"');

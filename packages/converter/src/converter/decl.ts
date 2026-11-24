@@ -60,6 +60,8 @@ export const decl = {
 
   // Spacing
   margin: (v: Box4) => fmt('margin', box4Value(v)),
+  marginLeft: (v: number) => fmt('margin-left', px(v)),
+  marginTop: (v: number) => fmt('margin-top', px(v)),
   padding: (v: Box4) => fmt('padding', box4Value(v)),
 
   // Flex container

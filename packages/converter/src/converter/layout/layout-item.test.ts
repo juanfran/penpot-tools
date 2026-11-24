@@ -273,4 +273,18 @@ describe('layoutItemAbsoluteStyle', () => {
     expect(result).toContain('left: 20px;');
     expect(result).toContain('top: 30px;');
   });
+  it('positions a path child from its selrect when x/y are null', () => {
+    // Penpot path shapes carry x/y as null; the geometry lives in selrect.
+    // Reading null as 0 put a full-size path at left:-9810px inside its board.
+    const path = makeShape({
+      type: 'path',
+      layoutItemAbsolute: true,
+      x: null as unknown as number,
+      y: null as unknown as number,
+      selrect: { x: 9810, y: -59, width: 1910, height: 1052 },
+    });
+    const result = layoutItemAbsoluteStyle(path, 9810, -59);
+    expect(result).toContain('left: 0px;');
+    expect(result).toContain('top: 0px;');
+  });
 });

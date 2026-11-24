@@ -6,6 +6,7 @@ import { resolvePositionOutput } from '../visual/position';
 import { baseStylesNoTransform } from '../visual/base';
 import { hexOpacityToCss } from '../utils/color';
 import { renderShape } from './dispatch';
+import { shapeBox } from '../utils/geometry';
 
 function isSvgOnlyGroup(children: Shape[]): boolean {
   const visible = children.filter((c) => !c.hidden);
@@ -169,8 +170,8 @@ export function renderGroup(
     _parentIsLayoutAutoW: undefined,
     _parentIsLayoutAutoH: undefined,
     _parentLayoutItemStyles: undefined,
-    _offsetX: shape.x ?? 0,
-    _offsetY: shape.y ?? 0,
+    _offsetX: shapeBox(shape).x,
+    _offsetY: shapeBox(shape).y,
   };
   const inner = children.map((child) => renderShape(child, objects, childCtx)).join('');
 

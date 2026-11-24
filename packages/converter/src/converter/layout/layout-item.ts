@@ -1,6 +1,7 @@
 import type { ShapeCommon, FrameShape, LayoutItemAlignSelf } from '../../penpot.types';
 import { mergeStyles } from '../utils/style';
 import { decl } from '../decl';
+import { shapeBox } from '../utils/geometry';
 
 export function layoutItemSizingStyle(
   shape: ShapeCommon,
@@ -17,8 +18,7 @@ export function layoutItemSizingStyle(
 
   // Path shapes carry geometry in `selrect` and leave `width`/`height` null.
   // Fall back to selrect so flex sizing doesn't collapse them to 0.
-  const w = shape.width ?? shape.selrect?.width ?? 0;
-  const h = shape.height ?? shape.selrect?.height ?? 0;
+  const { width: w, height: h } = shapeBox(shape);
 
   const parts: string[] = [];
   let hIsExplicit = false;
@@ -114,7 +114,10 @@ export function layoutItemZIndexStyle(shape: ShapeCommon): string {
 
 export function layoutItemAbsoluteStyle(shape: ShapeCommon, offsetX = 0, offsetY = 0): string {
   if (!shape.layoutItemAbsolute) return '';
-  const x = (shape.x ?? 0) - offsetX;
-  const y = (shape.y ?? 0) - offsetY;
-  return mergeStyles(decl.position('absolute'), decl.left(x), decl.top(y));
+  const box = shapeBox(shape);
+  return mergeStyles(
+    decl.position('absolute'),
+    decl.left(box.x - offsetX),
+    decl.top(box.y - offsetY),
+  );
 }
