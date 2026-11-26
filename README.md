@@ -35,6 +35,101 @@ pnpm viewer-dev   # start the viewer app (http://localhost:3000)
 pnpm penpot-to-html ...   # shortcut to the converter CLI (see its README)
 ```
 
+## Connecting to Penpot (instance URL and access token)
+
+Every tool here needs two things: **which Penpot instance** to talk to and an
+**access token** for an account on that instance.
+
+| Setting      | What it is                                                      | Example                                   |
+| ------------ | --------------------------------------------------------------- | ----------------------------------------- |
+| Instance URL | The address you open Penpot at in the browser, nothing after it | `https://design.penpot.app` (the default) |
+| Access token | A personal token created in that instance's account settings    | `eyJhbGciOiJBMjU2S1ciLCJlbmMiOi…`         |
+
+### 1. Create an access token
+
+1. Open Penpot at the instance you want to use and sign in.
+2. Open your profile menu (bottom left) → **Your account** → **Access tokens**.
+3. **Generate new token**, give it a name and copy it. Penpot shows it only once.
+
+A token only works on the instance that created it: a design.penpot.app token
+is rejected by `https://penpot.example.com`, and the other way round.
+
+Self-hosted instances must have access tokens turned on: add
+`enable-access-tokens` to `PENPOT_FLAGS` on the frontend and backend. Without
+it the **Access tokens** tab is missing.
+
+### 2. Sign in to the viewer (the normal way)
+
+```bash
+pnpm viewer-dev   # http://localhost:3000 → redirects to /login
+```
+
+The login screen asks for both settings:
+
+- **Penpot URL**: leave `https://design.penpot.app`, or type your instance.
+  `penpot.example.com` becomes `https://penpot.example.com`, `localhost:9001`
+  becomes `http://localhost:9001`, and a pasted workspace link or `/api/...`
+  URL is cut back to the instance root.
+- **Access token**: the token from step 1.
+
+The viewer checks the pair against Penpot before saving it, so a typo shows up
+right there (_"Could not reach a Penpot instance at …"_, _"… rejected the
+access token"_, _"… does not look like a Penpot instance"_).
+
+**You never write the stored values by hand.** After a successful login the
+viewer keeps them in two places:
+
+| Where                               | Names                             | Used by    |
+| ----------------------------------- | --------------------------------- | ---------- |
+| Browser cookies (httpOnly, 30 days) | `penpot_token`, `penpot_base_url` | The viewer |
+| `~/.config/penpot-tools/state.json` | `token`, `baseUrl`                | The MCP    |
+
+To switch instance or token, open `http://localhost:3000/login` again and sign
+in with the new pair; both places are overwritten. Switching instance also
+clears the MCP's current selection, since those file ids belong to the old
+instance.
+
+### 3. Environment variables (no viewer, or a different default)
+
+Use these when you run the MCP or the CLI without the viewer, or to change what
+the login screen offers by default. All three tools take the same values.
+
+| Variable          | Value                                                            | Read by                                                                                           |
+| ----------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `PENPOT_BASE_URL` | Instance root, e.g. `https://penpot.example.com` (no `/api/...`) | **Viewer**: default for the login screen only. **MCP** and **CLI**: the instance to call.         |
+| `PENPOT_TOKEN`    | Access token for that instance                                   | **MCP**: used instead of `state.json`. **CLI**: required (or `PENPOT_EMAIL` + `PENPOT_PASSWORD`). |
+
+The viewer does not read `PENPOT_TOKEN`; it always asks for the token at login.
+
+How each tool picks the instance, first match wins:
+
+| Tool   | Instance URL                                                      | Token                                      |
+| ------ | ----------------------------------------------------------------- | ------------------------------------------ |
+| Viewer | login cookie → `PENPOT_BASE_URL` → `https://design.penpot.app`    | login cookie                               |
+| MCP    | `PENPOT_BASE_URL` → `baseUrl` in `state.json` → design.penpot.app | `PENPOT_TOKEN` → `token` in `state.json`   |
+| CLI    | `--base-url` → `PENPOT_BASE_URL` → design.penpot.app              | `PENPOT_TOKEN` → `PENPOT_EMAIL`/`PASSWORD` |
+
+Set both variables together. If you give the MCP `PENPOT_TOKEN` alone, it still
+takes the instance from `state.json`, and a token from one instance sent to
+another one fails.
+
+Examples:
+
+```bash
+# Viewer: pre-fill the login screen with a self-hosted instance
+PENPOT_BASE_URL=https://penpot.example.com pnpm viewer-dev
+
+# CLI against a self-hosted instance
+PENPOT_BASE_URL=https://penpot.example.com PENPOT_TOKEN=<token> \
+  pnpm penpot-to-html --file-id <uuid> --output page.html
+
+# MCP without the viewer (Claude Code)
+claude mcp add penpot-viewer \
+  --env PENPOT_BASE_URL=https://penpot.example.com \
+  --env PENPOT_TOKEN=<token> \
+  -- node /absolute/path/to/penpot-tools/apps/mcp/bin/mcp.mjs
+```
+
 ## Verifying MCP writes in Penpot
 
 `.claude/skills/verify-penpot-design` checks that a design written through the

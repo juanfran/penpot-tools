@@ -2,6 +2,7 @@ import { createServerOnlyFn } from '@tanstack/react-start';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { DEFAULT_PENPOT_URL } from '../penpot-instance';
 
 export interface McpSelection {
   fileId: string;
@@ -12,6 +13,8 @@ export interface McpSelection {
 
 export interface McpState {
   token?: string;
+  /** Penpot instance the token belongs to, e.g. `https://design.penpot.app`. */
+  baseUrl?: string;
   selection?: McpSelection;
   updatedAt?: string;
 }
@@ -49,9 +52,12 @@ async function writeState(next: McpState): Promise<void> {
   await writeFile(path, JSON.stringify(next, null, 2), 'utf8');
 }
 
-export const updateMcpToken = createServerOnlyFn(async (token: string) => {
+export const updateMcpLogin = createServerOnlyFn(async (token: string, baseUrl: string) => {
   const state = await readState();
-  await writeState({ ...state, token, updatedAt: new Date().toISOString() });
+  // A selection from another instance points at files this one doesn't have.
+  const sameInstance = (state.baseUrl ?? DEFAULT_PENPOT_URL) === baseUrl;
+  const selection = sameInstance ? state.selection : undefined;
+  await writeState({ ...state, token, baseUrl, selection, updatedAt: new Date().toISOString() });
 });
 
 export const updateMcpSelection = createServerOnlyFn(async (selection: McpSelection) => {

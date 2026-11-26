@@ -1,9 +1,10 @@
 import { createServerFn } from '@tanstack/react-start';
-import { getRequest } from '@tanstack/react-start/server';
 import { authMiddleware } from '../middlewares/auth.middleware';
+import { getPenpotBaseUrl } from '../auth';
+import { buildViewerFontsCss } from './fonts.server';
 import { updateMcpSelection } from './mcp-state';
 import z from 'zod';
-import { convertPage, convertPageShapes, buildPenpotFontsCss } from '@penpot-tools/converter';
+import { convertPage, convertPageShapes } from '@penpot-tools/converter';
 import {
   extractTokens,
   tokensToCss,
@@ -21,12 +22,6 @@ import {
 
 export type { FileTokenSet } from './token-sets';
 
-const BASE_URL = 'https://design.penpot.app';
-
-function getFontsBaseUrl(): string {
-  return `${new URL(getRequest().url).origin}/proxy-fonts`;
-}
-
 export interface Team {
   id: string;
   name: string;
@@ -41,10 +36,8 @@ export interface PenpotFile {
   modifiedAt: string;
   isShared: boolean;
   thumbnailId?: string;
-}
-
-export function getThumbnailUrl(thumbnailId: string): string {
-  return `${BASE_URL}/assets/by-id/${thumbnailId}`;
+  /** Absolute thumbnail URL on the active Penpot instance, set by the server. */
+  thumbnailUrl?: string;
 }
 
 export const getTeamsFn = createServerFn({ method: 'GET' })
@@ -61,9 +54,15 @@ export const getRecentFilesFn = createServerFn({ method: 'GET' })
   )
   .middleware([authMiddleware])
   .handler(async ({ data, context }) => {
-    return rpc<PenpotFile[]>(context.token, 'get-team-recent-files', {
+    const files = await rpc<PenpotFile[]>(context.token, 'get-team-recent-files', {
       params: { 'team-id': data.teamId },
     });
+    const baseUrl = getPenpotBaseUrl();
+    return files.map((file) =>
+      file.thumbnailId
+        ? { ...file, thumbnailUrl: `${baseUrl}/assets/by-id/${file.thumbnailId}` }
+        : file,
+    );
   });
 
 export interface PenpotFileSummary {
@@ -131,14 +130,14 @@ export const getPageHtmlFn = createServerFn({ method: 'GET' })
     });
     const tokens = extractTokens(page.objects);
     const ctx: ConverterContext = {
-      resolveImageUrl: (id: Uuid) => `${BASE_URL}/assets/by-file-media-id/${id}`,
+      resolveImageUrl: (id: Uuid) => `${getPenpotBaseUrl()}/assets/by-file-media-id/${id}`,
       tokens,
       format: false,
     };
     const { html, fonts } = await convertPage(page, ctx);
     return {
       html,
-      fontsCss: await buildPenpotFontsCss(fonts, { baseUrl: getFontsBaseUrl() }),
+      fontsCss: await buildViewerFontsCss(fonts),
       tokensCss: tokensToCss(tokens),
     };
   });
@@ -214,7 +213,7 @@ export const getPageShapesFn = createServerFn({ method: 'GET' })
     console.time(`convertPageShapes ${data.pageId}`);
     const tokens = extractTokens(page.objects);
     const ctx: ConverterContext = {
-      resolveImageUrl: (id: Uuid) => `${BASE_URL}/assets/by-file-media-id/${id}`,
+      resolveImageUrl: (id: Uuid) => `${getPenpotBaseUrl()}/assets/by-file-media-id/${id}`,
       tokens,
       format: false,
     };
@@ -231,7 +230,7 @@ export const getPageShapesFn = createServerFn({ method: 'GET' })
       name: page.name,
       shapes,
       tree,
-      fontsCss: await buildPenpotFontsCss(fonts, { baseUrl: getFontsBaseUrl() }),
+      fontsCss: await buildViewerFontsCss(fonts),
       tokensCss: tokensToCss(tokens),
       comments: await resolvePageComments(page, commentThreads),
     };

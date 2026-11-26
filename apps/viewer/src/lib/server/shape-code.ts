@@ -1,8 +1,9 @@
 import { createServerFn } from '@tanstack/react-start';
-import { getRequest } from '@tanstack/react-start/server';
 import z from 'zod';
 import { authMiddleware } from '../middlewares/auth.middleware';
-import { buildPenpotFontsCss, type ConverterContext } from '@penpot-tools/converter';
+import { getPenpotBaseUrl } from '../auth';
+import { buildViewerFontsCss } from './fonts.server';
+import type { ConverterContext } from '@penpot-tools/converter';
 import { extractTokens, tokensToCss } from '@penpot-tools/converter/tokens';
 import {
   shapeToCode,
@@ -12,12 +13,6 @@ import {
 import { readSemanticsFromDisk } from '@penpot-tools/converter/semantics-store';
 import type { Page, Uuid } from '@penpot-tools/penpot-types';
 import { rpc } from './penpot-api-utils.server';
-
-const BASE_URL = 'https://design.penpot.app';
-
-function getFontsBaseUrl(): string {
-  return `${new URL(getRequest().url).origin}/proxy-fonts`;
-}
 
 export type { ShapeCodeFormat, ShapeCodeStyling };
 
@@ -54,7 +49,7 @@ export const getShapeCodeFn = createServerFn({ method: 'GET' })
     // immediately without client-cache lag.
     const rules = await readSemanticsFromDisk(data.fileId);
     const ctx: ConverterContext = {
-      resolveImageUrl: (id: Uuid) => `${BASE_URL}/assets/by-file-media-id/${id}`,
+      resolveImageUrl: (id: Uuid) => `${getPenpotBaseUrl()}/assets/by-file-media-id/${id}`,
       tokens,
     };
     const { code, css, fonts } = await shapeToCode(shape, page.objects, ctx, {
@@ -67,7 +62,7 @@ export const getShapeCodeFn = createServerFn({ method: 'GET' })
     return {
       code,
       css,
-      fontsCss: await buildPenpotFontsCss(fonts, { baseUrl: getFontsBaseUrl() }),
+      fontsCss: await buildViewerFontsCss(fonts),
       tokensCss: tokensToCss(tokens),
     };
   });

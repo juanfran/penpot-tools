@@ -1,3 +1,5 @@
+import { getPenpotBaseUrlFn } from '#/lib/auth';
+import { penpotWorkspaceUrl } from '#/lib/penpot-instance';
 import { getFileSummaryFn } from '#/lib/server/penpot-api';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -8,6 +10,12 @@ export const getFileSummaryQueryOptions = (fileId: string) =>
     queryKey: ['get-file', fileId],
     queryFn: () => getFileSummaryFn({ data: { fileId } }),
   });
+
+const penpotBaseUrlQueryOptions = queryOptions({
+  queryKey: ['penpot-base-url'],
+  queryFn: () => getPenpotBaseUrlFn(),
+  staleTime: Infinity,
+});
 
 export type PageHeaderView = 'workspace' | 'tokens';
 
@@ -32,13 +40,8 @@ export function PageHeader({
 }) {
   const { data: file } = useSuspenseQuery(getFileSummaryQueryOptions(fileId));
 
-  const penpotParams = new URLSearchParams({
-    screen: 'workspace',
-    'file-id': fileId,
-    'page-id': pageId,
-  });
-  if (teamId) penpotParams.set('team-id', teamId);
-  const penpotUrl = `https://design.penpot.app/?${penpotParams.toString()}`;
+  const { data: penpotBaseUrl } = useSuspenseQuery(penpotBaseUrlQueryOptions);
+  const penpotUrl = penpotWorkspaceUrl(penpotBaseUrl, { fileId, pageId, teamId });
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4">

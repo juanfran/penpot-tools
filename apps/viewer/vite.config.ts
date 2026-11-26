@@ -14,13 +14,7 @@ const config = defineConfig({
     devtools(),
     tailwindcss(),
     tanstackStart(),
-    nitro({
-      routeRules: {
-        '/proxy-fonts/**': {
-          proxy: 'https://design.penpot.app/**',
-        },
-      },
-    }),
+    nitro(),
     babel({
       presets: [reactCompilerPreset()],
     }),

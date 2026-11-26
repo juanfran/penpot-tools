@@ -63,7 +63,7 @@ The HTML returned is **raw**: a `<div>` tree with inline `style="…"` attribute
    pnpm viewer-dev
    ```
 
-   Then sign in with a Penpot access token and open a file/page (and optionally select a shape). Both navigation and shape selection are persisted automatically.
+   Then sign in with your Penpot instance URL and an access token, and open a file/page (and optionally select a shape). Both navigation and shape selection are persisted automatically. How to create the token, use a self-hosted instance or skip the viewer: [Connecting to Penpot](../../README.md#connecting-to-penpot-instance-url-and-access-token).
 
 2. Node.js 22+ (the MCP runs through `tsx` from the bundled `node_modules`).
 
@@ -84,6 +84,7 @@ The viewer writes, and the MCP reads, a single JSON file:
 ```json
 {
   "token": "…",
+  "baseUrl": "https://design.penpot.app",
   "selection": {
     "fileId": "…",
     "pageId": "…",
@@ -95,7 +96,9 @@ The viewer writes, and the MCP reads, a single JSON file:
 
 Override the path with `PENPOT_RANDOM_STATE_FILE` (useful for tests / sandboxed installs).
 
-You can also bypass the state file entirely by setting `PENPOT_TOKEN` directly in the MCP environment — handy if you want to point the MCP at a Penpot file without running the viewer (you'll then need to pass `fileId` / `pageId` to each tool yourself).
+Don't edit it by hand: the viewer's login screen writes `token` and `baseUrl`, and opening files writes `selection`. The MCP re-reads it on every call, so signing in to another instance or with another token takes effect without restarting the MCP. Signing in to a different instance clears `selection`.
+
+To run without the viewer, set `PENPOT_TOKEN` and `PENPOT_BASE_URL` in the MCP environment (see the table below). You'll then need to pass `fileId` / `pageId` to each tool yourself.
 
 ## Installation
 
@@ -150,9 +153,11 @@ Same shape — `command: "node"`, `args: ["…/apps/mcp/bin/mcp.mjs"]`. The bin 
 | Var                        | Purpose                                                                                         |
 | -------------------------- | ----------------------------------------------------------------------------------------------- |
 | `PENPOT_MCP_MODE`          | `read-write` (default) or `read-only`. See [Read-only vs read-write](#read-only-vs-read-write). |
-| `PENPOT_TOKEN`             | Use this token instead of the one written by the viewer                                         |
-| `PENPOT_BASE_URL`          | Self-hosted Penpot instance (default `https://design.penpot.app`)                               |
+| `PENPOT_TOKEN`             | Access token; used instead of `token` from the state file                                       |
+| `PENPOT_BASE_URL`          | Instance root, e.g. `https://penpot.example.com`; used instead of `baseUrl` from the state file |
 | `PENPOT_RANDOM_STATE_FILE` | Override the JSON state file location                                                           |
+
+Set `PENPOT_TOKEN` and `PENPOT_BASE_URL` together: with only the token, the instance still comes from the state file (default design.penpot.app), and a token sent to the wrong instance is rejected.
 
 ## Read-only vs read-write
 

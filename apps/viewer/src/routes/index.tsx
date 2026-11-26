@@ -1,13 +1,7 @@
 import { createFileRoute, redirect, Link, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { isAuthenticatedFn } from '#/lib/auth';
-import {
-  getTeamsFn,
-  getRecentFilesFn,
-  getThumbnailUrl,
-  type PenpotFile,
-  type Team,
-} from '#/lib/server/penpot-api';
+import { getTeamsFn, getRecentFilesFn, type PenpotFile, type Team } from '#/lib/server/penpot-api';
 import { getFileAccessesFn } from '#/lib/server/file-access';
 import {
   Select,
@@ -222,9 +216,9 @@ function App() {
               className="border-border bg-card group overflow-hidden rounded-xl border transition-shadow hover:shadow-md"
             >
               <div className="bg-muted relative aspect-4/3 overflow-hidden">
-                {file.thumbnailId ? (
+                {file.thumbnailUrl ? (
                   <img
-                    src={getThumbnailUrl(file.thumbnailId)}
+                    src={file.thumbnailUrl}
                     alt={file.name}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />

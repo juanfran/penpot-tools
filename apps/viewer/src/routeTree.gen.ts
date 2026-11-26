@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RSplatRouteImport } from './routes/r.$'
+import { Route as ProxyFontsSplatRouteImport } from './routes/proxy-fonts.$'
 import { Route as WorkspaceFileIdPageIdRouteImport } from './routes/workspace/$fileId.$pageId'
 import { Route as TokensFileIdPageIdRouteImport } from './routes/tokens/$fileId.$pageId'
 
@@ -30,6 +31,11 @@ const RSplatRoute = RSplatRouteImport.update({
   path: '/r/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProxyFontsSplatRoute = ProxyFontsSplatRouteImport.update({
+  id: '/proxy-fonts/$',
+  path: '/proxy-fonts/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkspaceFileIdPageIdRoute = WorkspaceFileIdPageIdRouteImport.update({
   id: '/workspace/$fileId/$pageId',
   path: '/workspace/$fileId/$pageId',
@@ -44,6 +50,7 @@ const TokensFileIdPageIdRoute = TokensFileIdPageIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/proxy-fonts/$': typeof ProxyFontsSplatRoute
   '/r/$': typeof RSplatRoute
   '/tokens/$fileId/$pageId': typeof TokensFileIdPageIdRoute
   '/workspace/$fileId/$pageId': typeof WorkspaceFileIdPageIdRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/proxy-fonts/$': typeof ProxyFontsSplatRoute
   '/r/$': typeof RSplatRoute
   '/tokens/$fileId/$pageId': typeof TokensFileIdPageIdRoute
   '/workspace/$fileId/$pageId': typeof WorkspaceFileIdPageIdRoute
@@ -59,6 +67,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/proxy-fonts/$': typeof ProxyFontsSplatRoute
   '/r/$': typeof RSplatRoute
   '/tokens/$fileId/$pageId': typeof TokensFileIdPageIdRoute
   '/workspace/$fileId/$pageId': typeof WorkspaceFileIdPageIdRoute
@@ -68,6 +77,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/proxy-fonts/$'
     | '/r/$'
     | '/tokens/$fileId/$pageId'
     | '/workspace/$fileId/$pageId'
@@ -75,6 +85,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/proxy-fonts/$'
     | '/r/$'
     | '/tokens/$fileId/$pageId'
     | '/workspace/$fileId/$pageId'
@@ -82,6 +93,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/login'
+    | '/proxy-fonts/$'
     | '/r/$'
     | '/tokens/$fileId/$pageId'
     | '/workspace/$fileId/$pageId'
@@ -90,6 +102,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  ProxyFontsSplatRoute: typeof ProxyFontsSplatRoute
   RSplatRoute: typeof RSplatRoute
   TokensFileIdPageIdRoute: typeof TokensFileIdPageIdRoute
   WorkspaceFileIdPageIdRoute: typeof WorkspaceFileIdPageIdRoute
@@ -118,6 +131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/proxy-fonts/$': {
+      id: '/proxy-fonts/$'
+      path: '/proxy-fonts/$'
+      fullPath: '/proxy-fonts/$'
+      preLoaderRoute: typeof ProxyFontsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/workspace/$fileId/$pageId': {
       id: '/workspace/$fileId/$pageId'
       path: '/workspace/$fileId/$pageId'
@@ -138,6 +158,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  ProxyFontsSplatRoute: ProxyFontsSplatRoute,
   RSplatRoute: RSplatRoute,
   TokensFileIdPageIdRoute: TokensFileIdPageIdRoute,
   WorkspaceFileIdPageIdRoute: WorkspaceFileIdPageIdRoute,

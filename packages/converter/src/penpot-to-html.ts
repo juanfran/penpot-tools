@@ -10,7 +10,8 @@
  *   PENPOT_EMAIL + PENPOT_PASSWORD       (username/password login)
  *
  * Optional env vars:
- *   PENPOT_BASE_URL   (default: https://design.penpot.app/api/main)
+ *   PENPOT_BASE_URL   Penpot instance (default: https://design.penpot.app).
+ *                     The instance root or its `/api/main` URL both work.
  */
 
 import fs from 'node:fs/promises';
@@ -239,11 +240,25 @@ async function saveCache(fileId: string, page: Page): Promise<void> {
 // Main
 // ---------------------------------------------------------------------------
 
+/**
+ * `https://penpot.example.com` and `https://penpot.example.com/api/main` both
+ * become the latter, so `PENPOT_BASE_URL` takes the same value as for the
+ * viewer and the MCP (instance root) while old `/api/main` values keep working.
+ */
+function toApiBase(url: string): string {
+  const root = url
+    .trim()
+    .replace(/\/+$/, '')
+    .replace(/\/api(\/main)?$/, '');
+  return `${root}/api/main`;
+}
+
 async function main(): Promise<void> {
   const { fileId, pageId, shapeId, output, baseUrl: cliBaseUrl, cache } = parseArgs(process.argv);
 
-  const apiBase =
-    cliBaseUrl ?? process.env['PENPOT_BASE_URL'] ?? 'https://design.penpot.app/api/main';
+  const apiBase = toApiBase(
+    cliBaseUrl ?? process.env['PENPOT_BASE_URL'] ?? 'https://design.penpot.app',
+  );
 
   let page: Page | null = null;
 

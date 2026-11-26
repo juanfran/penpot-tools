@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { basename, isAbsolute, resolve as resolvePath } from 'node:path';
 import type { Comment, CommentThread, FileChange, Page } from '@penpot-tools/converter/types';
+import { readStateSync } from './state.ts';
 import { tk, toTransitJson, tu } from './transit.ts';
 
 const DEFAULT_BASE = 'https://design.penpot.app';
@@ -24,8 +25,14 @@ const PENPOT_FEATURES = [
   'plugins/runtime',
 ];
 
+/**
+ * Penpot instance to talk to: `PENPOT_BASE_URL`, else the one the viewer
+ * logged into (state file), else design.penpot.app. Read on every call so a
+ * re-login in the viewer takes effect without restarting the MCP.
+ */
 export function getPenpotBase(): string {
-  return process.env['PENPOT_BASE_URL'] ?? DEFAULT_BASE;
+  const base = process.env['PENPOT_BASE_URL'] ?? readStateSync().baseUrl ?? DEFAULT_BASE;
+  return base.replace(/\/+$/, '');
 }
 
 function rpcUrl(method: string): string {

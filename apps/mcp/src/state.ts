@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -11,6 +12,8 @@ export interface McpSelection {
 
 export interface McpState {
   token?: string;
+  /** Penpot instance the viewer logged into, e.g. `https://design.penpot.app`. */
+  baseUrl?: string;
   selection?: McpSelection;
   updatedAt?: string;
 }
@@ -26,6 +29,15 @@ export async function readState(): Promise<McpState> {
   try {
     const raw = await readFile(getStateFilePath(), 'utf8');
     return JSON.parse(raw) as McpState;
+  } catch {
+    return {};
+  }
+}
+
+/** Sync read for callers that build URLs synchronously (see `getPenpotBase`). */
+export function readStateSync(): McpState {
+  try {
+    return JSON.parse(readFileSync(getStateFilePath(), 'utf8')) as McpState;
   } catch {
     return {};
   }

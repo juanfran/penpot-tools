@@ -15,7 +15,7 @@ PENPOT_TOKEN=<token> pnpm penpot-to-html \
   [--shape-id <uuid>] \
   [--output <path>] \
   [--cache] \
-  [--base-url https://your-instance.com/api/main]
+  [--base-url https://penpot.example.com]
 ```
 
 ### Authentication (pick one)
@@ -25,16 +25,20 @@ PENPOT_TOKEN=<token> pnpm penpot-to-html \
 | `PENPOT_TOKEN`                     | Access token from Penpot profile settings |
 | `PENPOT_EMAIL` + `PENPOT_PASSWORD` | Username/password login                   |
 
+The token must come from the instance you call. `PENPOT_BASE_URL` (or
+`--base-url`) picks that instance; see
+[Connecting to Penpot](../../README.md#connecting-to-penpot-instance-url-and-access-token).
+
 ### Options
 
-| Flag         | Required | Description                                                       |
-| ------------ | -------- | ----------------------------------------------------------------- |
-| `--file-id`  | yes      | UUID of the Penpot file                                           |
-| `--page-id`  | no       | UUID of the page (defaults to first page)                         |
-| `--shape-id` | no       | UUID of a specific shape to render (renders full page if omitted) |
-| `--output`   | no       | Path to write the HTML file (prints to stdout if omitted)         |
-| `--cache`    | no       | Use cached response from `cache/<file-id>.json` if available      |
-| `--base-url` | no       | API base URL (default: `https://design.penpot.app/api/main`)      |
+| Flag         | Required | Description                                                                                                                                                 |
+| ------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--file-id`  | yes      | UUID of the Penpot file                                                                                                                                     |
+| `--page-id`  | no       | UUID of the page (defaults to first page)                                                                                                                   |
+| `--shape-id` | no       | UUID of a specific shape to render (renders full page if omitted)                                                                                           |
+| `--output`   | no       | Path to write the HTML file (prints to stdout if omitted)                                                                                                   |
+| `--cache`    | no       | Use cached response from `cache/<file-id>.json` if available                                                                                                |
+| `--base-url` | no       | Penpot instance, e.g. `https://penpot.example.com`. Overrides `PENPOT_BASE_URL`; default `https://design.penpot.app`. The old `…/api/main` form still works |
 
 ### Cache
 
@@ -56,7 +60,7 @@ PENPOT_TOKEN=xxx pnpm penpot-to-html --file-id <uuid> --page-id <uuid> --shape-i
 PENPOT_TOKEN=xxx pnpm penpot-to-html --file-id <uuid> --cache --output page.html
 
 # Self-hosted instance
-PENPOT_TOKEN=xxx pnpm penpot-to-html --file-id <uuid> --base-url https://your-instance.com/api/main --output page.html
+PENPOT_TOKEN=xxx pnpm penpot-to-html --file-id <uuid> --base-url https://penpot.example.com --output page.html
 ```
 
 ## Commands

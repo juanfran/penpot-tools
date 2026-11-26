@@ -6,11 +6,10 @@ import { parser } from 'stream-json';
 import { pick } from 'stream-json/filters/pick.js';
 import { streamValues } from 'stream-json/streamers/stream-values.js';
 import transit from 'transit-js';
+import { getPenpotBaseUrl } from '../auth';
 import { extractTokenSetsFromTokensLib, type FileTokenSet } from './token-sets';
 
 const reader = transit.reader('json');
-
-const BASE_URL = 'https://design.penpot.app';
 
 export async function rpc<T>(
   token: string,
@@ -28,7 +27,7 @@ export async function rpc<T>(
       }
     }
   }
-  const url = new URL(`${BASE_URL}/api/main/methods/${command}`);
+  const url = new URL(`${getPenpotBaseUrl()}/api/main/methods/${command}`);
   if (searchParams) {
     url.search = searchParams.toString();
   }
@@ -99,7 +98,7 @@ export async function rpcPick<T>(
       }
     }
   }
-  const url = new URL(`${BASE_URL}/api/main/methods/${command}`);
+  const url = new URL(`${getPenpotBaseUrl()}/api/main/methods/${command}`);
   if (searchParams) {
     url.search = searchParams.toString();
   }
@@ -180,7 +179,7 @@ export const rpcTransit = createServerOnlyFn(
         }
       }
     }
-    const url = new URL(`${BASE_URL}/api/main/methods/${command}`);
+    const url = new URL(`${getPenpotBaseUrl()}/api/main/methods/${command}`);
     if (searchParams) {
       url.search = searchParams.toString();
     }

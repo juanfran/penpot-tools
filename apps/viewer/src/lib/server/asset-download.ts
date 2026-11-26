@@ -4,9 +4,9 @@ import { optimize, type Config as SvgoConfig } from 'svgo';
 import z from 'zod';
 
 import { authMiddleware } from '../middlewares/auth.middleware';
+import { getPenpotBaseUrl } from '../auth';
 import type { AssetDownloadResult, ImageOutputFormat } from '../asset-download-types';
 
-const PENPOT_ORIGIN = 'https://design.penpot.app';
 const MAX_ASSET_BYTES = 25 * 1024 * 1024;
 
 const imageInputSchema = z.object({
@@ -59,7 +59,9 @@ function normalizeSvgAsset(markup: string): string {
 
 function assertAllowedPenpotAssetUrl(src: string): URL {
   const url = new URL(src);
-  if (url.origin !== PENPOT_ORIGIN || !url.pathname.startsWith('/assets/by-file-media-id/')) {
+  const base = new URL(getPenpotBaseUrl());
+  const assetsPrefix = `${base.pathname.replace(/\/$/, '')}/assets/by-file-media-id/`;
+  if (url.origin !== base.origin || !url.pathname.startsWith(assetsPrefix)) {
     throw new Error('Only Penpot file media assets can be downloaded by the server.');
   }
   return url;
